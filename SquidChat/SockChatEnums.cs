@@ -52,10 +52,4 @@
         MessagesUsers = 3,
         All = 4,
     }
-
-    enum SockChatForceDisconnectType
-    {
-        Kicked = 0,
-        Banned = 1,
-    }
 }

@@ -32,6 +32,9 @@ namespace SquidChat
         public void Send(string data)
             => Users.ForEach(u => u.Send(data));
 
+        public void Send(SockChatClientMessage inst, params string[] parts)
+            => Send(parts.Pack(inst));
+
         public string GetUsersString(IEnumerable<SockChatUser> exclude = null)
         {
             StringBuilder sb = new StringBuilder();

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Fleck;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -6,6 +7,9 @@ namespace SquidChat
 {
     public class SockChatMessage
     {
+        public static int MessageIdCounter { get; private set; } = 0;
+        public static string NextMessageId => (++MessageIdCounter).ToString();
+
         public int MessageId { get; set; }
         public SockChatUser User { get; set; }
         public SockChatChannel Channel { get; set; }
@@ -27,6 +31,11 @@ namespace SquidChat
             sb.Append(@"10010"); // BOLD CURSIVE UNDERLINED COLON PRIVATE
 
             return sb.ToString();
+        }
+
+        public static string PackBotMessage(int type, string id, params string[] parts)
+        {
+            return type.ToString() + '\f' + id + '\f' + string.Join('\f', parts);
         }
     }
 }
