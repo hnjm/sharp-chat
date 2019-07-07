@@ -27,7 +27,9 @@ namespace SharpChat
         public readonly List<SockChatConn> Connections = new List<SockChatConn>();
 
         public string DisplayName
-            => !string.IsNullOrEmpty(Nickname) ? '~' + Nickname : Username;
+            => !string.IsNullOrEmpty(Nickname)
+                ? '~' + Nickname
+                : Username;
 
         public IEnumerable<string> RemoteAddresses
             => Connections.Select(c => c.Websocket.RemoteAddress());
