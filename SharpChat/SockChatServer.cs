@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace SquidChat
+namespace SharpChat
 {
     public class SockChatServer : IDisposable
     {
@@ -23,7 +23,7 @@ namespace SquidChat
 
         public SockChatServer(ushort port)
         {
-            Logger.Write("SquidChat - Multi-user (PHP) Sock Chat");
+            Logger.Write("Starting Sock Chat server...");
 
             Context = new SockChatContext(this);
 
@@ -31,7 +31,6 @@ namespace SquidChat
                 Name = @"Lounge",
             });
 
-            Logger.Write("Starting server...");
             Server = new WebSocketServer($@"ws://0.0.0.0:{port}");
             Server.Start(sock =>
             {
@@ -44,13 +43,13 @@ namespace SquidChat
 
         private void OnOpen(IWebSocketConnection conn)
         {
-            Logger.Write($@"[{conn.ConnectionInfo.ClientIpAddress}] Open");
+            Logger.Write($@"[{conn.RemoteAddress()}] Open");
             Context.CheckPings();
         }
 
         private void OnClose(IWebSocketConnection conn)
         {
-            Logger.Write($@"[{conn.ConnectionInfo.ClientIpAddress}] Close");
+            Logger.Write($@"[{conn.RemoteAddress()}] Close");
 
             SockChatUser user = Context.FindUserBySock(conn);
 
@@ -103,7 +102,7 @@ namespace SquidChat
                     if (aUser != null || args.Length < 3 || !int.TryParse(args[1], out int aUserId))
                         break;
 
-                    FlashiiAuth auth = FlashiiAuth.Attempt(aUserId, args[2], conn.ConnectionInfo.ClientIpAddress);
+                    FlashiiAuth auth = FlashiiAuth.Attempt(aUserId, args[2], conn.RemoteAddress());
 
                     if (!auth.Success)
                     {

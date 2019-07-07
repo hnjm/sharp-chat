@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace SquidChat
+namespace SharpChat
 {
     public static class Logger
     {

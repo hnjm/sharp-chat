@@ -1,4 +1,4 @@
-﻿namespace SquidChat
+﻿namespace SharpChat
 {
     public static class Constants
     {

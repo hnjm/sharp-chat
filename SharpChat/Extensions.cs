@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace SquidChat
+namespace SharpChat
 {
     public static class Extensions
     {
@@ -38,5 +38,11 @@ namespace SquidChat
 
         public static char AsChar(this bool b)
             => b ? '1' : '0';
+
+        public static string RemoteAddress(this IWebSocketConnection conn)
+            => (conn.ConnectionInfo.ClientIpAddress == @"127.0.0.1" || conn.ConnectionInfo.ClientIpAddress == @"::1")
+                && conn.ConnectionInfo.Headers.ContainsKey(@"X-Real-IP")
+                ? conn.ConnectionInfo.Headers[@"X-Real-IP"]
+                : conn.ConnectionInfo.ClientIpAddress;
     }
 }

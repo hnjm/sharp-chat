@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace SquidChat
+namespace SharpChat
 {
     public static class Utils
     {

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace SquidChat
+namespace SharpChat
 {
     public enum SockChatUserChannel
     {
@@ -30,7 +30,7 @@ namespace SquidChat
             => !string.IsNullOrEmpty(Nickname) ? '~' + Nickname : Username;
 
         public IEnumerable<string> RemoteAddresses
-            => Connections.Select(c => c.Websocket.ConnectionInfo.ClientIpAddress);
+            => Connections.Select(c => c.Websocket.RemoteAddress());
 
         public SockChatUser()
         {

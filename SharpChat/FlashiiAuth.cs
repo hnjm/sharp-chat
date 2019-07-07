@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System.Net;
 
-namespace SquidChat
+namespace SharpChat
 {
     public class FlashiiAuth
     {

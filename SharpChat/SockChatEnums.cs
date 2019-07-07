@@ -1,4 +1,4 @@
-﻿namespace SquidChat
+﻿namespace SharpChat
 {
     public enum SockChatServerMessage
     {
