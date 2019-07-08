@@ -1,4 +1,5 @@
 ﻿using Fleck;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -21,6 +22,8 @@ namespace SharpChat
         public string Nickname { get; set; }
 
         public bool IsAway { get; set; }
+        public DateTimeOffset SilencedUntil { get; set; }
+        public DateTimeOffset BannedUntil { get; set; }
 
         public bool IsModerator { get; private set; } = false;
         public bool CanChangeNick { get; private set; } = false;
@@ -29,6 +32,11 @@ namespace SharpChat
         public readonly List<SockChatConn> Connections = new List<SockChatConn>();
 
         public SockChatChannel Channel { get; set; }
+
+        public bool IsSilenced
+            => SilencedUntil != null && DateTimeOffset.UtcNow - SilencedUntil <= TimeSpan.Zero;
+        public bool IsBanned
+            => BannedUntil != null && DateTimeOffset.UtcNow - BannedUntil <= TimeSpan.Zero;
 
         public string DisplayName
             => !string.IsNullOrEmpty(Nickname)
@@ -48,12 +56,13 @@ namespace SharpChat
             ApplyAuth(auth, true);
         }
 
-        public void ApplyAuth(FlashiiAuth auth, bool usernameAsWell = false)
+        public void ApplyAuth(FlashiiAuth auth, bool usernameAsWell = false, bool invalidateRestrictions = false)
         {
-            if (usernameAsWell)
+            if (usernameAsWell || IsAway)
             {
                 Username = auth.Username;
                 Nickname = null;
+                IsAway = false;
             }
 
             Colour = auth.Colour;
@@ -61,6 +70,12 @@ namespace SharpChat
             IsModerator = auth.IsModerator;
             CanChangeNick = auth.CanChangeNick;
             CanCreateChannels = auth.CanCreateChannels;
+
+            if(invalidateRestrictions || !IsBanned)
+                BannedUntil = auth.BannedUntil;
+
+            if(invalidateRestrictions || !IsSilenced)
+                SilencedUntil = auth.SilencedUntil;
         }
 
         public void Send(string data)

@@ -8,7 +8,12 @@ namespace SharpChat
 
         public static void Main(string[] args)
         {
-            Logger.Write("SharpChat - Multi-Session (PHP) Sock Chat");
+            Console.WriteLine(@"   _____ __                     ________          __ ");
+            Console.WriteLine(@"  / ___// /_  ____ __________  / ____/ /_  ____ _/ /_");
+            Console.WriteLine(@"  \__ \/ __ \/ __ `/ ___/ __ \/ /   / __ \/ __ `/ __/");
+            Console.WriteLine(@" ___/ / / / / /_/ / /  / /_/ / /___/ / / / /_/ / /_  ");
+            Console.WriteLine(@"/____/_/ /_/\__,_/_/  / .___/\____/_/ /_/\__,_/\__/  ");
+            Console.WriteLine(@"                     / _/     Multi-Session Sock Chat");
 
             using (ManualResetEvent mre = new ManualResetEvent(false))
             using (SockChatServer scs = new SockChatServer(6770))

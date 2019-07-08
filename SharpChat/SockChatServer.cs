@@ -34,27 +34,29 @@ namespace SharpChat
             Server = new WebSocketServer($@"ws://0.0.0.0:{port}");
             Server.Start(sock =>
             {
-                sock.OnOpen = () => OnOpen(sock);
-                sock.OnClose = () => OnClose(sock);
-                sock.OnError = err => OnError(sock, err);
-                sock.OnMessage = msg => OnMessage(sock, msg);
+                sock.OnOpen = () => { lock (Context) OnOpen(sock); };
+                sock.OnClose = () => { lock (Context) OnClose(sock); };
+                sock.OnError = err => { lock (Context) OnError(sock, err); };
+                sock.OnMessage = msg => { lock (Context) OnMessage(sock, msg); };
             });
         }
 
         private void OnOpen(IWebSocketConnection conn)
         {
-            Logger.Write($@"[{conn.RemoteAddress()}] Open");
             Context.CheckPings();
         }
 
         private void OnClose(IWebSocketConnection conn)
         {
-            Logger.Write($@"[{conn.RemoteAddress()}] Close");
-
             SockChatUser user = Context.FindUserBySock(conn);
 
-            if (user != null)
-                Context.UserLeave(null, user);
+            if(user != null)
+            {
+                user.RemoveConnection(conn);
+
+                if(!user.Connections.Any())
+                    Context.UserLeave(null, user);
+            }
 
             Context.CheckPings();
         }
@@ -70,6 +72,8 @@ namespace SharpChat
             Context.CheckPings();
 
             Logger.Write($@"[{conn.ConnectionInfo.ClientIpAddress}] {msg}");
+
+            // do flood protection shit here
 
             string[] args = msg.Split('\t');
 
@@ -110,39 +114,6 @@ namespace SharpChat
                         break;
                     }
 
-                    // sockfail and userfail checks
-                    /*
-                    $reason = Context::allowUser(auth.Username, $conn);
-
-                    if (!empty($reason) && $reason !== 'userfail') {
-                        fw_log("Auth failed ({$reason}).");
-                        conn.Send(PackMessage(SockChatClientMessage.UserConnect, @"n", $reason));
-                        break;
-                    }
-                     */
-
-                    // check ban
-                    /*
-                    $ban_length = Context::checkBan($GLOBALS['chat']['AUTOID'] ? null : $aparts[0], $conn->remoteAddress, sanitize_name($aparts[1]));
-
-                    if ($ban_length !== false) {
-                        fw_log("Auth failed, banned until {$ban_length}");
-                        $conn->send(pack_message(1, ['n', 'joinfail', $ban_length]));
-                        break;
-                    }
-                     */
-
-                    /*
-                    if($reason === 'userfail') {
-                        $oldUser = Context::getUserById($userId);
-                        $oldUser->runSock(function($sock) {
-                            $sock->close();
-                        });
-                        Context::leave($oldUser);
-                        return;
-                    }
-                    */
-
                     aUser = Context.FindUserById(auth.UserId);
 
                     if (aUser == null)
@@ -153,12 +124,27 @@ namespace SharpChat
                         aUser.Channel?.UpdateUser(aUser);
                     }
 
+                    if (aUser.IsBanned)
+                    {
+                        conn.Send(SockChatClientMessage.UserConnect, @"n", @"joinfail", aUser.BannedUntil.ToUnixTimeSeconds().ToString());
+                        conn.Close();
+                        break;
+                    }
+
+                    // arbitrarily limit users to five connections
+                    if (aUser.Connections.Count >= 5)
+                    {
+                        conn.Send(SockChatClientMessage.UserConnect, @"n", @"sockfail");
+                        conn.Close();
+                        break;
+                    }
+
                     aUser.AddConnection(conn);
 
                     SockChatChannel chan = Context.FindChannelByName(auth.DefaultChannel) ?? Context.Channels.FirstOrDefault();
 
                     // umi eats the first message for some reason so we'll send a blank padding msg
-                    conn.Send(SockChatClientMessage.ContextPopulate, Constants.CTX_MSG, Utils.UnixNow, Bot.ToString(), SockChatMessage.PackBotMessage(0, @"say", @""), @"welcome", @"0", @"10010");
+                    conn.Send(SockChatClientMessage.ContextPopulate, Constants.CTX_MSG, Utils.UnixNow, Bot.ToString(), SockChatMessage.PackBotMessage(0, @"say", Utils.InitialMessage), @"welcome", @"0", @"10010");
                     conn.Send(SockChatClientMessage.ContextPopulate, Constants.CTX_MSG, Utils.UnixNow, Bot.ToString(), SockChatMessage.PackBotMessage(0, @"say", $@"Welcome to the temporary drop in chat, {aUser.Username}!"), @"welcome", @"0", @"10010");
 
                     Context.HandleJoin(aUser, chan, conn);
@@ -173,6 +159,20 @@ namespace SharpChat
 
                     if (mUser == null || !mUser.HasConnection(conn) || string.IsNullOrEmpty(args[2]))
                         break;
+
+                    if (mUser.IsSilenced && !mUser.IsModerator)
+                        break;
+
+                    if (mUser.IsAway)
+                    {
+                        mUser.IsAway = false;
+                        mUser.Nickname = mUser.Nickname.Substring(mUser.Nickname.IndexOf('_') + 1);
+
+                        if (mUser.Nickname == mUser.Username)
+                            mUser.Nickname = null;
+
+                        mChan.UpdateUser(mUser);
+                    }
 
                     string message = string.Join('\t', args.Skip(2)).Trim();
 
@@ -251,9 +251,9 @@ namespace SharpChat
                                 if (parts.Length < 2)
                                     break;
 
-                                string actionMsg = @"<i>" + string.Join(' ', parts.Skip(1)) + @"</i>";
+                                string actionMsg = string.Join(' ', parts.Skip(1));
                                 if(!string.IsNullOrWhiteSpace(actionMsg))
-                                    mChan.Send(mUser, actionMsg, @"11000");
+                                    mChan.Send(mUser, @"<i>" + actionMsg + @"</i>", @"11000");
                                 break;
                             case @"who": // gets all online users/online users in a channel if arg
                                 break;
