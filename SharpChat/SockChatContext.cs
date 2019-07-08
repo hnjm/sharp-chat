@@ -43,6 +43,10 @@ namespace SharpChat
         {
             return Users.FirstOrDefault(x => x.UserId == userId);
         }
+        public SockChatUser FindUserByName(string name)
+        {
+            return Users.FirstOrDefault(x => x.Username.ToLowerInvariant() == name.ToLowerInvariant() || x.DisplayName.ToLowerInvariant() == name.ToLowerInvariant());
+        }
 
         public SockChatUser FindUserBySock(IWebSocketConnection conn)
         {
@@ -52,6 +56,11 @@ namespace SharpChat
         public SockChatChannel FindChannelByName(string name)
         {
             return Channels.FirstOrDefault(x => x.Name.ToLowerInvariant().Trim() == name.ToLowerInvariant().Trim());
+        }
+
+        public SockChatChannel FindUserChannel(SockChatUser user)
+        {
+            return Channels.FirstOrDefault(c => c.Users.Contains(user));
         }
 
         public SockChatMessage[] GetChannelBacklog(SockChatChannel chan, int count = 15)
@@ -137,6 +146,11 @@ namespace SharpChat
                         UserLeave(null, user, Constants.LEAVE_TIMEOUT);
                 }
             }
+        }
+
+        public void Broadcast(SockChatUser user, string message, string flags = @"10010")
+        {
+            Channels.ForEach(c => c.Send(user, message, flags));
         }
 
         ~SockChatContext()

@@ -44,5 +44,15 @@ namespace SharpChat
                 && conn.ConnectionInfo.Headers.ContainsKey(@"X-Real-IP")
                 ? conn.ConnectionInfo.Headers[@"X-Real-IP"]
                 : conn.ConnectionInfo.ClientIpAddress;
+
+        public static string ToHexString(this byte[] arr)
+        {
+            StringBuilder sb = new StringBuilder();
+
+            foreach (byte b in arr)
+                sb.AppendFormat("{0:x2}", b);
+
+            return sb.ToString();
+        }
     }
 }

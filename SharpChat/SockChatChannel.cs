@@ -20,13 +20,21 @@ namespace SharpChat
 
         public void UserJoin(SockChatUser user)
         {
-            Users.Add(user);
-            // do other shit too
+            lock (Users)
+            {
+                user.Channel = this;
+                Users.Add(user);
+            }
         }
 
         public void UserLeave(SockChatUser user)
         {
-            Users.Remove(user);
+            lock (Users)
+            {
+                if (user.Channel == this)
+                    user.Channel = null;
+                Users.Remove(user);
+            }
         }
 
         public void Send(string data)
@@ -34,6 +42,22 @@ namespace SharpChat
 
         public void Send(SockChatClientMessage inst, params string[] parts)
             => Send(parts.Pack(inst));
+
+        public void Send(SockChatUser user, string message, string flags = @"10010")
+        {
+            message = new[] { Utils.UnixNow, user.UserId.ToString(), message, SockChatMessage.NextMessageId, flags }.Pack(SockChatClientMessage.MessageAdd);
+            Send(message);
+        }
+
+        public void Send(bool error, string id, params string[] args)
+        {
+            Send(null, SockChatMessage.PackBotMessage(error ? 1 : 0, id, args));
+        }
+
+        public void UpdateUser(SockChatUser user)
+        {
+            Send(SockChatClientMessage.UserUpdate, user.ToString());
+        }
 
         public string GetUsersString(IEnumerable<SockChatUser> exclude = null)
         {

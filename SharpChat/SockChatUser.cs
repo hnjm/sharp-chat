@@ -20,15 +20,19 @@ namespace SharpChat
         public int Hierarchy { get; set; }
         public string Nickname { get; set; }
 
+        public bool IsAway { get; set; }
+
         public bool IsModerator { get; private set; } = false;
         public bool CanChangeNick { get; private set; } = false;
         public SockChatUserChannel CanCreateChannels { get; private set; } = SockChatUserChannel.No;
 
         public readonly List<SockChatConn> Connections = new List<SockChatConn>();
 
+        public SockChatChannel Channel { get; set; }
+
         public string DisplayName
             => !string.IsNullOrEmpty(Nickname)
-                ? '~' + Nickname
+                ? (IsAway ? string.Empty : @"~") + Nickname
                 : Username;
 
         public IEnumerable<string> RemoteAddresses
@@ -41,7 +45,17 @@ namespace SharpChat
         public SockChatUser(FlashiiAuth auth)
         {
             UserId = auth.UserId;
-            Username = auth.Username;
+            ApplyAuth(auth, true);
+        }
+
+        public void ApplyAuth(FlashiiAuth auth, bool usernameAsWell = false)
+        {
+            if (usernameAsWell)
+            {
+                Username = auth.Username;
+                Nickname = null;
+            }
+
             Colour = auth.Colour;
             Hierarchy = auth.Hierarchy;
             IsModerator = auth.IsModerator;
@@ -54,6 +68,22 @@ namespace SharpChat
 
         public void Send(SockChatClientMessage inst, params string[] parts)
             => Send(parts.Pack(inst));
+
+        public void Send(SockChatUser user, string message, string flags = @"10010")
+        {
+            user = user ?? SockChatServer.Bot;
+            Send(
+                SockChatClientMessage.MessageAdd,
+                Utils.UnixNow, user.UserId.ToString(),
+                message, SockChatMessage.NextMessageId,
+                flags
+            );
+        }
+
+        public void Send(bool error, string id, params string[] args)
+        {
+            Send(null, SockChatMessage.PackBotMessage(error ? 1 : 0, id, args));
+        }
 
         public void AddConnection(SockChatConn conn)
             => Connections.Add(conn);
@@ -82,7 +112,7 @@ namespace SharpChat
 
             sb.Append(UserId);
             sb.Append(Constants.SEPARATOR);
-            sb.Append(Username);
+            sb.Append(DisplayName);
             sb.Append(Constants.SEPARATOR);
             sb.Append(Colour);
             sb.Append(Constants.SEPARATOR);

@@ -143,14 +143,23 @@ namespace SharpChat
                     }
                     */
 
-                    aUser = Context.FindUserById(auth.UserId) ?? new SockChatUser(auth);
+                    aUser = Context.FindUserById(auth.UserId);
+
+                    if (aUser == null)
+                        aUser = new SockChatUser(auth);
+                    else
+                    {
+                        aUser.ApplyAuth(auth);
+                        aUser.Channel?.UpdateUser(aUser);
+                    }
+
                     aUser.AddConnection(conn);
 
                     SockChatChannel chan = Context.FindChannelByName(auth.DefaultChannel) ?? Context.Channels.FirstOrDefault();
 
                     // umi eats the first message for some reason so we'll send a blank padding msg
-                    conn.Send(SockChatClientMessage.ContextPopulate, Constants.CTX_MSG, Utils.UnixNow, Bot.ToString(), SockChatMessage.PackBotMessage(0, @"say", @""), @"welcome", @"0", @"1001");
-                    conn.Send(SockChatClientMessage.ContextPopulate, Constants.CTX_MSG, Utils.UnixNow, Bot.ToString(), SockChatMessage.PackBotMessage(0, @"say", $@"Welcome to the temporary drop in chat, {aUser.Username}!"), @"welcome", @"0", @"1001");
+                    conn.Send(SockChatClientMessage.ContextPopulate, Constants.CTX_MSG, Utils.UnixNow, Bot.ToString(), SockChatMessage.PackBotMessage(0, @"say", @""), @"welcome", @"0", @"10010");
+                    conn.Send(SockChatClientMessage.ContextPopulate, Constants.CTX_MSG, Utils.UnixNow, Bot.ToString(), SockChatMessage.PackBotMessage(0, @"say", $@"Welcome to the temporary drop in chat, {aUser.Username}!"), @"welcome", @"0", @"10010");
 
                     Context.HandleJoin(aUser, chan, conn);
                     break;
@@ -160,6 +169,7 @@ namespace SharpChat
                         break;
 
                     SockChatUser mUser = Context.FindUserById(mUserId);
+                    SockChatChannel mChan = Context.FindUserChannel(mUser);
 
                     if (mUser == null || !mUser.HasConnection(conn) || string.IsNullOrEmpty(args[2]))
                         break;
@@ -179,27 +189,126 @@ namespace SharpChat
 
                         switch (command)
                         {
+                            case @"afk": // go afk
+                                string afkStr = parts.Length < 2 || string.IsNullOrEmpty(parts[1])
+                                    ? @"AFK"
+                                    : (parts[1].Length > 5 ? parts[1].Substring(0, 5) : parts[1]).ToUpperInvariant().Trim();
+
+                                if(!mUser.IsAway && !string.IsNullOrEmpty(afkStr))
+                                {
+                                    mUser.IsAway = true;
+                                    mUser.Nickname = @"&lt;" + afkStr + @"&gt;_" + mUser.DisplayName;
+                                    mChan.UpdateUser(mUser);
+                                }
+                                break;
+                            case @"nick": // sets a temporary nickname
+                                if (!mUser.CanChangeNick)
+                                {
+                                    mUser.Send(true, @"cmdna", @"/nick");
+                                    break;
+                                }
+
+                                string nickStr = string.Join('_', parts.Skip(1)).Trim().SanitiseUsername();
+
+                                if (nickStr.Length > 15)
+                                    nickStr = nickStr.Substring(0, 15);
+                                else if (string.IsNullOrEmpty(nickStr))
+                                    nickStr = null;
+
+                                if(nickStr != null && Context.FindUserByName(nickStr) != null)
+                                {
+                                    mUser.Send(true, @"nameinuse", nickStr);
+                                    break;
+                                }
+
+                                mChan.Send(false, @"nick", mUser.DisplayName, nickStr);
+                                mUser.Nickname = nickStr;
+                                mChan.UpdateUser(mUser);
+                                break;
+                            case @"whisper": // sends a pm to another user
+                            case @"msg":
+                                if (parts.Length < 3)
+                                {
+                                    mUser.Send(true, @"cmderr");
+                                    break;
+                                }
+
+                                SockChatUser whisperUser = Context.FindUserByName(parts[1]);
+
+                                if(whisperUser == null)
+                                {
+                                    mUser.Send(true, @"usernf", parts[1]);
+                                    break;
+                                }
+
+                                string whisperStr = string.Join(' ', parts.Skip(2));
+
+                                whisperUser.Send(mUser, whisperStr, @"10011");
+                                mUser.Send(mUser, $@"{whisperUser.DisplayName} {whisperStr}", @"10011");
+                                break;
+                            case @"action": // describe an action
+                            case @"me":
+                                if (parts.Length < 2)
+                                    break;
+
+                                string actionMsg = @"<i>" + string.Join(' ', parts.Skip(1)) + @"</i>";
+                                if(!string.IsNullOrWhiteSpace(actionMsg))
+                                    mChan.Send(mUser, actionMsg, @"11000");
+                                break;
+                            case @"who": // gets all online users/online users in a channel if arg
+                                break;
+
+                            // anyone can use these
+                            case @"join": // join a channel
+                                break;
+                            case @"create": // create a new channel
+                                break;
+                            case @"delchan": // delete a channel
+                                break;
+                            case @"password": // set a password on the channel
+                            case @"pwd":
+                                break;
+                            case @"privilege": // sets a minimum hierarchy requirement on the channel
+                            case @"rank":
+                            case @"priv":
+                                break;
+
+                            case @"say": // pretend to be the bot
+                                break;
+                            case @"delmsg": // deletes a message
+                                break;
+                            case @"kick": // kick a user from the server
+                                break;
+                            case @"ban": // ban a user from the server
+                                break;
+                            case @"pardon": // unban a user
+                            case @"unban":
+                                break;
+                            case @"pardonip": // unban an ip
+                            case @"unbanip":
+                                break;
+                            case @"bans": // gets a list of bans
+                            case @"banned":
+                                break;
+                            case @"silence": // silence a user
+                                break;
+                            case @"unsilence": // unsilence a user
+                                break;
+                            case @"ip": // gets a user's ip (from all connections in this case)
+                            case @"whois":
+                                break;
+
                             default:
+                                mUser.Send(true, @"nocmd", command);
                                 break;
                         }
-
-                        // find command
-                        Logger.Write($@"Running command '{command}'");
-                        /*
-                        if (!Modules::executeRoutine('onCommandReceive', [$user, &$cmd, &$cmdparts])) {
-                            return;
-                        }
-
-                        if (!Modules::executeCommand($cmd, $user, $cmdparts)) {
-                            Message::privateBotMessage(Constants::MSG_ERROR, 'nocmd', [strtolower($cmd)], $user);
-                        } 
-                        */
                         break;
                     }
 
-                    message = message.SanitiseMessage();
-
-                    // Message::broadcastUserMessage($user, $out);
+                    mChan.Send(
+                        mUser,
+                        message.SanitiseMessage()
+                    );
                     break;
             }
         }
