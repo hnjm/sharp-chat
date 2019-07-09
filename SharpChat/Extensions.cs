@@ -1,6 +1,7 @@
 ﻿using Fleck;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace SharpChat
@@ -39,6 +40,9 @@ namespace SharpChat
 
         public static char AsChar(this bool b)
             => b ? '1' : '0';
+
+        public static bool IsNumeric(this string str)
+            => str.All(char.IsDigit);
 
         public static string RemoteAddress(this IWebSocketConnection conn)
             => (conn.ConnectionInfo.ClientIpAddress == @"127.0.0.1" || conn.ConnectionInfo.ClientIpAddress == @"::1")

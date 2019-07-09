@@ -18,7 +18,7 @@
         MessageDelete = 6,
         ContextPopulate = 7,
         ContextClear = 8,
-        ForceDisconnect = 9,
+        BAKA = 9,
         UserUpdate = 10,
     }
 

@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Text;
 
 namespace SharpChat
@@ -14,10 +15,67 @@ namespace SharpChat
         public readonly List<SockChatUser> Users = new List<SockChatUser>();
         public readonly List<SockChatChannel> Channels = new List<SockChatChannel>();
         public readonly List<SockChatMessage> Messages = new List<SockChatMessage>();
+        public readonly Dictionary<IPAddress, DateTimeOffset> IPBans = new Dictionary<IPAddress, DateTimeOffset>();
 
         public SockChatContext(SockChatServer server)
         {
             Server = server;
+        }
+
+        public void CheckIPBanExpirations()
+        {
+            lock(IPBans)
+                IPBans.Where(kvp => kvp.Value < DateTimeOffset.UtcNow).Select(kvp => kvp.Key).ToList().ForEach(ip => IPBans.Remove(ip));
+        }
+
+        public bool CheckIPBan(string ipAddr)
+        {
+            return GetIPBanExpiration(ipAddr) > DateTimeOffset.UtcNow;
+        }
+
+        public bool CheckIPBan(IPAddress ipAddr)
+        {
+            return GetIPBanExpiration(ipAddr) > DateTimeOffset.UtcNow;
+        }
+
+        public DateTimeOffset GetIPBanExpiration(string ipAddr)
+        {
+            if (IPAddress.TryParse(ipAddr, out IPAddress ip))
+                return GetIPBanExpiration(ip);
+            return DateTimeOffset.MinValue;
+        }
+
+        public DateTimeOffset GetIPBanExpiration(IPAddress ipAddr)
+        {
+            lock(IPBans)
+            {
+                if (!IPBans.ContainsKey(ipAddr))
+                    return DateTimeOffset.MinValue;
+                return IPBans[ipAddr];
+            }
+        }
+
+        public void BanUser(SockChatUser user, DateTimeOffset? until = null, bool banIPs = false, string type = Constants.LEAVE_KICK)
+        {
+            if (until.HasValue && until.Value <= DateTimeOffset.UtcNow)
+                until = null;
+
+            if (until.HasValue)
+            {
+                user.Send(SockChatClientMessage.BAKA, @"ban", until.Value == DateTimeOffset.MaxValue ? @"-1" : until.Value.ToUnixTimeSeconds().ToString());
+                user.BannedUntil = until.Value;
+
+                if (banIPs)
+                    lock (user.Connections)
+                        foreach (string ip in user.RemoteAddresses)
+                            if (IPAddress.TryParse(ip, out IPAddress ipAddr))
+                                IPBans[ipAddr] = until.Value;
+            }
+            else
+                user.Send(SockChatClientMessage.BAKA, @"kick");
+
+            user.Close();
+            UserLeave(user.Channel, user, type);
         }
 
         public SockChatChannel DefaultChannel
@@ -66,14 +124,23 @@ namespace SharpChat
                     u.Send(SockChatClientMessage.ChannelEvent, @"1", oldName ?? chan.Name, chan.ToString());
 
                     /* Not entire sure how to recreate this behaviour at the moment
-                if ($user->channel == $oldname && $oldname != "") {
-                    $user->runSock(function($sock) use ($channel) {
-                        $sock->send(pack_message(5, ["2", $channel->name]));
-                    });
-                    $user->channel = $channel->name;
-                }
+                    if ($user->channel == $oldname && $oldname != "") {
+                        $user->runSock(function($sock) use ($channel) {
+                            $sock->send(pack_message(5, ["2", $channel->name]));
+                        });
+                        $user->channel = $channel->name;
+                    }
                      */
+                    u.ForceChannel();
                 });
+        }
+
+        public void DeleteMessage(SockChatMessage msg)
+        {
+            lock (Messages)
+                Messages.Remove(msg);
+
+            Broadcast(SockChatClientMessage.MessageDelete, msg.MessageId.ToString());
         }
 
         public SockChatUser FindUserById(int userId)
@@ -251,9 +318,21 @@ namespace SharpChat
             }
         }
 
+        public void Broadcast(string data)
+        {
+            lock (Users)
+                Users.ForEach(u => u.Send(data));
+        }
+        public void Broadcast(SockChatClientMessage inst, params string[] parts)
+        {
+            lock (Users)
+                Users.ForEach(u => u.Send(inst, parts));
+        }
+
         public void Broadcast(SockChatUser user, string message, string flags = @"10010")
         {
-            Channels.ForEach(c => c.Send(user, message, flags));
+            lock (Users)
+                Users.ForEach(u => u.Send(user, message, flags));
         }
 
         ~SockChatContext()
