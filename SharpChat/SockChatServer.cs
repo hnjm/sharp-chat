@@ -736,14 +736,25 @@ namespace SharpChat
                             break;
                         }
 
-                        mChan.Send(
-                            mUser,
-                            message.SanitiseMessage()
-                        );
+                        lock (Lock)
+                        {
+                            message = message.SanitiseMessage();
+                            mChan.Send(mUser, message);
+                            Context.Messages.Add(new SockChatMessage
+                            {
+                                MessageId = SockChatMessage.MessageIdCounter,
+                                Channel = mChan,
+                                DateTime = DateTimeOffset.UtcNow,
+                                User = mUser,
+                                Text = message,
+                            });
+                        }
                     }
                     break;
             }
         }
+
+        public readonly object Lock = new object();
 
         ~SockChatServer()
             => Dispose(false);

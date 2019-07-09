@@ -71,7 +71,7 @@ namespace SharpChat
 
         public void Send(bool error, string id, params string[] args)
         {
-            Send(null, SockChatMessage.PackBotMessage(error ? 1 : 0, id, args));
+            Send(SockChatServer.Bot, SockChatMessage.PackBotMessage(error ? 1 : 0, id, args));
         }
 
         public void UpdateUser(SockChatUser user)
