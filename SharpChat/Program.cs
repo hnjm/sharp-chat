@@ -15,8 +15,6 @@ namespace SharpChat
             Console.WriteLine(@"/____/_/ /_/\__,_/_/  / .___/\____/_/ /_/\__,_/\__/  ");
             Console.WriteLine(@"                     / _/     Multi-Session Sock Chat");
 
-            Console.WriteLine(System.IO.File.ReadAllText(@"login_key.txt"));
-
             using (ManualResetEvent mre = new ManualResetEvent(false))
             using (SockChatServer scs = new SockChatServer(6770))
             {
