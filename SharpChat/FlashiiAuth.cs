@@ -59,6 +59,7 @@ namespace SharpChat
             }
             catch(Exception ex)
             {
+                Logger.Write(ex.ToString());
                 return new FlashiiAuth { Success = false };
             }
         }
