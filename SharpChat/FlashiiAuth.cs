@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using System;
+using System.Collections.Specialized;
 using System.IO;
 using System.Net;
 using System.Security.Cryptography;
@@ -42,17 +43,20 @@ namespace SharpChat
         [JsonProperty(@"is_silenced")]
         public DateTimeOffset SilencedUntil { get; set; }
 
-        public static FlashiiAuth Attempt(int userId, string token, string ip, string endpoint = "https://flashii.net/_sockchat.php?user_id={0}&token={1}&ip={2}&hash={3}")
+        public static FlashiiAuth Attempt(int userId, string token, string ip)
         {
             try
             {
                 using (HMACSHA256 hash = new HMACSHA256(File.Exists(@"login_key.txt") ? File.ReadAllBytes(@"login_key.txt") : Encoding.ASCII.GetBytes(@"woomy")))
                 using (WebClient wc = new WebClient())
                 {
-                    string authJson = wc.DownloadString(string.Format(
-                        endpoint, userId, token, ip,
-                        hash.ComputeHash(Encoding.ASCII.GetBytes($@"{userId}#{token}#{ip}")).ToHexString()
-                    ));
+                    string authJson = Encoding.UTF8.GetString(wc.UploadValues(File.Exists(@"login_endpoint.txt") ? File.ReadAllText(@"login_endpoint.txt") : @"https://flashii.net/_sockchat.php", new NameValueCollection
+                    {
+                        { @"user_id", userId.ToString() },
+                        { @"token", token },
+                        { @"ip", ip },
+                        { @"hash", hash.ComputeHash(Encoding.ASCII.GetBytes($@"{userId}#{token}#{ip}")).ToHexString() },
+                    }));
 
                     return JsonConvert.DeserializeObject<FlashiiAuth>(authJson);
                 }
