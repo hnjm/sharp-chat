@@ -28,32 +28,14 @@ namespace SharpChat
 
             Context = new SockChatContext(this);
 
-            Context.AddChannel(new SockChatChannel
-            {
-                Name = @"Lounge",
-            });
-            Context.AddChannel(new SockChatChannel
-            {
-                Name = @"Programming",
-            });
-            Context.AddChannel(new SockChatChannel
-            {
-                Name = @"Games",
-            });
-            Context.AddChannel(new SockChatChannel
-            {
-                Name = @"Splatoon",
-            });
-            Context.AddChannel(new SockChatChannel
-            {
-                Name = @"Password",
-                Password = @"meow",
-            });
-            Context.AddChannel(new SockChatChannel
-            {
-                Name = @"Staff",
-                Hierarchy = 5,
-            });
+            Context.AddChannel(new SockChatChannel(@"Lounge"));
+#if DEBUG
+            Context.AddChannel(new SockChatChannel(@"Programming"));
+            Context.AddChannel(new SockChatChannel(@"Games"));
+            Context.AddChannel(new SockChatChannel(@"Splatoon"));
+            Context.AddChannel(new SockChatChannel(@"Password") { Password = @"meow", });
+#endif
+            Context.AddChannel(new SockChatChannel(@"Staff") { Hierarchy = 5 });
 
             Server = new WebSocketServer($@"ws://0.0.0.0:{port}");
             Server.Start(sock =>

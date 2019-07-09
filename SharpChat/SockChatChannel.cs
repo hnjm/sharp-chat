@@ -18,6 +18,15 @@ namespace SharpChat
         public bool HasPassword
             => !string.IsNullOrEmpty(Password);
 
+        public SockChatChannel()
+        {
+        }
+
+        public SockChatChannel(string name)
+        {
+            Name = name;
+        }
+
         public bool HasUser(SockChatUser user)
             => Users.Contains(user);
 
