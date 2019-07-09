@@ -33,6 +33,8 @@ namespace SharpChat
 
         public SockChatChannel Channel { get; set; }
 
+        public readonly ChatRateLimiter RateLimiter = new ChatRateLimiter();
+
         public bool IsSilenced
             => SilencedUntil != null && DateTimeOffset.UtcNow - SilencedUntil <= TimeSpan.Zero;
         public bool IsBanned

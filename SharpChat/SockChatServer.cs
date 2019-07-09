@@ -102,7 +102,19 @@ namespace SharpChat
             Context.CheckIPBanExpirations();
             Context.CheckPings();
 
-            // do flood protection shit here
+            SockChatUser floodUser = Context.FindUserBySock(conn);
+
+            if(floodUser != null)
+            {
+                floodUser.RateLimiter.AddTimePoint();
+
+                if(floodUser.RateLimiter.State == ChatRateLimitState.Kick)
+                {
+                    Context.BanUser(floodUser, DateTimeOffset.UtcNow.AddSeconds(30), false, Constants.LEAVE_FLOOD);
+                    return;
+                } else if(floodUser.RateLimiter.State == ChatRateLimitState.Warning)
+                    floodUser.Send(false, @"flwarn");
+            }
 
             string[] args = msg.Split('\t');
 
