@@ -93,6 +93,7 @@ namespace SharpChat
             {
                 sb.Append('\t');
                 sb.Append(user);
+                sb.Append("\t1");
             }
 
             return sb.ToString();
