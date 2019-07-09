@@ -54,14 +54,11 @@ namespace SharpChat
                         hash.ComputeHash(Encoding.ASCII.GetBytes($@"{userId}#{token}#{ip}")).ToHexString()
                     ));
 
-                    Logger.Write(authJson);
-
                     return JsonConvert.DeserializeObject<FlashiiAuth>(authJson);
                 }
             }
             catch(Exception ex)
             {
-                Logger.Write(ex.ToString());
                 return new FlashiiAuth { Success = false };
             }
         }

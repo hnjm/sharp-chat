@@ -100,6 +100,11 @@ namespace SharpChat
             Send(null, SockChatMessage.PackBotMessage(error ? 1 : 0, id, args));
         }
 
+        public void ForceChannel(SockChatChannel chan = null)
+        {
+            Send(SockChatClientMessage.UserSwitch, @"2", (chan ?? Channel).ToString());
+        }
+
         public void AddConnection(SockChatConn conn)
             => Connections.Add(conn);
 

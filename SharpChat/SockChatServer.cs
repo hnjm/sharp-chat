@@ -1,6 +1,5 @@
 ﻿using Fleck;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
@@ -27,8 +26,31 @@ namespace SharpChat
 
             Context = new SockChatContext(this);
 
-            Context.AddChannel(new SockChatChannel {
+            Context.AddChannel(new SockChatChannel
+            {
                 Name = @"Lounge",
+            });
+            Context.AddChannel(new SockChatChannel
+            {
+                Name = @"Programming",
+            });
+            Context.AddChannel(new SockChatChannel
+            {
+                Name = @"Games",
+            });
+            Context.AddChannel(new SockChatChannel
+            {
+                Name = @"Splatoon",
+            });
+            Context.AddChannel(new SockChatChannel
+            {
+                Name = @"Password",
+                Password = @"meow",
+            });
+            Context.AddChannel(new SockChatChannel
+            {
+                Name = @"Staff",
+                Hierarchy = 5,
             });
 
             Server = new WebSocketServer($@"ws://0.0.0.0:{port}");
@@ -256,10 +278,64 @@ namespace SharpChat
                                     mChan.Send(mUser, @"<i>" + actionMsg + @"</i>", @"11000");
                                 break;
                             case @"who": // gets all online users/online users in a channel if arg
+                                StringBuilder whoChanSB = new StringBuilder();
+                                string whoChanStr = parts.Length > 1 && !string.IsNullOrEmpty(parts[1]) ? parts[1] : string.Empty;
+
+                                if (!string.IsNullOrEmpty(whoChanStr))
+                                {
+                                    SockChatChannel whoChan = Context.FindChannelByName(whoChanStr);
+
+                                    if(whoChan == null)
+                                    {
+                                        mUser.Send(true, @"nochan", whoChanStr);
+                                        break;
+                                    }
+
+                                    if(whoChan.Hierarchy > mUser.Hierarchy || (whoChan.HasPassword && !mUser.IsModerator))
+                                    {
+                                        mUser.Send(true, @"whoerr", whoChanStr);
+                                        break;
+                                    }
+
+                                    lock (whoChan.Users)
+                                        whoChan.Users.ForEach(u => {
+                                            whoChanSB.Append(@"<a href=""javascript:void(0);"" onclick=""UI.InsertChatText(this.innerHTML);""");
+
+                                            if (u == mUser)
+                                                whoChanSB.Append(@" style=""font-weight: bold;""");
+
+                                            whoChanSB.Append(@">");
+                                            whoChanSB.Append(u.DisplayName);
+                                            whoChanSB.Append(@"</a>, ");
+                                        });
+
+                                    whoChanSB.Length -= 2;
+                                    mUser.Send(false, @"whochan", whoChan.Name, whoChanSB.ToString());
+                                } else
+                                {
+                                    lock (Context.Users)
+                                        Context.Users.ForEach(u => {
+                                            whoChanSB.Append(@"<a href=""javascript:void(0);"" onclick=""UI.InsertChatText(this.innerHTML);""");
+
+                                            if (u == mUser)
+                                                whoChanSB.Append(@" style=""font-weight: bold;""");
+
+                                            whoChanSB.Append(@">");
+                                            whoChanSB.Append(u.DisplayName);
+                                            whoChanSB.Append(@"</a>, ");
+                                        });
+
+                                    whoChanSB.Length -= 2;
+                                    mUser.Send(false, @"who", whoChanSB.ToString());
+                                }
                                 break;
 
                             // anyone can use these
                             case @"join": // join a channel
+                                if (parts.Length < 2)
+                                    break;
+
+                                Context.SwitchChannel(mUser, parts[1], string.Join(' ', parts.Skip(2)));
                                 break;
                             case @"create": // create a new channel
                                 break;
@@ -267,13 +343,48 @@ namespace SharpChat
                                 break;
                             case @"password": // set a password on the channel
                             case @"pwd":
+                                if(!mUser.IsModerator || mChan.Owner != mUser)
+                                {
+                                    mUser.Send(true, @"cmdna", @"/pwd");
+                                    break;
+                                }
+
+                                mChan.Password = string.Join(' ', parts.Skip(1)).Trim();
+
+                                if (string.IsNullOrEmpty(mChan.Password))
+                                    mChan.Password = null;
+
+                                Context.UpdateChannel(mChan);
+                                mUser.Send(false, @"cpwdchan");
                                 break;
                             case @"privilege": // sets a minimum hierarchy requirement on the channel
                             case @"rank":
                             case @"priv":
+                                if(!mUser.IsModerator || mChan.Owner != mUser)
+                                {
+                                    mUser.Send(true, @"cmdna", @"/priv");
+                                    break;
+                                }
+
+                                if(parts.Length < 2 || !int.TryParse(parts[1], out int chanHierarchy) || chanHierarchy > mUser.Hierarchy)
+                                {
+                                    mUser.Send(true, @"rankerr");
+                                    break;
+                                }
+
+                                mChan.Hierarchy = chanHierarchy;
+                                Context.UpdateChannel(mChan);
+                                mUser.Send(false, @"cprivchan");
                                 break;
 
                             case @"say": // pretend to be the bot
+                                if (!mUser.IsModerator)
+                                {
+                                    mUser.Send(true, @"cmdna", @"/say");
+                                    break;
+                                }
+
+                                Context.Broadcast(Bot, SockChatMessage.PackBotMessage(0, @"say", string.Join(' ', parts.Skip(1))));
                                 break;
                             case @"delmsg": // deletes a message
                                 break;
@@ -296,6 +407,20 @@ namespace SharpChat
                                 break;
                             case @"ip": // gets a user's ip (from all connections in this case)
                             case @"whois":
+                                if (!mUser.IsModerator)
+                                {
+                                    mUser.Send(true, @"cmdna", @"/ip");
+                                    break;
+                                }
+
+                                SockChatUser ipUser;
+                                if (parts.Length < 2 || (ipUser = Context.FindUserByName(parts[1])) == null)
+                                {
+                                    mUser.Send(true, @"usernf", parts[1] ?? string.Empty);
+                                    break;
+                                }
+
+                                ipUser.RemoteAddresses.Distinct().ForEach(ip => mUser.Send(false, @"ipaddr", ipUser.Username, ip));
                                 break;
 
                             default:

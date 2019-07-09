@@ -15,6 +15,9 @@ namespace SharpChat
 
         public readonly List<SockChatUser> Users = new List<SockChatUser>();
 
+        public bool HasPassword
+            => !string.IsNullOrEmpty(Password);
+
         public bool HasUser(SockChatUser user)
             => Users.Contains(user);
 
@@ -22,8 +25,14 @@ namespace SharpChat
         {
             lock (Users)
             {
-                user.Channel = this;
-                Users.Add(user);
+                if(user.Channel != this)
+                {
+                    user.Channel?.UserLeave(user);
+                    user.Channel = this;
+                }
+
+                if(!Users.Contains(user))
+                    Users.Add(user);
             }
         }
 
@@ -33,7 +42,9 @@ namespace SharpChat
             {
                 if (user.Channel == this)
                     user.Channel = null;
-                Users.Remove(user);
+
+                if(Users.Contains(user))
+                    Users.Remove(user);
             }
         }
 

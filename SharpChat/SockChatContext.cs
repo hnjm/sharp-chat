@@ -20,23 +20,60 @@ namespace SharpChat
             Server = server;
         }
 
-        public void AddChannel(SockChatChannel chan)
+        public SockChatChannel DefaultChannel
+            => Channels.First();
+
+        public string AddChannel(SockChatChannel chan)
         {
             lock (Channels)
+            {
+                SockChatChannel eChan = FindChannelByName(chan.Name);
+                if (eChan != null)
+                    return SockChatMessage.PackBotMessage(1, @"nischan", chan.Name);
+
+                if (chan.Name.StartsWith(@"@") || chan.Name.StartsWith(@"*"))
+                    return SockChatMessage.PackBotMessage(1, @"inchan");
+
                 Channels.Add(chan);
+
+                lock (Users)
+                    Users.Where(u => u.Hierarchy >= chan.Hierarchy).ForEach(u => u.Send(SockChatClientMessage.ChannelEvent, @"0", chan.ToString()));
+            }
+
+            return null;
         }
 
         public void DeleteChannel(SockChatChannel chan)
         {
-            if (chan.Name == @"Lounge")
+            if (chan == DefaultChannel)
                 return;
 
-            // move users to main channel
+            lock (chan.Users)
+                lock (Users)
+                    lock (Channels)
+                    {
+                        chan.Users.ForEach(u => SwitchChannel(u, DefaultChannel, string.Empty));
+                        Users.Where(u => u.Hierarchy >= chan.Hierarchy).ForEach(u => u.Send(SockChatClientMessage.ChannelEvent, @"2", chan.Name));
+                        Channels.Remove(chan);
+                    }
+        }
 
-            lock (Channels)
-                Channels.Remove(chan);
+        public void UpdateChannel(SockChatChannel chan, string oldName = null)
+        {
+            lock (Users)
+                Users.Where(u => u.Hierarchy >= chan.Hierarchy).ForEach(u =>
+                {
+                    u.Send(SockChatClientMessage.ChannelEvent, @"1", oldName ?? chan.Name, chan.ToString());
 
-            // send deletion broadcast
+                    /* Not entire sure how to recreate this behaviour at the moment
+                if ($user->channel == $oldname && $oldname != "") {
+                    $user->runSock(function($sock) use ($channel) {
+                        $sock->send(pack_message(5, ["2", $channel->name]));
+                    });
+                    $user->channel = $channel->name;
+                }
+                     */
+                });
         }
 
         public SockChatUser FindUserById(int userId)
@@ -74,10 +111,6 @@ namespace SharpChat
                 chan.Send(SockChatClientMessage.UserConnect, Utils.UnixNow, user.ToString(), SockChatMessage.NextMessageId);
 
             conn.Send(SockChatClientMessage.UserConnect, @"y", user.ToString(), chan.Name);
-
-            //if (!chan.HasUser(user))
-            //    LogToChannel(chan, user, SockChatMessage.PackBotMessage(0, @"join", user.Username), @"10010");
-
             conn.Send(SockChatClientMessage.ContextPopulate, Constants.CTX_USER, chan.GetUsersString(new[] { user }));
 
             SockChatMessage[] msgs = GetChannelBacklog(chan);
@@ -125,6 +158,76 @@ namespace SharpChat
             chan.Send(SockChatClientMessage.UserDisconnect, user.UserId.ToString(), user.Username, type, Utils.UnixNow, SockChatMessage.NextMessageId, chan.Name);
         }
 
+        public void SwitchChannel(SockChatUser user, string chanName, string password)
+        {
+            SockChatChannel chan = FindChannelByName(chanName);
+
+            if (chan == null)
+            {
+                user.Send(true, @"nochan", chanName);
+                user.ForceChannel();
+                return;
+            }
+
+            SwitchChannel(user, chan, password);
+        }
+
+        public void SwitchChannel(SockChatUser user, SockChatChannel chan, string password)
+        {
+            if (user.Channel == chan)
+            {
+                //user.Send(true, @"samechan", chan.Name);
+                user.ForceChannel();
+                return;
+            }
+
+            if (!user.IsModerator && chan.Owner != user)
+            {
+                if (chan.Hierarchy > user.Hierarchy)
+                {
+                    user.Send(true, @"ipchan", chan.Name);
+                    user.ForceChannel();
+                    return;
+                }
+
+                if (chan.Password != password)
+                {
+                    user.Send(true, @"ipwchan", chan.Name);
+                    user.ForceChannel();
+                    return;
+                }
+            }
+
+            ForceChannelSwitch(user, chan);
+        }
+
+        public void ForceChannelSwitch(SockChatUser user, SockChatChannel chan)
+        {
+            if (!Channels.Contains(chan))
+                return;
+
+            string messageId = SockChatMessage.NextMessageId;
+            SockChatChannel oldChan = user.Channel;
+
+            oldChan.Send(SockChatClientMessage.UserSwitch, @"1", user.UserId.ToString(), messageId);
+            chan.Send(SockChatClientMessage.UserSwitch, @"0", user.ToString(), messageId);
+
+            user.Send(SockChatClientMessage.ContextClear, Constants.CLEAR_MSGNUSERS);
+            user.Send(SockChatClientMessage.ContextPopulate, Constants.CTX_USER, chan.GetUsersString(new[] { user }));
+
+            SockChatMessage[] msgs = GetChannelBacklog(chan);
+
+            foreach (SockChatMessage msg in msgs)
+                user.Send(SockChatClientMessage.ContextPopulate, Constants.CTX_MSG, msg.GetLogString());
+
+            user.ForceChannel(chan);
+            oldChan.UserLeave(user);
+            chan.UserJoin(user);
+
+            if(oldChan.IsTemporary && oldChan.Owner == user)
+                DeleteChannel(oldChan);
+        }
+
         public void CheckPings()
         {
             List<SockChatUser> users = new List<SockChatUser>(Users);
@@ -154,10 +257,10 @@ namespace SharpChat
         }
 
         ~SockChatContext()
-            => Dispose(false);
+        => Dispose(false);
 
         public void Dispose()
-            => Dispose(true);
+        => Dispose(true);
 
         private void Dispose(bool disposing)
         {

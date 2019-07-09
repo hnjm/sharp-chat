@@ -1,4 +1,5 @@
 ﻿using Fleck;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -53,6 +54,13 @@ namespace SharpChat
                 sb.AppendFormat("{0:x2}", b);
 
             return sb.ToString();
+        }
+
+        public static void ForEach<T>(this IEnumerable<T> collection, Action<T> action)
+        {
+            lock (collection)
+                foreach (T item in collection)
+                    action(item);
         }
     }
 }

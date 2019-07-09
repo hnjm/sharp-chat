@@ -17,6 +17,8 @@ namespace SharpChat
                 @"you can't escape a man with no capes",
                 @"genocide denocide what nintendenocide",
                 @"genesis denesis what nintendenis",
-               }[RNG.Next(0, 7)];
+                @"school supplies",
+                @"shosple colupis",
+               }[RNG.Next(0, 9)];
     }
 }
