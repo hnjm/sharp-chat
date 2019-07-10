@@ -266,7 +266,7 @@ namespace SharpChat
                                         break;
                                     }
 
-                                    mChan.Send(false, @"nick", mUser.DisplayName, nickStr);
+                                    mChan.Send(false, @"nick", mUser.DisplayName, nickStr == null ? mUser.Username : nickStr);
                                     mUser.Nickname = nickStr;
                                     mChan.UpdateUser(mUser);
                                     break;
