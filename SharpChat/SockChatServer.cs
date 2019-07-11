@@ -255,7 +255,9 @@ namespace SharpChat
 
                                     string nickStr = string.Join('_', parts.Skip(1)).Trim().SanitiseUsername();
 
-                                    if (nickStr.Length > 15)
+                                    if (nickStr == mUser.Username)
+                                        nickStr = null;
+                                    else if (nickStr.Length > 15)
                                         nickStr = nickStr.Substring(0, 15);
                                     else if (string.IsNullOrEmpty(nickStr))
                                         nickStr = null;
