@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Net;
 
@@ -6,10 +7,10 @@ namespace SharpChat
 {
     public class FlashiiBump
     {
-        [JsonProperty(@"user_id")]
+        [JsonProperty(@"id")]
         public int UserId { get; set; }
 
-        [JsonProperty(@"user_ip")]
+        [JsonProperty(@"ip")]
         public string UserIP { get; set; }
 
         public static void Submit(IEnumerable<FlashiiBump> users)
@@ -20,14 +21,15 @@ namespace SharpChat
                 {
                     string submitBump = JsonConvert.SerializeObject(users);
 
-                    wc.UploadValues(Utils.ReadFileOrDefault(@"bump_endpoint.txt", @"https://flashii.net/_sockchat.php"), new System.Collections.Specialized.NameValueCollection {
+                    Logger.Write(wc.UploadValues(Utils.ReadFileOrDefault(@"bump_endpoint.txt", @"https://flashii.net/_sockchat.php"), new System.Collections.Specialized.NameValueCollection {
                         { @"bump", submitBump },
                         { @"hash", submitBump.GetSignedHash() },
-                    });
+                    }));
                 }
             }
-            catch
+            catch(Exception ex)
             {
+                Logger.Write(ex);
             }
         }
     }

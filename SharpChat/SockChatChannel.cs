@@ -60,7 +60,7 @@ namespace SharpChat
         public void Send(string data)
             => Users.ForEach(u => u.Send(data));
 
-        public void Send(SockChatClientMessage inst, params string[] parts)
+        public void Send(SockChatClientMessage inst, params object[] parts)
             => Send(parts.Pack(inst));
 
         public void Send(SockChatUser user, string message, string flags = @"10010")

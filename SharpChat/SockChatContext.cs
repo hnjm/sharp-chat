@@ -328,7 +328,8 @@ namespace SharpChat
             lock (Users)
                 Users.Where(u => u.IsAlive).ForEach(u => bups.Add(new FlashiiBump { UserId = u.UserId, UserIP = u.RemoteAddresses.First() }));
 
-            FlashiiBump.Submit(bups);
+            if(bups.Any())
+                FlashiiBump.Submit(bups);
         }
 
         public void Broadcast(string data)

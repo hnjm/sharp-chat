@@ -40,7 +40,7 @@ namespace SharpChat
         public bool IsBanned
             => BannedUntil != null && DateTimeOffset.UtcNow - BannedUntil <= TimeSpan.Zero;
         public bool IsAlive
-            => Connections.Any();
+            => Connections.Where(c => !c.HasTimedOut).Any();
 
         public string DisplayName
             => !string.IsNullOrEmpty(Nickname)
@@ -85,7 +85,7 @@ namespace SharpChat
         public void Send(string data)
             => Connections.ForEach(c => c.Send(data));
 
-        public void Send(SockChatClientMessage inst, params string[] parts)
+        public void Send(SockChatClientMessage inst, params object[] parts)
             => Send(parts.Pack(inst));
 
         public void Send(SockChatUser user, string message, string flags = @"10010")
