@@ -198,7 +198,7 @@ namespace SharpChat
                         SockChatUser mUser = Context.FindUserById(mUserId);
                         SockChatChannel mChan = Context.FindUserChannel(mUser);
 
-                        if (mUser == null || !mUser.HasConnection(conn) || string.IsNullOrEmpty(args[2]))
+                        if (mUser == null || !mUser.HasConnection(conn) || string.IsNullOrWhiteSpace(args[2]))
                             break;
 
                         if (mUser.IsSilenced && !mUser.IsModerator)
