@@ -47,15 +47,14 @@ namespace SharpChat
         {
             try
             {
-                using (HMACSHA256 hash = new HMACSHA256(File.Exists(@"login_key.txt") ? File.ReadAllBytes(@"login_key.txt") : Encoding.ASCII.GetBytes(@"woomy")))
                 using (WebClient wc = new WebClient())
                 {
-                    string authJson = Encoding.UTF8.GetString(wc.UploadValues(File.Exists(@"login_endpoint.txt") ? File.ReadAllText(@"login_endpoint.txt") : @"https://flashii.net/_sockchat.php", new NameValueCollection
+                    string authJson = Encoding.UTF8.GetString(wc.UploadValues(Utils.ReadFileOrDefault(@"login_endpoint.txt", @"https://flashii.net/_sockchat.php"), new NameValueCollection
                     {
                         { @"user_id", userId.ToString() },
                         { @"token", token },
                         { @"ip", ip },
-                        { @"hash", hash.ComputeHash(Encoding.ASCII.GetBytes($@"{userId}#{token}#{ip}")).ToHexString() },
+                        { @"hash", $@"{userId}#{token}#{ip}".GetSignedHash() },
                     }));
 
                     return JsonConvert.DeserializeObject<FlashiiAuth>(authJson);

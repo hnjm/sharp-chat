@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Threading;
 
 namespace SharpChat
 {
@@ -16,10 +17,12 @@ namespace SharpChat
         public readonly List<SockChatChannel> Channels = new List<SockChatChannel>();
         public readonly List<SockChatMessage> Messages = new List<SockChatMessage>();
         public readonly Dictionary<IPAddress, DateTimeOffset> IPBans = new Dictionary<IPAddress, DateTimeOffset>();
+        public readonly Timer BumpTimer;
 
         public SockChatContext(SockChatServer server)
         {
             Server = server;
+            BumpTimer = new Timer(e => BumpFlashiiOnline(), null, TimeSpan.Zero, TimeSpan.FromMinutes(1));
         }
 
         public void CheckIPBanExpirations()
@@ -318,6 +321,16 @@ namespace SharpChat
             }
         }
 
+        public void BumpFlashiiOnline()
+        {
+            List<FlashiiBump> bups = new List<FlashiiBump>();
+
+            lock (Users)
+                Users.Where(u => u.IsAlive).ForEach(u => bups.Add(new FlashiiBump { UserId = u.UserId, UserIP = u.RemoteAddresses.First() }));
+
+            FlashiiBump.Submit(bups);
+        }
+
         public void Broadcast(string data)
         {
             lock (Users)
@@ -347,6 +360,7 @@ namespace SharpChat
                 return;
             IsDisposed = true;
 
+            BumpTimer?.Dispose();
             Messages.Clear();
             Channels.Clear();
             Users.Clear();

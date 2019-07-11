@@ -1,7 +1,9 @@
 ﻿using Fleck;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace SharpChat
@@ -65,6 +67,15 @@ namespace SharpChat
             lock (collection)
                 foreach (T item in collection)
                     action(item);
+        }
+
+        public static string GetSignedHash(this string str, string key = null)
+        {
+            if (key == null)
+                key = Utils.ReadFileOrDefault(@"login_key.txt", @"woomy");
+
+            using (HMACSHA256 hash = new HMACSHA256(Encoding.UTF8.GetBytes(key)))
+                return hash.ComputeHash(Encoding.UTF8.GetBytes(str)).ToHexString();
         }
     }
 }

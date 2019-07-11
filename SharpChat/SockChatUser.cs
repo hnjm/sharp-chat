@@ -39,6 +39,8 @@ namespace SharpChat
             => SilencedUntil != null && DateTimeOffset.UtcNow - SilencedUntil <= TimeSpan.Zero;
         public bool IsBanned
             => BannedUntil != null && DateTimeOffset.UtcNow - BannedUntil <= TimeSpan.Zero;
+        public bool IsAlive
+            => Connections.Any();
 
         public string DisplayName
             => !string.IsNullOrEmpty(Nickname)
