@@ -21,10 +21,10 @@ namespace SharpChat
                 {
                     string submitBump = JsonConvert.SerializeObject(users);
 
-                    Logger.Write(wc.UploadValues(Utils.ReadFileOrDefault(@"bump_endpoint.txt", @"https://flashii.net/_sockchat.php"), new System.Collections.Specialized.NameValueCollection {
+                    wc.UploadValues(Utils.ReadFileOrDefault(@"bump_endpoint.txt", @"https://flashii.net/_sockchat.php"), new System.Collections.Specialized.NameValueCollection {
                         { @"bump", submitBump },
                         { @"hash", submitBump.GetSignedHash() },
-                    }));
+                    });
                 }
             }
             catch(Exception ex)
