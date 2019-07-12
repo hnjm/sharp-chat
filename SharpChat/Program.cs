@@ -5,7 +5,6 @@ namespace SharpChat
 {
     public class Program
     {
-
         public static void Main(string[] args)
         {
             Console.WriteLine(@"   _____ __                     ________          __ ");

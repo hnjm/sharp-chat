@@ -240,8 +240,8 @@ namespace SharpChat
 
                                     if (!mUser.IsAway && !string.IsNullOrEmpty(afkStr))
                                     {
-                                        mUser.IsAway = true;
                                         mUser.Nickname = @"&lt;" + afkStr + @"&gt;_" + mUser.DisplayName;
+                                        mUser.IsAway = true;
                                         mChan.UpdateUser(mUser);
                                     }
                                     break;
