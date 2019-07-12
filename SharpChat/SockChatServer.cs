@@ -267,7 +267,7 @@ namespace SharpChat
                                         break;
                                     }
 
-                                    mChan.Send(false, @"nick", mUser.DisplayName, nickStr == null ? mUser.Username : nickStr);
+                                    mChan.Send(false, @"nick", mUser.DisplayName, nickStr ?? mUser.Username);
                                     mUser.Nickname = nickStr;
                                     mChan.UpdateUser(mUser);
                                     break;
@@ -289,8 +289,8 @@ namespace SharpChat
 
                                     string whisperStr = string.Join(' ', parts.Skip(2));
 
-                                    whisperUser.Send(mUser, whisperStr, @"10011");
-                                    mUser.Send(mUser, $@"{whisperUser.DisplayName} {whisperStr}", @"10011");
+                                    whisperUser.Send(mUser, whisperStr, MessageFlags.RegularPM);
+                                    mUser.Send(mUser, $@"{whisperUser.DisplayName} {whisperStr}", MessageFlags.RegularPM);
                                     break;
                                 case @"action": // describe an action
                                 case @"me":
@@ -299,7 +299,7 @@ namespace SharpChat
 
                                     string actionMsg = string.Join(' ', parts.Skip(1));
                                     if (!string.IsNullOrWhiteSpace(actionMsg))
-                                        mChan.Send(mUser, @"<i>" + actionMsg + @"</i>", @"11000");
+                                        mChan.Send(mUser, @"<i>" + actionMsg + @"</i>", MessageFlags.Action);
                                     break;
                                 case @"who": // gets all online users/online users in a channel if arg
                                     StringBuilder whoChanSB = new StringBuilder();
@@ -507,7 +507,7 @@ namespace SharpChat
                                         break;
                                     }
 
-                                    SockChatMessage delMsg = Context.Messages.FirstOrDefault(m => m.MessageId == delMsgId);
+                                    IChatMessage delMsg = Context.Messages.FirstOrDefault(m => m.MessageId == delMsgId);
 
                                     if (delMsg == null || delMsg.User.Hierarchy > mUser.Hierarchy)
                                     {

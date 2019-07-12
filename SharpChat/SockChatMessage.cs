@@ -1,11 +1,9 @@
-﻿using Fleck;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Text;
 
 namespace SharpChat
 {
-    public class SockChatMessage
+    public class SockChatMessage : IChatMessage
     {
         public static int MessageIdCounter { get; private set; } = 0;
         public static string NextMessageId => (++MessageIdCounter).ToString();
@@ -15,6 +13,7 @@ namespace SharpChat
         public SockChatChannel Channel { get; set; }
         public string Text { get; set; }
         public DateTimeOffset DateTime { get; set; }
+        public MessageFlags Flags { get; set; } = MessageFlags.RegularUser;
 
         public string GetLogString()
         {
@@ -28,7 +27,7 @@ namespace SharpChat
             sb.Append('\t');
             sb.Append(MessageId);
             sb.Append("\t0\t");
-            sb.Append(@"10010"); // BOLD CURSIVE UNDERLINED COLON PRIVATE
+            sb.Append(Flags.Serialise());
 
             return sb.ToString();
         }

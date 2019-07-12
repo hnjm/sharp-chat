@@ -88,14 +88,14 @@ namespace SharpChat
         public void Send(SockChatClientMessage inst, params object[] parts)
             => Send(parts.Pack(inst));
 
-        public void Send(SockChatUser user, string message, string flags = @"10010")
+        public void Send(SockChatUser user, string message, MessageFlags flags = MessageFlags.RegularUser)
         {
             user = user ?? SockChatServer.Bot;
             Send(
                 SockChatClientMessage.MessageAdd,
                 Utils.UnixNow, user.UserId.ToString(),
                 message, SockChatMessage.NextMessageId,
-                flags
+                flags.Serialise()
             );
         }
 

@@ -77,5 +77,21 @@ namespace SharpChat
             using (HMACSHA256 hash = new HMACSHA256(Encoding.UTF8.GetBytes(key)))
                 return hash.ComputeHash(Encoding.UTF8.GetBytes(str)).ToHexString();
         }
+
+        public static void AppendNum(this StringBuilder sb, bool b)
+            => sb.Append(b ? '1' : '0');
+
+        public static string Serialise(this MessageFlags flags)
+        {
+            StringBuilder sb = new StringBuilder();
+
+            sb.AppendNum(flags.HasFlag(MessageFlags.Bold));
+            sb.AppendNum(flags.HasFlag(MessageFlags.Cursive));
+            sb.AppendNum(flags.HasFlag(MessageFlags.Underline));
+            sb.AppendNum(flags.HasFlag(MessageFlags.Colon));
+            sb.AppendNum(flags.HasFlag(MessageFlags.Private));
+
+            return sb.ToString();
+        }
     }
 }

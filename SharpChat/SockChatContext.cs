@@ -15,7 +15,7 @@ namespace SharpChat
         public readonly SockChatServer Server;
         public readonly List<SockChatUser> Users = new List<SockChatUser>();
         public readonly List<SockChatChannel> Channels = new List<SockChatChannel>();
-        public readonly List<SockChatMessage> Messages = new List<SockChatMessage>();
+        public readonly List<IChatMessage> Messages = new List<IChatMessage>();
         public readonly Dictionary<IPAddress, DateTimeOffset> IPBans = new Dictionary<IPAddress, DateTimeOffset>();
         public readonly Timer BumpTimer;
 
@@ -138,7 +138,7 @@ namespace SharpChat
                 });
         }
 
-        public void DeleteMessage(SockChatMessage msg)
+        public void DeleteMessage(IChatMessage msg)
         {
             lock (Messages)
                 Messages.Remove(msg);
@@ -170,7 +170,7 @@ namespace SharpChat
             return Channels.FirstOrDefault(c => c.Users.Contains(user));
         }
 
-        public SockChatMessage[] GetChannelBacklog(SockChatChannel chan, int count = 15)
+        public IChatMessage[] GetChannelBacklog(SockChatChannel chan, int count = 15)
         {
             return Messages.Where(x => x.Channel == chan || x.Channel == null).Reverse().Take(count).Reverse().ToArray();
         }
@@ -183,7 +183,7 @@ namespace SharpChat
             conn.Send(SockChatClientMessage.UserConnect, @"y", user.ToString(), chan.Name);
             conn.Send(SockChatClientMessage.ContextPopulate, Constants.CTX_USER, chan.GetUsersString(new[] { user }));
 
-            SockChatMessage[] msgs = GetChannelBacklog(chan);
+            IChatMessage[] msgs = GetChannelBacklog(chan);
 
             foreach (SockChatMessage msg in msgs)
                 conn.Send(SockChatClientMessage.ContextPopulate, Constants.CTX_MSG, msg.GetLogString());
@@ -285,7 +285,7 @@ namespace SharpChat
             user.Send(SockChatClientMessage.ContextClear, Constants.CLEAR_MSGNUSERS);
             user.Send(SockChatClientMessage.ContextPopulate, Constants.CTX_USER, chan.GetUsersString(new[] { user }));
 
-            SockChatMessage[] msgs = GetChannelBacklog(chan);
+            IChatMessage[] msgs = GetChannelBacklog(chan);
 
             foreach (SockChatMessage msg in msgs)
                 user.Send(SockChatClientMessage.ContextPopulate, Constants.CTX_MSG, msg.GetLogString());
@@ -343,7 +343,7 @@ namespace SharpChat
                 Users.ForEach(u => u.Send(inst, parts));
         }
 
-        public void Broadcast(SockChatUser user, string message, string flags = @"10010")
+        public void Broadcast(SockChatUser user, string message, MessageFlags flags = MessageFlags.RegularUser)
         {
             lock (Users)
                 Users.ForEach(u => u.Send(user, message, flags));
