@@ -148,16 +148,19 @@ namespace SharpChat
 
         public SockChatUser FindUserById(int userId)
         {
-            return Users.FirstOrDefault(x => x.UserId == userId);
+            lock (Users)
+                return Users.ToList().FirstOrDefault(x => x.UserId == userId);
         }
         public SockChatUser FindUserByName(string name)
         {
-            return Users.FirstOrDefault(x => x.Username.ToLowerInvariant() == name.ToLowerInvariant() || x.DisplayName.ToLowerInvariant() == name.ToLowerInvariant());
+            lock (Users)
+                return Users.FirstOrDefault(x => x.Username.ToLowerInvariant() == name.ToLowerInvariant() || x.DisplayName.ToLowerInvariant() == name.ToLowerInvariant());
         }
 
         public SockChatUser FindUserBySock(IWebSocketConnection conn)
         {
-            return Users.FirstOrDefault(x => x.Connections.Any(y => y.Websocket == conn));
+            lock(Users)
+                return Users.ToList().FirstOrDefault(x => x.Connections.Any(y => y.Websocket == conn));
         }
 
         public SockChatChannel FindChannelByName(string name)
@@ -186,7 +189,7 @@ namespace SharpChat
             IChatMessage[] msgs = GetChannelBacklog(chan);
 
             foreach (SockChatMessage msg in msgs)
-                conn.Send(SockChatClientMessage.ContextPopulate, Constants.CTX_MSG, msg.GetLogString());
+                conn.Send(SockChatClientMessage.ContextPopulate, Constants.CTX_MSG, msg);
 
             SockChatChannel[] chans = Channels.Where(x => user.Hierarchy >= x.Hierarchy).ToArray();
             StringBuilder sb = new StringBuilder();
@@ -288,7 +291,7 @@ namespace SharpChat
             IChatMessage[] msgs = GetChannelBacklog(chan);
 
             foreach (SockChatMessage msg in msgs)
-                user.Send(SockChatClientMessage.ContextPopulate, Constants.CTX_MSG, msg.GetLogString());
+                user.Send(SockChatClientMessage.ContextPopulate, Constants.CTX_MSG, msg);
 
             user.ForceChannel(chan);
             oldChan.UserLeave(user);
@@ -300,7 +303,10 @@ namespace SharpChat
 
         public void CheckPings()
         {
-            List<SockChatUser> users = new List<SockChatUser>(Users);
+            List<SockChatUser> users;
+
+            lock(Users)
+                users = new List<SockChatUser>(Users);
 
             foreach (SockChatUser user in users)
             {

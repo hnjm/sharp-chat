@@ -104,6 +104,11 @@ namespace SharpChat
             Send(SockChatServer.Bot, SockChatMessage.PackBotMessage(error ? 1 : 0, id, args));
         }
 
+        public void SendLog(IChatMessage msg)
+        {
+            Send(SockChatClientMessage.ContextPopulate, Constants.CTX_MSG, msg);
+        }
+
         public void Close()
         {
             lock (Connections)

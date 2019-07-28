@@ -57,7 +57,10 @@ namespace SharpChat
         }
 
         public void Send(string data)
-            => Users.ForEach(u => u.Send(data));
+        {
+            lock(Users)
+                Users.ForEach(u => u.Send(data));
+        }
 
         public void Send(SockChatClientMessage inst, params object[] parts)
             => Send(parts.Pack(inst));
@@ -80,22 +83,25 @@ namespace SharpChat
 
         public string GetUsersString(IEnumerable<SockChatUser> exclude = null)
         {
-            StringBuilder sb = new StringBuilder();
-            IEnumerable<SockChatUser> users = Users;
-
-            if (exclude != null)
-                users = users.Except(exclude);
-
-            sb.Append(users.Count());
-            
-            foreach(SockChatUser user in users)
+            lock (Users)
             {
-                sb.Append('\t');
-                sb.Append(user);
-                sb.Append("\t1");
-            }
+                StringBuilder sb = new StringBuilder();
+                IEnumerable<SockChatUser> users = Users;
 
-            return sb.ToString();
+                if (exclude != null)
+                    users = users.Except(exclude);
+
+                sb.Append(users.Count());
+
+                foreach (SockChatUser user in users)
+                {
+                    sb.Append('\t');
+                    sb.Append(user);
+                    sb.Append("\t1");
+                }
+
+                return sb.ToString();
+            }
         }
 
         public override string ToString()

@@ -182,8 +182,8 @@ namespace SharpChat
                     SockChatChannel chan = Context.FindChannelByName(auth.DefaultChannel) ?? Context.Channels.FirstOrDefault();
 
                     // umi eats the first message for some reason so we'll send a blank padding msg
-                    conn.Send(SockChatClientMessage.ContextPopulate, Constants.CTX_MSG, Utils.UnixNow, Bot.ToString(), SockChatMessage.PackBotMessage(0, @"say", Utils.InitialMessage), @"welcome", @"0", @"10010");
-                    conn.Send(SockChatClientMessage.ContextPopulate, Constants.CTX_MSG, Utils.UnixNow, Bot.ToString(), SockChatMessage.PackBotMessage(0, @"say", $@"Welcome to the temporary drop in chat, {aUser.Username}!"), @"welcome", @"0", @"10010");
+                    conn.SendLog(EventChatMessage.Info(@"welcome", MessageFlags.RegularUser, @"say", Utils.InitialMessage));
+                    conn.SendLog(EventChatMessage.Info(@"welcome", MessageFlags.RegularUser, @"say", $@"Welcome to the temporary drop in chat, {aUser.Username}!"));
 
                     Context.HandleJoin(aUser, chan, conn);
                     break;

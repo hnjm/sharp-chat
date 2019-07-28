@@ -40,6 +40,9 @@ namespace SharpChat
         public static void Send(this IWebSocketConnection conn, SockChatClientMessage inst, params object[] parts)
             => conn.Send(parts.Pack(inst));
 
+        public static void SendLog(this IWebSocketConnection conn, IChatMessage msg)
+            => conn.Send(SockChatClientMessage.ContextPopulate, Constants.CTX_MSG, msg);
+
         public static char AsChar(this bool b)
             => b ? '1' : '0';
 

@@ -45,6 +45,24 @@ namespace SharpChat
 
         public static FlashiiAuth Attempt(int userId, string token, string ip)
         {
+#if DEBUG
+            if (userId >= 10000)
+                return new FlashiiAuth
+                {
+                    Success = true,
+                    UserId = userId,
+                    Username = @"Misaka-" + (userId - 10000),
+                    Colour = $@"rgb({RNG.Next(0, 255)}, {RNG.Next(0, 255)}, {RNG.Next(0, 255)})",
+                    DefaultChannel = @"Lounge",
+                    Hierarchy = 0,
+                    IsModerator = false,
+                    BannedUntil = DateTimeOffset.MinValue,
+                    SilencedUntil = DateTimeOffset.MinValue,
+                    CanChangeNick = false,
+                    CanCreateChannels = SockChatUserChannel.No
+                };
+#endif
+
             try
             {
                 using (WebClient wc = new WebClient())

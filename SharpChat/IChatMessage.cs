@@ -24,5 +24,6 @@ namespace SharpChat
         MessageFlags Flags { get; }
         SockChatChannel Channel { get;  }
         SockChatUser User { get; }
+        string ToString();
     }
 }

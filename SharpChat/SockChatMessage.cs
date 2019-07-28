@@ -15,7 +15,7 @@ namespace SharpChat
         public DateTimeOffset DateTime { get; set; }
         public MessageFlags Flags { get; set; } = MessageFlags.RegularUser;
 
-        public string GetLogString()
+        public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
 
