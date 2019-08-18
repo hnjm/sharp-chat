@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Net;
 
 namespace SharpChat
@@ -21,7 +22,7 @@ namespace SharpChat
                 {
                     string submitBump = JsonConvert.SerializeObject(users);
 
-                    wc.UploadValues(Utils.ReadFileOrDefault(@"bump_endpoint.txt", @"https://flashii.net/_sockchat.php"), new System.Collections.Specialized.NameValueCollection {
+                    wc.UploadValues(Utils.ReadFileOrDefault(@"bump_endpoint.txt", @"https://flashii.net/_sockchat.php"), new NameValueCollection {
                         { @"bump", submitBump },
                         { @"hash", submitBump.GetSignedHash() },
                     });

@@ -60,11 +60,12 @@ namespace SharpChat
             ApplyAuth(auth, true);
         }
 
-        public void ApplyAuth(FlashiiAuth auth, bool usernameAsWell = false, bool invalidateRestrictions = false)
+        public void ApplyAuth(FlashiiAuth auth, bool invalidateRestrictions = false)
         {
-            if (usernameAsWell || IsAway)
+            Username = auth.Username;
+
+            if (IsAway)
             {
-                Username = auth.Username;
                 Nickname = null;
                 IsAway = false;
             }
