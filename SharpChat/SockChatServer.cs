@@ -174,6 +174,9 @@ namespace SharpChat
                     break;
 
                 case SockChatClientPacket.Authenticate:
+                    if (Context.FindUserBySock(conn) != null)
+                        break;
+
                     DateTimeOffset authBan = Context.GetIPBanExpiration(conn.RemoteAddress);
 
                     if (authBan > DateTimeOffset.UtcNow)
