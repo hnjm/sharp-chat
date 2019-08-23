@@ -23,7 +23,7 @@ namespace SharpChat
                     .Replace("\f", string.Empty)
                     .Replace("\t", string.Empty);
 
-        public static string Pack(this IEnumerable<object> parts, SockChatClientMessage inst)
+        public static string Pack(this IEnumerable<object> parts, SockChatServerPacket inst)
         {
             StringBuilder sb = new StringBuilder();
             sb.Append((int)inst);
@@ -37,11 +37,11 @@ namespace SharpChat
             return sb.ToString();
         }
 
-        public static void Send(this IWebSocketConnection conn, SockChatClientMessage inst, params object[] parts)
+        public static void Send(this IWebSocketConnection conn, SockChatServerPacket inst, params object[] parts)
             => conn.Send(parts.Pack(inst));
 
         public static void SendLog(this IWebSocketConnection conn, IChatMessage msg)
-            => conn.Send(SockChatClientMessage.ContextPopulate, Constants.CTX_MSG, msg);
+            => conn.Send(SockChatServerPacket.ContextPopulate, Constants.CTX_MSG, msg);
 
         public static char AsChar(this bool b)
             => b ? '1' : '0';

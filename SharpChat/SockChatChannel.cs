@@ -62,12 +62,12 @@ namespace SharpChat
                 Users.ForEach(u => u.Send(data));
         }
 
-        public void Send(SockChatClientMessage inst, params object[] parts)
+        public void Send(SockChatServerPacket inst, params object[] parts)
             => Send(parts.Pack(inst));
 
         public void Send(SockChatUser user, string message, MessageFlags flags = MessageFlags.RegularUser)
         {
-            message = new[] { Utils.UnixNow, user.UserId.ToString(), message, SockChatMessage.NextMessageId, flags.Serialise() }.Pack(SockChatClientMessage.MessageAdd);
+            message = new[] { Utils.UnixNow, user.UserId.ToString(), message, SockChatMessage.NextMessageId, flags.Serialise() }.Pack(SockChatServerPacket.MessageAdd);
             Send(message);
         }
 
@@ -78,7 +78,7 @@ namespace SharpChat
 
         public void UpdateUser(SockChatUser user)
         {
-            Send(SockChatClientMessage.UserUpdate, user.ToString());
+            Send(SockChatServerPacket.UserUpdate, user.ToString());
         }
 
         public string GetUsersString(IEnumerable<SockChatUser> exclude = null)

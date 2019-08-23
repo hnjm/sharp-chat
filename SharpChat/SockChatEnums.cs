@@ -1,14 +1,19 @@
 ﻿namespace SharpChat
 {
-    public enum SockChatServerMessage
+    public enum SockChatClientPacket
     {
+        // Version 1
         Ping = 0,
         Authenticate = 1,
         MessageSend = 2,
+
+        // Version 2
+        Upgrade = 3,
     }
 
-    public enum SockChatClientMessage
+    public enum SockChatServerPacket
     {
+        // Version 1
         Pong = 0,
         UserConnect = 1,
         MessageAdd = 2,
@@ -20,5 +25,8 @@
         ContextClear = 8,
         BAKA = 9,
         UserUpdate = 10,
+
+        // Version 2
+        UpgradeAck = 11,
     }
 }

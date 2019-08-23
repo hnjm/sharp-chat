@@ -1,5 +1,6 @@
 ﻿using Fleck;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -8,6 +9,13 @@ namespace SharpChat
 {
     public class SockChatServer : IDisposable
     {
+        public const int VERSION =
+#if DEBUG
+            2;
+#else
+            1;
+#endif
+
         public bool IsDisposed { get; private set; }
 
         public static readonly SockChatUser Bot = new SockChatUser
@@ -20,6 +28,8 @@ namespace SharpChat
 
         public readonly WebSocketServer Server;
         public readonly SockChatContext Context;
+
+        public readonly List<SockChatConn> Connections = new List<SockChatConn>();
 
         public SockChatServer(ushort port)
         {
@@ -48,6 +58,14 @@ namespace SharpChat
 
         private void OnOpen(IWebSocketConnection conn)
         {
+            lock(Connections)
+            {
+                SockChatConn sConn = Connections.FirstOrDefault(x => x.Websocket == conn);
+
+                if (sConn == null)
+                    Connections.Add(sConn = new SockChatConn(conn));
+            }
+
             Context.CheckIPBanExpirations();
             Context.CheckPings();
         }
@@ -69,6 +87,17 @@ namespace SharpChat
 
             Context.CheckIPBanExpirations();
             Context.CheckPings();
+
+            lock (Connections)
+            {
+                SockChatConn sConn = Connections.FirstOrDefault(x => x.Websocket == conn);
+
+                if (sConn == null)
+                {
+                    Connections.Remove(sConn);
+                    sConn.Dispose();
+                }
+            }
         }
 
         private void OnError(IWebSocketConnection conn, Exception ex)
@@ -78,10 +107,22 @@ namespace SharpChat
             Context.CheckPings();
         }
 
-        private void OnMessage(IWebSocketConnection conn, string msg)
+        private void OnMessage(IWebSocketConnection ws, string msg)
         {
             Context.CheckIPBanExpirations();
             Context.CheckPings();
+
+            SockChatConn conn;
+
+            lock (Connections)
+                conn = Connections.FirstOrDefault(x => x.Websocket == ws);
+
+            if (conn == null)
+            {
+                Logger.Write(@"Somehow got to OnMessage without a valid SockChatConn.");
+                ws.Close();
+                return;
+            }
 
             SockChatUser floodUser = Context.FindUserBySock(conn);
 
@@ -99,36 +140,46 @@ namespace SharpChat
 
             string[] args = msg.Split('\t');
 
-            if (args.Length < 1 || !Enum.TryParse(args[0], out SockChatServerMessage opCode))
+            if (args.Length < 1 || !Enum.TryParse(args[0], out SockChatClientPacket opCode))
                 return;
 
             switch (opCode)
             {
-                case SockChatServerMessage.Ping:
-                    if (!int.TryParse(args[1], out int userId))
+                case SockChatClientPacket.Ping:
+                    if (!int.TryParse(args[1], out int pTime))
                         break;
 
-                    SockChatUser puser = Context.Users.FirstOrDefault(x => x.UserId == userId);
+                    conn.BumpPing();
 
-                    if (puser == null)
-                        break;
-
-                    SockChatConn pconn = puser.GetConnection(conn);
-
-                    if (pconn == null)
-                        break;
-
-                    pconn.BumpPing();
-                    conn.Send(SockChatClientMessage.Pong, @"pong");
+                    if(conn.Version < 2)
+                        conn.Send(SockChatServerPacket.Pong, @"pong");
+                    else
+                        conn.Send(SockChatServerPacket.Pong, conn.LastPing.ToUnixTimeSeconds());
                     break;
 
-                case SockChatServerMessage.Authenticate:
-                    DateTimeOffset authBan = Context.GetIPBanExpiration(conn.RemoteAddress());
+                case SockChatClientPacket.Upgrade:
+#pragma warning disable CS0162
+                    if (VERSION < 2)
+                        break;
+#pragma warning restore CS0162
+
+                    if (int.TryParse(args[1], out int uVersion) || uVersion < 2 || uVersion > VERSION)
+                    {
+                        conn.Send(SockChatServerPacket.UpgradeAck, 0, VERSION);
+                        break;
+                    }
+
+                    conn.Version = uVersion;
+                    conn.Send(SockChatServerPacket.UpgradeAck, 1, conn.Version);
+                    break;
+
+                case SockChatClientPacket.Authenticate:
+                    DateTimeOffset authBan = Context.GetIPBanExpiration(conn.RemoteAddress);
 
                     if (authBan > DateTimeOffset.UtcNow)
                     {
-                        conn.Send(SockChatClientMessage.UserConnect, @"n", @"joinfail", authBan == DateTimeOffset.MaxValue ? @"-1" : authBan.ToUnixTimeSeconds().ToString());
-                        conn.Close();
+                        conn.Send(SockChatServerPacket.UserConnect, @"n", @"joinfail", authBan == DateTimeOffset.MaxValue ? @"-1" : authBan.ToUnixTimeSeconds().ToString());
+                        conn.Dispose();
                         break;
                     }
 
@@ -142,12 +193,12 @@ namespace SharpChat
                         if (aUser != null || args.Length < 3 || !int.TryParse(args[1], out int aUserId))
                             break;
 
-                        auth = FlashiiAuth.Attempt(aUserId, args[2], conn.RemoteAddress());
+                        auth = FlashiiAuth.Attempt(aUserId, args[2], conn.RemoteAddress);
 
                         if (!auth.Success)
                         {
-                            conn.Send(SockChatClientMessage.UserConnect, @"n", @"authfail");
-                            conn.Close();
+                            conn.Send(SockChatServerPacket.UserConnect, @"n", @"authfail");
+                            conn.Dispose();
                             break;
                         }
 
@@ -164,16 +215,16 @@ namespace SharpChat
 
                     if (aUser.IsBanned)
                     {
-                        conn.Send(SockChatClientMessage.UserConnect, @"n", @"joinfail", aUser.BannedUntil.ToUnixTimeSeconds().ToString());
-                        conn.Close();
+                        conn.Send(SockChatServerPacket.UserConnect, @"n", @"joinfail", aUser.BannedUntil.ToUnixTimeSeconds().ToString());
+                        conn.Dispose();
                         break;
                     }
 
                     // arbitrarily limit users to five connections
                     if (aUser.Connections.Count >= 5)
                     {
-                        conn.Send(SockChatClientMessage.UserConnect, @"n", @"sockfail");
-                        conn.Close();
+                        conn.Send(SockChatServerPacket.UserConnect, @"n", @"sockfail");
+                        conn.Dispose();
                         break;
                     }
 
@@ -188,19 +239,24 @@ namespace SharpChat
                     Context.HandleJoin(aUser, chan, conn);
                     break;
 
-                case SockChatServerMessage.MessageSend:
+                case SockChatClientPacket.MessageSend:
                     if (args.Length < 3 || !int.TryParse(args[1], out int mUserId))
                         break;
 
                     lock (Context)
                     {
-                        SockChatUser mUser = Context.FindUserById(mUserId);
-                        SockChatChannel mChan = Context.FindUserChannel(mUser);
+                        SockChatUser mUser = Context.FindUserBySock(conn);
+                        SockChatChannel mChan;
 
-                        if (mUser == null || !mUser.HasConnection(conn) || string.IsNullOrWhiteSpace(args[2]))
+                        if (mUser == null || string.IsNullOrWhiteSpace(args[2]))
                             break;
 
-                        if (mUser.IsSilenced && !mUser.IsModerator)
+                        if (conn.Version < 2)
+                            mChan = Context.FindUserChannel(mUser);
+                        else
+                            mChan = Context.FindChannelByName(args[1]);
+
+                        if (mChan == null || (mUser.IsSilenced && !mUser.IsModerator))
                             break;
 
                         if (mUser.IsAway)

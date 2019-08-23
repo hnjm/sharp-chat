@@ -86,14 +86,14 @@ namespace SharpChat
         public void Send(string data)
             => Connections.ForEach(c => c.Send(data));
 
-        public void Send(SockChatClientMessage inst, params object[] parts)
+        public void Send(SockChatServerPacket inst, params object[] parts)
             => Send(parts.Pack(inst));
 
         public void Send(SockChatUser user, string message, MessageFlags flags = MessageFlags.RegularUser)
         {
             user = user ?? SockChatServer.Bot;
             Send(
-                SockChatClientMessage.MessageAdd,
+                SockChatServerPacket.MessageAdd,
                 Utils.UnixNow, user.UserId.ToString(),
                 message, SockChatMessage.NextMessageId,
                 flags.Serialise()
@@ -107,26 +107,23 @@ namespace SharpChat
 
         public void SendLog(IChatMessage msg)
         {
-            Send(SockChatClientMessage.ContextPopulate, Constants.CTX_MSG, msg);
+            Send(SockChatServerPacket.ContextPopulate, Constants.CTX_MSG, msg);
         }
 
         public void Close()
         {
             lock (Connections)
             {
-                Connections.ForEach(c => c.Close());
+                Connections.ForEach(c => c.Dispose());
                 Connections.Clear();
             }
         }
 
         public void ForceChannel(SockChatChannel chan = null)
-            => Send(SockChatClientMessage.UserSwitch, @"2", (chan ?? Channel).ToString());
+            => Send(SockChatServerPacket.UserSwitch, @"2", (chan ?? Channel).ToString());
 
         public void AddConnection(SockChatConn conn)
             => Connections.Add(conn);
-
-        public void AddConnection(IWebSocketConnection conn)
-            => Connections.Add(new SockChatConn(conn));
 
         public void RemoveConnection(SockChatConn conn)
            => Connections.Remove(conn);
