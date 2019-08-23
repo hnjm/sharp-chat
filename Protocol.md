@@ -1,11 +1,6 @@
-# Sock Chat Protocol
-
-This is a rewrite of the original Sock Chat Protocol Information by MallocNull, still available at https://web.archive.org/web/20170113030901/https://flashii.net/forum/thread/122.
-Since this version was incomplete and doesn't match the implementation of the protocol that ended up used on Flashii, and implemented in Railgun I've decided to structure it back together so there's an easy reference for anyone wanting to look into this protocol.
-
 ## Sock Chat Protocol Information
 
-Messages sent between the client and server are a series of concatenated string delimited by the vertical tab character, represented in most language by the escape sequence `\t` and defined as the ASCII character `0x09`.
+The protocol operates on a websocket in text mode. Messages sent between the client and server are a series of concatenated strings delimited by the vertical tab character, represented in most languages by the escape sequence `\t` and defined in ASCII as `0x09`.
 The first string in this concatenation must be the packet identifier, sent as an integer. The packet identifiers are as follows.
 
 ### Client
