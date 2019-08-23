@@ -163,7 +163,7 @@ namespace SharpChat
                         break;
 #pragma warning restore CS0162
 
-                    if (int.TryParse(args[1], out int uVersion) || uVersion < 2 || uVersion > VERSION)
+                    if (!int.TryParse(args[1], out int uVersion) || uVersion < 2 || uVersion > VERSION)
                     {
                         conn.Send(SockChatServerPacket.UpgradeAck, 0, VERSION);
                         break;
