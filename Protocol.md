@@ -1,125 +1,652 @@
 # Sock Chat Protocol Information
-
 The protocol operates on a websocket in text mode. Messages sent between the client and server are a series of concatenated strings delimited by the vertical tab character, represented in most languages by the escape sequence `\t` and defined in ASCII as `0x09`.
 The first string in this concatenation must be the packet identifier, sent as an integer. The packet identifiers are as follows.
 
-## Client
+Some instructions are specific to newer revisions of the protocol and some instructions behave differently in newer revisions, all versions are documented but it is recommended you use the latest one.
 
-- `0`: User keepalive ping. Done to prevent the client from closing the session due to socket inactivity. The only parameter of this is the user id.
-- `1`: User join request. Takes a variable number of parameters that are fed into the authentication script associated with the chat.
-- `2`: User message. The first parameter is the user id, the second is the message.
+The current stable version of the protocol is **Version 1**.
+
+## Client
+These are the packets sent from the client to the server.
+
+### Packet `0`: Ping
+Used to prevent the client from closing the session due to inactivity.
+
+<table>
+    <tr>
+        <th colspan="2">Version 1</th>
+    </tr>
+    <tr>
+        <td>int</td>
+        <td>User ID</td>
+    </tr>
+</table>
+
+### Packet `1`: Authentication
+Takes a variable number of parameters that are fed into the authentication script associated with the chat.
+
+<table>
+    <tr>
+        <th colspan="2">Version 1</th>
+    </tr>
+    <tr>
+        <td>...any</td>
+        <td>Any amount of data required to complete authentication.</td>
+    </tr>
+</table>
+
+### Packet `2`: Message
+Informs the server that the user has sent a message.
+
+<table>
+    <tr>
+        <th colspan="2">Version 1</th>
+    </tr>
+    <tr>
+        <td>int</td>
+        <td>User ID</td>
+    </tr>
+    <tr>
+        <td>...string</td>
+        <td>Message text, additional packet parameters should be glued on the server using <code>\t</code>.</td>
+    </tr>
+</table>
 
 ## Server
+These are the packets sent from the server to the client.
 
-- `0`: Keepalive ping response. Not actually handled, but the client does receive it. The first and only parameter is always the string `pong`.
-- `1`: User joining message. Takes two different forms depending on the recipient.
-    - If the recipient is not the joining user, the arguments are as follows.
-        - Unix Timestamp
-        - User Id
-        - Username
-        - User Colour
-        - Permission String
-        - Message Id
-    - If the recipient is the joining user, the arguments depend on the first parameter of the message.
-        - If `y` (connection accepted), the parameters are as follows:
-            - User Id
-            - Username
-            - User Colour
-            - Permission String
-            - Default Channel
-        - If `n` (connection refused), the parameters are as follows:
-            - REASON ENUM
-            - `authfail`: Auth data is wrong.
-            - `userfail`: Username is in use.
-            - `sockfail`: Socket session has already started.
-            - `joinfail`: Banned.
-                - Followed by unix timestamp.
-- `2`: Chat message to be parsed. Takes a general form but has a special case for bot messages.
-    - Formatted as follows:
-        - Unix Timestamp
-        - User Id
-        - Message (sanitised on the server side)
-        - Message Id
-        - Message Flags
-    - If the message is sent by the chat bot, the User Id will be set to -1, and the MESSAGE field will be a series of string concatenated by the form feed operator, ASCII character `0x0C` and represented in most languages by the escape sequence `\f`. The string will take the following form:
-        - MESSAGE TYPE ENUM
-            - `0`: Normal message.
-            - `1`: Error message.
-        - Id of string in legacy language files.
-        - Any number of parameters, fed as arguments into the language string.
-- `3`: User disconnect notification. The parameters are as follows:
-    - User Id
-    - Username
-    - Departure reason, can technically be anything but Railgun sticks to the following ones as they were implemented by the legacy client:
-        - `kick`, for both bans and kicks.
-        - `flood`, for flood protection kicks.
-        - `leave`, for regular departures.
-    - Unix timestamp
-    - Message Id
-- `4`: Channel event notification to client. First parameter is an integer representing the action taken, and are described below.
-    - `0`: Creation, parameters are as follows:
-        - Channel name
-        - Password protected, (either `0` or `1`)
-        - Temporary, (same as above)
-    - `1`: Update,
-        - Old channel name
-        - New channel name
-        - Password protected
-        - Temporary
-    - `2`: Delete,
-        - Channel name
-- `5`: User changing channel information for clients. First parameter is an integer representing the action taken, and are described below.
-    - `0`: User joining, parameters are as follows.
-        - User Id
-        - Username
-        - User Colour
-        - Message id
-    - `1`: User leaving.
-        - User Id
-        - Message Id
-    - `2`: Telling the client that it has been moved to a different channel.
-        - Channel Name
-- `6`: Indicates that a message has been removed, it only has a single argument which is the id of the message that has been removed.
-- `7`: Indicates the sending of data about the context of the server to the client. It has a number of actions described below.
-    - `0`: The users in the current channel, formatted as follows:
-        - Number of users, represented as `n`.
-        - `n` repetitions of the following parameters, each indicating a user:
-            - User Id
-            - Username
-            - User Colour
-            - Permission String
-            - Visibility (`0` or `1`)
-    - `1`: A message object, the parameters are as follows:
-        - Unix timestamp
-        - User Id
-        - Username
-        - User Colour
-        - Permission string
-        - Message
-        - Message Id
-        - Should play a sound on receive (`0` or `1`)
-        - Message flags
-    - `2`: The server's channels, formatted as follows:
-        - The number of channels, represented as `n`.
-        - `n` repetitions of the following parameters, each indicating a channel:
-            - Channel name
-            - Password protected, `0` or `1`.
-            - Temporary, same as above.
-- `8`: Forces a context clear on the client. The first parameters is an integer ranging from `0` to `4`.
-    - `0`: Clears only the message listing.
-    - `1`: Clears only the user listing.
-    - `2`: Clears only the channel listing.
-    - `3`: Clears both the message and user listings.
-    - `4`: Clear all three listings.
-- `9`: Tells the client that their connection is about to forcefully terminated, used to indicate kick and bans.
-    - `0`: The user has been kicked.
-    - `1`: The user has been banned, this comes with another argument:
-        - Unix timestamp indicating the length of the ban.
-- `10`: Informs the client that a user (usually in the same channel) has been updated. Used for things like nicknames and temporary privilege elevations. The arguments are as follows:
-    - User Id, this never changes and can thus be used to indentify the user.
-    - Username
-    - User Colour
-    - Permission string.
+### Packet `0`: Pong
+Response to client packet `0`: Ping.
+
+<table>
+    <tr>
+        <th colspan="2">Version 1</th>
+    </tr>
+    <tr>
+        <td>string</td>
+        <td>The literal string <code>pong</code></td>
+    </tr>
+</table>
+
+### Packet `1`: Join/Auth
+While authenticated this packet indicates that a new user has joined the server/channel. Before authentication this packet serves as a response to client packet `1`: Authentication.
+
+#### Successful authentication response
+Informs the client that authentication has succeeded.
+
+<table>
+    <tr>
+        <th colspan="2">Version 1</th>
+    </tr>
+    <tr>
+        <td>string</td>
+        <td>Literal string <code>y</code> for yes.</td>
+    </tr>
+    <tr>
+        <td>int</td>
+        <td>Session User ID.</td>
+    </tr>
+    <tr>
+        <td>string</td>
+        <td>Username</td>
+    </tr>
+    <tr>
+        <td>string</td>
+        <td>CSS username color</td>
+    </tr>
+    <tr>
+        <td>permissions (string)</td>
+        <td>User permissions, documented below.</td>
+    </tr>
+    <tr>
+        <td>string</td>
+        <td>Default channel the user will join following this packet.</td>
+    </tr>
+</table>
+
+#### Failed authentication response
+Informs the client that authentication has failed.
+
+<table>
+    <tr>
+        <th colspan="2">Version 1</th>
+    </tr>
+    <tr>
+        <td>string</td>
+        <td>Literal string <code>n</code> for no.</td>
+    </tr>
+    <tr>
+        <td>string</td>
+        <td>
+            Reason for failure.
+            <ul>
+                <li><code>authfail</code>: Authentication data is invalid.</li>
+                <li><code>userfail</code>: Username in use.</li>
+                <li><code>sockfail</code>: A connection has already been started (used to cap maximum connections to 5 in SharpChat).</li>
+                <li><code>joinfail</code>: User attempting to authenticate is banned.</li>
+            </ul>
+        </td>
+    </tr>
+    <tr>
+        <td>int</td>
+        <td>If <code>joinfail</code>; A 32-bit Unix timestamp indicating the length of the ban.</td>
+    </tr>
+</table>
+
+#### User joining
+Informs the client that a user has joined.
+
+<table>
+    <tr>
+        <th colspan="2">Version 1</th>
+    </tr>
+    <tr>
+        <td>int</td>
+        <td>32-bit Unix timestamp of when the user joined.</td>
+    </tr>
+    <tr>
+        <td>int</td>
+        <td>User ID.</td>
+    </tr>
+    <tr>
+        <td>string</td>
+        <td>Username.</td>
+    </tr>
+    <tr>
+        <td>string</td>
+        <td>CSS username color.</td>
+    </tr>
+    <tr>
+        <td>permissions (string)</td>
+        <td>User permissions, documented below.</td>
+    </tr>
+    <tr>
+        <td>int</td>
+        <td>Event ID.</td>
+    </tr>
+</table>
+
+### Packet `2`: Chat message
+Informs the client that a chat message has been received.
+
+<table>
+    <tr>
+        <th colspan="2">Version 1</th>
+    </tr>
+    <tr>
+        <td>int</td>
+        <td>32-bit Unix timestamp of when the user joined.</td>
+    </tr>
+    <tr>
+        <td>int</td>
+        <td>
+            User ID.
+            If <code>-1</code> this message is an informational message from the server and the next field takes on a special form.
+        </td>
+    </tr>
+    <tr>
+        <td>string</td>
+        <td>
+            <p>Message (sanitised on the server).</p>
+            <p>
+                If this is an informational message this field is formatted as follows and concatenated by the form feed character <code>\f</code>, respresented in ASCII by <code>0x0C</code>.
+                <table>
+                    <tr>
+                        <td>int</td>
+                        <td>
+                            Message type.
+                            <ul>
+                                <li><code>0</code> for a normal informational message.</li>
+                                <li><code>1</code> for an error.</li>
+                            </ul>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>string</td>
+                        <td>
+                            An id of a string in the legacy language files.
+                            A list can be found in the <code>botText</code> and <code>botErrText</code> sections of <a href="https://sockchat.flashii.net/legacy/lang/en/common.json">sockchat.flashii.net/legacy/lang/en/common.json</a> and <a href="https://sockchat.flashii.net/legacy/lang/en/core.json">sockchat.flashii.net/legacy/lang/en/common.json</a>.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>...string</td>
+                        <td>
+                            Any number of parameters used to format the language string.
+                        </td>
+                    </tr>
+                </table>
+            </p>
+        </td>
+    </tr>
+    <tr>
+        <td>int</td>
+        <td>Event ID.</td>
+    </tr>
+    <tr>
+        <td>message flags (string)</td>
+        <td>Message flags, documented below.</td>
+    </tr>
+</table>
+
+### Packet `3`: User disconnect
+Informs the client that a user has disconnected.
+
+<table>
+    <tr>
+        <th colspan="2">Version 1</th>
+    </tr>
+    <tr>
+        <td>int</td>
+        <td>User ID.</td>
+    </tr>
+    <tr>
+        <td>string</td>
+        <td>Username.</td>
+    </tr>
+    <tr>
+        <td>string</td>
+        <td>
+            One of four disconnect reasons.
+            <ul>
+                <li><code>leave</code>: The user gracefully left, e.g. "x logged out".</li>
+                <li><code>timeout</code>: The user lost connection unexpectedly, e.g. "x timed out".</li>
+                <li><code>kick</code>: The user has been kicked, e.g. "x has been kicked".</li>
+                <li><code>flood</code>: The user has been kicked for exceeding the flood protection limit, e.g. "x has been kicked for spam".</li>
+            </ul>
+        </td>
+    </tr>
+    <tr>
+        <td>int</td>
+        <td>32-bit Unix timestamp of when the user disconnected.</td>
+    </tr>
+    <tr>
+        <td>int</td>
+        <td>Event ID.</td>
+    </tr>
+</table>
+
+### Packet `4`: Channel event
+This packet informs the user about channel related updates. The only consistent parameter across sub-packets is the first one described as follows.
+
+<table>
+    <tr>
+        <th colspan="2">Version 1</th>
+    </tr>
+    <tr>
+        <td>int</td>
+        <td>
+            Channel information update event ID.
+            <ul>
+                <li><code>0</code>: A channel has been created.</li>
+                <li><code>1</code>: A channel has been updated.</li>
+                <li><code>2</code>: A channel has been deleted.</li>
+            </ul>
+        </td>
+    </tr>
+</table>
+
+#### Sub-packet `0`: Channel creation
+Informs the client that a channel has been created.
+
+<table>
+    <tr>
+        <th colspan="2">Version 1</th>
+    </tr>
+    <tr>
+        <td>string</td>
+        <td>The name of the new channel.</td>
+    </tr>
+    <tr>
+        <td>bool</td>
+        <td>Indicates whether the channel is password protected.</td>
+    </tr>
+    <tr>
+        <td>bool</td>
+        <td>Indicates whether the channel is temporary, meaning the channel will be deleted after the last person departs.</td>
+    </tr>
+</table>
+
+#### Sub-packet `1`: Channel update
+Informs the client that details of a channel has changed.
+
+<table>
+    <tr>
+        <th colspan="2">Version 1</th>
+    </tr>
+    <tr>
+        <td>string</td>
+        <td>The old/current name of the channel.</td>
+    </tr>
+    <tr>
+        <td>string</td>
+        <td>The new name of the channel.</td>
+    </tr>
+    <tr>
+        <td>bool</td>
+        <td>Indicates whether the channel is password protected.</td>
+    </tr>
+    <tr>
+        <td>bool</td>
+        <td>Indicates whether the channel is temporary, meaning the channel will be deleted after the last person departs.</td>
+    </tr>
+</table>
+
+#### Sub-packet `2`: Channel deletion
+Informs the client that a channel has been deleted
+
+<table>
+    <tr>
+        <th colspan="2">Version 1</th>
+    </tr>
+    <tr>
+        <td>string</td>
+        <td>The name of the channel that has been deleted.</td>
+    </tr>
+</table>
+
+### Packet `5`: Channel switching
+This packet informs the client about channel switching.
+
+<table>
+    <tr>
+        <th colspan="2">Version 1</th>
+    </tr>
+    <tr>
+        <td>int</td>
+        <td>
+            Channel information update event ID.
+            <ul>
+                <li><code>0</code>: A user joined the channel (again). Sent to all users in a channel.</li>
+                <li><code>1</code>: A user left the channel. Sent to all users in a channel.</li>
+                <li><code>2</code>: The client is to forcibly switch to a different channel.</li>
+            </ul>
+        </td>
+    </tr>
+</table>
+
+#### Sub-packet `0`: Channel join
+Informs the client that a user has joined the channel.
+
+<table>
+    <tr>
+        <th colspan="2">Version 1</th>
+    </tr>
+    <tr>
+        <td>int</td>
+        <td>User ID.</td>
+    </tr>
+    <tr>
+        <td>string</td>
+        <td>Username.</td>
+    </tr>
+    <tr>
+        <td>string</td>
+        <td>CSS username color.</td>
+    </tr>
+    <tr>
+        <td>int</td>
+        <td>Event ID.</td>
+    </tr>
+</table>
+
+#### Sub-packet `1`: Channel departure
+Informs the client that a user has left the channel.
+
+<table>
+    <tr>
+        <th colspan="2">Version 1</th>
+    </tr>
+    <tr>
+        <td>int</td>
+        <td>User ID.</td>
+    </tr>
+    <tr>
+        <td>int</td>
+        <td>Event ID.</td>
+    </tr>
+</table>
+
+#### Sub-packet `2`: Forced channel switch
+Informs the client that it has been forcibly switched to a different channel.
+
+<table>
+    <tr>
+        <th colspan="2">Version 1</th>
+    </tr>
+    <tr>
+        <td>string</td>
+        <td>The name of the channel that the user has been switched to.</td>
+    </tr>
+</table>
+
+### Packet `6`: Message deletion
+Informs the client that a message has been deleted.
+
+<table>
+    <tr>
+        <th colspan="2">Version 1</th>
+    </tr>
+    <tr>
+        <td>int</td>
+        <td>Event ID of the deleted message.</td>
+    </tr>
+</table>
+
+### Packet `7`: Context information
+Informs the client about the context of a channel before the client was present.
+
+<table>
+    <tr>
+        <th colspan="2">Version 1</th>
+    </tr>
+    <tr>
+        <td>int</td>
+        <td>
+            Context event ID.
+            <ul>
+                <li><code>0</code>: Users present in the current channel.</li>
+                <li><code>1</code>: A message already in the channel, occurs more than once per channel.</li>
+                <li><code>2</code>: Channels on the server.</li>
+            </ul>
+        </td>
+    </tr>
+</table>
+
+#### Sub-packet `0`: Existing users
+Informs the client about users already present in the channel.
+
+<table>
+    <tr>
+        <th colspan="2">Version 1</th>
+    </tr>
+    <tr>
+        <td>int</td>
+        <td>Amount of users present in the channel.</td>
+    </tr>
+    <tr>
+        <td>Context User</td>
+        <td>An amount of repetitions of this object based on the number in the previous param, the object is described below.</td>
+    </tr>
+</table>
+
+##### Context User object
+
+<table>
+    <tr>
+        <th colspan="2">Version 1</th>
+    </tr>
+    <tr>
+        <td>int</td>
+        <td>User ID</td>
+    </tr>
+    <tr>
+        <td>string</td>
+        <td>Username</td>
+    </tr>
+    <tr>
+        <td>string</td>
+        <td>CSS username color</td>
+    </tr>
+    <tr>
+        <td>permissions (string)</td>
+        <td>User permissions, documented below.</td>
+    </tr>
+    <tr>
+        <td>bool</td>
+        <td>Whether the user should be visible in the users list.</td>
+    </tr>
+</table>
+
+#### Sub-packet `1`: Existing message
+Informs the client about an existing message in a channel.
+
+<table>
+    <tr>
+        <th colspan="2">Version 1</th>
+    </tr>
+    <tr>
+        <td>int</td>
+        <td>32-bit Unix timestamp</td>
+    </tr>
+    <tr>
+        <td>int</td>
+        <td>User ID</td>
+    </tr>
+    <tr>
+        <td>string</td>
+        <td>Username</td>
+    </tr>
+    <tr>
+        <td>string</td>
+        <td>CSS username color</td>
+    </tr>
+    <tr>
+        <td>permissions (string)</td>
+        <td>User permissions, documented below.</td>
+    </tr>
+    <tr>
+        <td>string</td>
+        <td>Message text, functions the same as described in Packet <code>2</code>: Chat message</td>
+    </tr>
+    <tr>
+        <td>int</td>
+        <td>Event ID</td>
+    </tr>
+    <tr>
+        <td>bool</td>
+        <td>Whether the client should notify the user about this message.</td>
+    </tr>
+    <tr>
+        <td>message flags (string)</td>
+        <td>Message flags, documented below.</td>
+    </tr>
+</table>
+
+#### Sub-packet `2`: Channels
+Informs the client about the channels on the server.
+
+<table>
+    <tr>
+        <th colspan="2">Version 1</th>
+    </tr>
+    <tr>
+        <td>int</td>
+        <td>Amount of channels on the channel.</td>
+    </tr>
+    <tr>
+        <td>Context Channel</td>
+        <td>An amount of repetitions of this object based on the number in the previous param, the object is described below.</td>
+    </tr>
+</table>
+
+##### Context Channel object
+
+<table>
+    <tr>
+        <th colspan="2">Version 1</th>
+    </tr>
+    <tr>
+        <td>string</td>
+        <td>Channel name</td>
+    </tr>
+    <tr>
+        <td>bool</td>
+        <td>Indicates whether the channel is password protected.</td>
+    </tr>
+    <tr>
+        <td>bool</td>
+        <td>Indicates whether the channel is temporary, meaning the channel will be deleted after the last person departs.</td>
+    </tr>
+</table>
+
+### Packet `8`: Context clearing
+Informs the client that the context has been cleared.
+
+<table>
+    <tr>
+        <th colspan="2">Version 1</th>
+    </tr>
+    <tr>
+        <td>int</td>
+        <td>
+            Number indicating what has been cleared.
+            <ul>
+                <li><code>0</code>: The message list has been cleared.</li>
+                <li><code>1</code>: The user list has been cleared.</li>
+                <li><code>2</code>: The channel list has been cleared.</li>
+                <li><code>3</code>: Both the message and user listing have been cleared.</li>
+                <li><code>4</code>: The message, user and channel listing have all been cleared.</li>
+            </ul>
+        </td>
+    </tr>
+</table>
+
+### Packet `9`: Forced disconnect
+Informs the client that they have either been banned or kicked from the server.
+
+<table>
+    <tr>
+        <th colspan="2">Version 1</th>
+    </tr>
+    <tr>
+        <td>bool</td>
+        <td>
+            <ul>
+                <li><code>0</code>: The client has been kicked, can reconnect immediately.</li>
+                <li><code>1</code>: The client has been banned, can reconnect after the timestamp in the next param has expired.</li>
+            </ul>
+        </td>
+    </tr>
+    <tr>
+        <td>int</td>
+        <td>A 32-bit Unix timestamp containing the ban expiration date and time.</td>
+    </tr>
+</table>
+
+### Packet `10`: User update
+Informs that another user's details have been updated.
+
+<table>
+    <tr>
+        <th colspan="2">Version 1</th>
+    </tr>
+    <tr>
+        <td>int</td>
+        <td>User ID of the affected user.</td>
+    </tr>
+    <tr>
+        <td>string</td>
+        <td>New username.</td>
+    </tr>
+    <tr>
+        <td>string</td>
+        <td>New CSS username color.</td>
+    </tr>
+    <tr>
+        <td>permissions (string)</td>
+        <td>User permissions, documented below.</td>
+    </tr>
+</table>
 
 ## User Permission String
 The User Permission String consists out of five (5) parts concatenated by the form feed operator, indentified in most languages as the escape sequence `\f` and defined as the ASCII character `0x0C`.
