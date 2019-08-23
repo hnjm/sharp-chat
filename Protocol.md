@@ -1,15 +1,15 @@
-## Sock Chat Protocol Information
+# Sock Chat Protocol Information
 
 The protocol operates on a websocket in text mode. Messages sent between the client and server are a series of concatenated strings delimited by the vertical tab character, represented in most languages by the escape sequence `\t` and defined in ASCII as `0x09`.
 The first string in this concatenation must be the packet identifier, sent as an integer. The packet identifiers are as follows.
 
-### Client
+## Client
 
 - `0`: User keepalive ping. Done to prevent the client from closing the session due to socket inactivity. The only parameter of this is the user id.
 - `1`: User join request. Takes a variable number of parameters that are fed into the authentication script associated with the chat.
 - `2`: User message. The first parameter is the user id, the second is the message.
 
-### Server
+## Server
 
 - `0`: Keepalive ping response. Not actually handled, but the client does receive it. The first and only parameter is always the string `pong`.
 - `1`: User joining message. Takes two different forms depending on the recipient.
@@ -121,7 +121,7 @@ The first string in this concatenation must be the packet identifier, sent as an
     - User Colour
     - Permission string.
 
-### User Permission String
+## User Permission String
 The User Permission String consists out of five (5) parts concatenated by the form feed operator, indentified in most languages as the escape sequence `\f` and defined as the ASCII character `0x0C`.
 In the original specification it appeared as if custom permission flags were possible, these have always gone completely unused and should thus be avoided.
 The parts are as follows:
@@ -135,7 +135,7 @@ The parts are as follows:
     - `1`: User can create channels, but only temporary ones. These _usually_ disappear after the last user left.
     - `2`: User can create permanent channels.
 
-### Message Flags
+## Message Flags
 The Message Flags alter how a message should be displayed to the client, these are all boolean values.
 I'm not entirely sure if these allowed for custom flags, but much like the custom flags in the User Permission String, these have gone unused and should thus, also, be avoided.
 The parts are as follows:
