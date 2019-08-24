@@ -20,6 +20,8 @@ namespace SharpChat.Packet
 
             sb.Append((int)SockChatServerPacket.UserConnect);
             sb.Append(Constants.SEPARATOR);
+            sb.Append(Joined.ToUnixTimeSeconds());
+            sb.Append(Constants.SEPARATOR);
             sb.Append(User.Pack(version));
             sb.Append(Constants.SEPARATOR);
             sb.Append(eventId);

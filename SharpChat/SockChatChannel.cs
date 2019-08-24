@@ -72,13 +72,9 @@ namespace SharpChat
         }
 
         [Obsolete(@"Use Send(IServerPacket, int)")]
-        public void Send(SockChatServerPacket inst, params object[] parts)
-            => Send(parts.Pack(inst));
-
-        [Obsolete(@"Use Send(IServerPacket, int)")]
         public void Send(SockChatUser user, string message, MessageFlags flags = MessageFlags.RegularUser)
         {
-            message = new[] { Utils.UnixNow, user.UserId.ToString(), message, SockChatMessage.NextMessageId.ToString(), flags.Serialise() }.Pack(SockChatServerPacket.MessageAdd);
+            message = new[] { DateTimeOffset.Now.ToUnixTimeSeconds().ToString(), user.UserId.ToString(), message, SockChatMessage.NextMessageId.ToString(), flags.Serialise() }.Pack(SockChatServerPacket.MessageAdd);
             Send(message);
         }
 

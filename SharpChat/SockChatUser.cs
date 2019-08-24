@@ -104,7 +104,7 @@ namespace SharpChat
             user = user ?? SockChatServer.Bot;
             Send(
                 SockChatServerPacket.MessageAdd,
-                Utils.UnixNow, user.UserId.ToString(),
+                DateTimeOffset.Now.ToUnixTimeSeconds().ToString(), user.UserId.ToString(),
                 message, SockChatMessage.NextMessageId,
                 flags.Serialise()
             );
@@ -114,12 +114,6 @@ namespace SharpChat
         public void Send(bool error, string id, params string[] args)
         {
             Send(SockChatServer.Bot, SockChatMessage.PackBotMessage(error ? 1 : 0, id, args));
-        }
-
-        [Obsolete(@"Use Send(IServerPacket, int)")]
-        public void SendLog(IChatMessage msg)
-        {
-            Send(SockChatServerPacket.ContextPopulate, Constants.CTX_MSG, msg);
         }
 
         public void Close()

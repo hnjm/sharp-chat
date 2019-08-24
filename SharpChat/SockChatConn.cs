@@ -30,16 +30,10 @@ namespace SharpChat
         {
             if (!Websocket.IsAvailable)
                 return;
+            if (eventId < 1)
+                eventId = SockChatMessage.NextMessageId; // there needs to be a better solution for this
             Websocket.Send(packet.Pack(Version, eventId));
         }
-
-        [Obsolete(@"Use Send(IServerPacket, int)")]
-        public void Send(SockChatServerPacket inst, params object[] parts)
-            => Send(parts.Pack(inst));
-
-        [Obsolete(@"Use Send(IServerPacket, int)")]
-        public void SendLog(IChatMessage msg)
-            => Send(SockChatServerPacket.ContextPopulate, Constants.CTX_MSG, msg);
 
         public void BumpPing()
             => LastPing = DateTimeOffset.Now;

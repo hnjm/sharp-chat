@@ -304,37 +304,7 @@ Informs the client that a chat message has been received.
     </tr>
     <tr>
         <td><code>string</code></td>
-        <td>
-            <p>Message, <b>NOT SANITISED</b></p>
-            <p>
-                If this is an informational message this field is formatted as follows and concatenated by the form feed character <code>\f</code>, respresented in ASCII by <code>0x0C</code>.
-                <table>
-                    <tr>
-                        <td><code>int</code></td>
-                        <td>
-                            Message type.
-                            <ul>
-                                <li><code>0</code> for a normal informational message.</li>
-                                <li><code>1</code> for an error.</li>
-                            </ul>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td><code>string</code></td>
-                        <td>
-                            An id of a string in the legacy language files.
-                            A list can be found in the <code>botText</code> and <code>botErrText</code> sections of <a href="https://sockchat.flashii.net/legacy/lang/en/common.json">sockchat.flashii.net/legacy/lang/en/common.json</a> and <a href="https://sockchat.flashii.net/legacy/lang/en/core.json">sockchat.flashii.net/legacy/lang/en/common.json</a>.
-                        </td>
-                    </tr>
-                    <tr>
-                        <td><code>...string</code></td>
-                        <td>
-                            Any number of parameters used to format the language string.
-                        </td>
-                    </tr>
-                </table>
-            </p>
-        </td>
+        <td>Message, <b>NOT SANITISED</b></td>
     </tr>
     <tr>
         <td><code>int</code></td>

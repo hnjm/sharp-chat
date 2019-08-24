@@ -5,9 +5,6 @@ namespace SharpChat
 {
     public static class Utils
     {
-        public static string UnixNow
-            => DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
-
         public static string InitialMessage
             => new[] {
                 @"This is Agent 2. If you're reading this it means you're either Agent 3 or someone listening in. If you're the latter I request you cease or you will regret it. I've acquired intel on the whereabouts of Agent 1 and you're going to have to help me out recovering her. Agent 4 and Agent 8 are each busy with another mission so we can't rely on their reinforcement either. A large shipment of crabby cakes has been reported missing with a trail of crumbs leading to Octo Valley, those octoslobs must have abducted her by setting up an elaborate trap. Meet me at Cuttlefish Cabin, and be sure to Stay Fresh.",

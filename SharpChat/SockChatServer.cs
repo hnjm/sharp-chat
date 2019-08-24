@@ -667,27 +667,7 @@ namespace SharpChat
                                         break;
                                     }
 
-                                    StringBuilder bansSB = new StringBuilder();
-
-                                    lock (Context.Users)
-                                        Context.Users.Where(u => u.IsBanned).ForEach(u =>
-                                        {
-                                            bansSB.Append(@"<a href=""javascript:void(0);"" onclick=""Chat.SendMessageWrapper('/unban '+ this.innerHTML);"">");
-                                            bansSB.Append(u.Username);
-                                            bansSB.Append(@"</a>, ");
-                                        });
-                                    lock (Context.IPBans)
-                                        Context.IPBans.ForEach(kvp =>
-                                        {
-                                            bansSB.Append(@"<a href=""javascript:void(0);"" onclick=""Chat.SendMessageWrapper('/unbanip '+ this.innerHTML);"">");
-                                            bansSB.Append(kvp.Key);
-                                            bansSB.Append(@"</a>, ");
-                                        });
-
-                                    if (bansSB.Length > 2)
-                                        bansSB.Length -= 2;
-
-                                    mUser.Send(false, @"banlist", bansSB.ToString());
+                                    mUser.Send(new BanListPacket(Context.Users.Where(u => u.IsBanned), Context.IPBans));
                                     break;
                                 case @"silence": // silence a user
                                     if (!mUser.IsModerator)
@@ -795,16 +775,17 @@ namespace SharpChat
 
                         lock (Lock)
                         {
-                            message = message.SanitiseMessage();
-                            mChan.Send(mUser, message);
-                            Context.Messages.Add(new SockChatMessage
+                            SockChatMessage sMsg = new SockChatMessage
                             {
-                                MessageId = SockChatMessage.MessageIdCounter,
+                                MessageId = SockChatMessage.NextMessageId,
                                 Channel = mChan,
                                 DateTime = DateTimeOffset.UtcNow,
                                 User = mUser,
                                 Text = message,
-                            });
+                            };
+
+                            Context.Messages.Add(sMsg);
+                            mChan.Send(new ChatMessageAddPacket(sMsg), sMsg.MessageId);
                         }
                     }
                     break;
