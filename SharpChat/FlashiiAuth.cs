@@ -22,6 +22,9 @@ namespace SharpChat
         [JsonProperty(@"colour")]
         public string Colour { get; set; }
 
+        [JsonProperty(@"colour_raw")]
+        public int ColourRaw { get; set; }
+
         [JsonProperty(@"default_channel")]
         public string DefaultChannel { get; set; }
 

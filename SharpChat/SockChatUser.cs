@@ -17,7 +17,7 @@ namespace SharpChat
     {
         public int UserId { get; set; }
         public string Username { get; set; }
-        public string Colour { get; set; }
+        public FlashiiColour Colour { get; set; }
         public int Hierarchy { get; set; }
         public string Nickname { get; set; }
 
@@ -70,7 +70,7 @@ namespace SharpChat
                 IsAway = false;
             }
 
-            Colour = auth.Colour;
+            Colour = new FlashiiColour(auth.ColourRaw);
             Hierarchy = auth.Hierarchy;
             IsModerator = auth.IsModerator;
             CanChangeNick = auth.CanChangeNick;
@@ -140,7 +140,7 @@ namespace SharpChat
         public SockChatConn GetConnection(IWebSocketConnection ws)
             => Connections.FirstOrDefault(x => x.Websocket == ws);
 
-        public override string ToString()
+        public string Pack(int targetVersion = 1)
         {
             StringBuilder sb = new StringBuilder();
 
@@ -148,7 +148,10 @@ namespace SharpChat
             sb.Append(Constants.SEPARATOR);
             sb.Append(DisplayName);
             sb.Append(Constants.SEPARATOR);
-            sb.Append(Colour);
+            if (targetVersion >= 2)
+                sb.Append(Colour.Raw);
+            else
+                sb.Append(Colour);
             sb.Append(Constants.SEPARATOR);
             sb.Append(Hierarchy);
             sb.Append(' ');
@@ -159,6 +162,11 @@ namespace SharpChat
             sb.Append((int)CanCreateChannels);
 
             return sb.ToString();
+        }
+
+        public override string ToString()
+        {
+            return Pack();
         }
     }
 }

@@ -23,7 +23,7 @@ namespace SharpChat
             UserId = -1,
             Username = @"ChatBot",
             Hierarchy = 0,
-            Colour = @"inherit",
+            Colour = new FlashiiColour(),
         };
 
         public readonly WebSocketServer Server;
@@ -92,7 +92,7 @@ namespace SharpChat
             {
                 SockChatConn sConn = Connections.FirstOrDefault(x => x.Websocket == conn);
 
-                if (sConn == null)
+                if (sConn != null)
                 {
                     Connections.Remove(sConn);
                     sConn.Dispose();
@@ -200,7 +200,7 @@ namespace SharpChat
 
                         if (!auth.Success)
                         {
-                            conn.Send(SockChatServerPacket.UserConnect, @"n", @"authfail");
+                            conn.Send(SockChatServerPacket.UserConnect, @"n", conn.Version >= 2 ? @"auth" : @"authfail");
                             conn.Dispose();
                             break;
                         }
@@ -218,7 +218,7 @@ namespace SharpChat
 
                     if (aUser.IsBanned)
                     {
-                        conn.Send(SockChatServerPacket.UserConnect, @"n", @"joinfail", aUser.BannedUntil.ToUnixTimeSeconds().ToString());
+                        conn.Send(SockChatServerPacket.UserConnect, @"n", conn.Version >= 2 ? @"baka" : @"joinfail", aUser.BannedUntil.ToUnixTimeSeconds().ToString());
                         conn.Dispose();
                         break;
                     }
@@ -226,7 +226,7 @@ namespace SharpChat
                     // arbitrarily limit users to five connections
                     if (aUser.Connections.Count >= 5)
                     {
-                        conn.Send(SockChatServerPacket.UserConnect, @"n", @"sockfail");
+                        conn.Send(SockChatServerPacket.UserConnect, @"n", conn.Version >= 2 ? @"conn" : @"sockfail");
                         conn.Dispose();
                         break;
                     }

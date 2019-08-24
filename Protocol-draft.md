@@ -2,7 +2,7 @@
 The protocol operates on a websocket in text mode. Messages sent between the client and server are a series of concatenated strings delimited by the vertical tab character, represented in most languages by the escape sequence `\t` and defined in ASCII as `0x09`.
 The first string in this concatenation must be the packet identifier, sent as an integer. The packet identifiers are as follows.
 
-Some instructions are specific to newer revisions of the protocol and some instructions behave differently in newer revisions, all versions are documented but it is recommended you use the latest one.
+Some instructions are specific to newer revisions of the protocol and some instructions behave differently in newer revisions, all versions are documented but it is recommended you use the latest one. If a packet is marked as deprecated and you only aim to implement the latest version, you may omit it in your implementation as it will never be sent.
 
 The current stable version of the protocol is **Version 1**.
 
@@ -147,6 +147,28 @@ Informs the client that authentication has failed.
 
 <table>
     <tr>
+        <th colspan="2">Version 2</th>
+    </tr>
+    <tr>
+        <td><code>string</code></td>
+        <td>Literal string <code>n</code> for no.</td>
+    </tr>
+    <tr>
+        <td><code>string</code></td>
+        <td>
+            Reason for failure.
+            <ul>
+                <li><code>auth</code>: Authentication data is invalid.</li>
+                <li><code>conn</code>: User has exceeded the maximum amount of connections per user.</li>
+                <li><code>baka</code>: User attempting to authenticate is banned.</li>
+            </ul>
+        </td>
+    </tr>
+    <tr>
+        <td><code>int</code></td>
+        <td>If <code>baka</code>; A 32-bit Unix timestamp indicating the length of the ban.</td>
+    </tr>
+    <tr>
         <th colspan="2">Version 1</th>
     </tr>
     <tr>
@@ -175,6 +197,33 @@ Informs the client that authentication has failed.
 Informs the client that a user has joined.
 
 <table>
+    <tr>
+        <th colspan="2">Version 2</th>
+    </tr>
+    <tr>
+        <td><code>int</code></td>
+        <td>32-bit Unix timestamp of when the user joined.</td>
+    </tr>
+    <tr>
+        <td><code>int</code></td>
+        <td>User ID.</td>
+    </tr>
+    <tr>
+        <td><code>string</code></td>
+        <td>Username.</td>
+    </tr>
+    <tr>
+        <td><code>color (int)</code></td>
+        <td>Username color in packed format, documented below.</td>
+    </tr>
+    <tr>
+        <td><code>permissions (string)</code></td>
+        <td>User permissions, documented below.</td>
+    </tr>
+    <tr>
+        <td><code>int</code></td>
+        <td>Event ID.</td>
+    </tr>
     <tr>
         <th colspan="2">Version 1</th>
     </tr>
@@ -515,6 +564,29 @@ Informs the client about users already present in the channel.
 
 <table>
     <tr>
+        <th colspan="2">Version 2</th>
+    </tr>
+    <tr>
+        <td><code>int</code></td>
+        <td>User ID</td>
+    </tr>
+    <tr>
+        <td><code>string</code></td>
+        <td>Username</td>
+    </tr>
+    <tr>
+        <td><code>color (int)</code></td>
+        <td>Username color in packed format, documented below.</td>
+    </tr>
+    <tr>
+        <td><code>permissions (string)</code></td>
+        <td>User permissions, documented below.</td>
+    </tr>
+    <tr>
+        <td><code>bool</code></td>
+        <td>Whether the user should be visible in the users list.</td>
+    </tr>
+    <tr>
         <th colspan="2">Version 1</th>
     </tr>
     <tr>
@@ -543,6 +615,45 @@ Informs the client about users already present in the channel.
 Informs the client about an existing message in a channel.
 
 <table>
+    <tr>
+        <th colspan="2">Version 2</th>
+    </tr>
+    <tr>
+        <td><code>int</code></td>
+        <td>32-bit Unix timestamp</td>
+    </tr>
+    <tr>
+        <td><code>int</code></td>
+        <td>User ID</td>
+    </tr>
+    <tr>
+        <td><code>string</code></td>
+        <td>Username</td>
+    </tr>
+    <tr>
+        <td><code>color (int)</code></td>
+        <td>Username color in packed format, documented below.</td>
+    </tr>
+    <tr>
+        <td><code>permissions (string)</code></td>
+        <td>User permissions, documented below.</td>
+    </tr>
+    <tr>
+        <td><code>string</code></td>
+        <td>Message text, functions the same as described in Packet <code>2</code>: Chat message</td>
+    </tr>
+    <tr>
+        <td><code>int</code></td>
+        <td>Event ID</td>
+    </tr>
+    <tr>
+        <td><code>bool</code></td>
+        <td>Whether the client should notify the user about this message.</td>
+    </tr>
+    <tr>
+        <td><code>message flags (string)</code></td>
+        <td>Message flags, documented below.</td>
+    </tr>
     <tr>
         <th colspan="2">Version 1</th>
     </tr>
@@ -624,6 +735,8 @@ Informs the client about the channels on the server.
 ### Packet `8`: Context clearing
 Informs the client that the context has been cleared.
 
+**DEPRECATED IN VERSION 2**
+
 <table>
     <tr>
         <th colspan="2">Version 1</th>
@@ -669,6 +782,25 @@ Informs the client that they have either been banned or kicked from the server.
 Informs that another user's details have been updated.
 
 <table>
+    <tr>
+        <th colspan="2">Version 2</th>
+    </tr>
+    <tr>
+        <td><code>int</code></td>
+        <td>User ID of the affected user.</td>
+    </tr>
+    <tr>
+        <td><code>string</code></td>
+        <td>New username.</td>
+    </tr>
+    <tr>
+        <td><code>color (int)</code></td>
+        <td>Username color in packed format, documented below.</td>
+    </tr>
+    <tr>
+        <td><code>permissions (string)</code></td>
+        <td>User permissions, documented below.</td>
+    </tr>
     <tr>
         <th colspan="2">Version 1</th>
     </tr>
@@ -735,3 +867,39 @@ The parts are as follows:
 - The message was sent privately, directly to the current user.
 
 As an example, the most common message flagset is `10010`.
+
+## Packed color format
+Starting with Version 2 colors are no longer sent as textual CSS colors, rather they're sent as a more easy to work with integer format.
+
+The format is pretty simple and comes in the form of a signed 32-bit integer in the following format: `0xFFRRGGBB`.
+`FF` is reserved for flags, although the highest bit goes unused as to avoid clashing with the sign bit.
+`RR` is the byte containing the red color value, `GG` contains green and `BB` contains blue.
+
+The only flag thusfar is `0x40` for indicating that the parent color should be inherited and the included color bytes should be ignored.
+
+Here's some C code showing an example of converting the integer color to a CSS color string;
+```
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define FLAG_INHERIT (0x40000000)
+
+char* color_to_css(int raw) {
+    if(raw & FLAG_INHERIT)
+        return "inherit";
+
+    char* css = (char*)malloc(17);
+    memset(css, 0, 17);
+
+    sprintf(
+        css,
+        "rgb(%d,%d,%d)",
+        (raw >> 16) & 0xFF,
+        (raw >>  8) & 0xFF,
+         raw        & 0xFF
+    );
+
+    return css;
+}
+```

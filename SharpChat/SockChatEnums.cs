@@ -19,10 +19,10 @@
         MessageAdd = 2,
         UserDisconnect = 3,
         ChannelEvent = 4,
-        UserSwitch = 5,
+        UserSwitch = 5,         // Deprecated in V2 (perhaps not entirely)
         MessageDelete = 6,
         ContextPopulate = 7,
-        ContextClear = 8,
+        ContextClear = 8,       // Deprecated in V2
         BAKA = 9,
         UserUpdate = 10,
 
