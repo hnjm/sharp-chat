@@ -1,4 +1,5 @@
 ﻿using Fleck;
+using SharpChat.Packet;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -150,11 +151,7 @@ namespace SharpChat
                         break;
 
                     conn.BumpPing();
-
-                    if(conn.Version < 2)
-                        conn.Send(SockChatServerPacket.Pong, @"pong");
-                    else
-                        conn.Send(SockChatServerPacket.Pong, conn.LastPing.ToUnixTimeSeconds());
+                    conn.Send(new PongPacket(conn.LastPing));
                     break;
 
                 case SockChatClientPacket.Upgrade:
@@ -165,12 +162,12 @@ namespace SharpChat
 
                     if (!int.TryParse(args[1], out int uVersion) || uVersion < 2 || uVersion > VERSION)
                     {
-                        conn.Send(SockChatServerPacket.UpgradeAck, 0, VERSION);
+                        conn.Send(new UpgradeAckPacket(false, VERSION));
                         break;
                     }
 
                     conn.Version = uVersion;
-                    conn.Send(SockChatServerPacket.UpgradeAck, 1, conn.Version);
+                    conn.Send(new UpgradeAckPacket(true, conn.Version));
                     break;
 
                 case SockChatClientPacket.Authenticate:
@@ -181,7 +178,7 @@ namespace SharpChat
 
                     if (authBan > DateTimeOffset.UtcNow)
                     {
-                        conn.Send(SockChatServerPacket.UserConnect, @"n", @"joinfail", authBan == DateTimeOffset.MaxValue ? @"-1" : authBan.ToUnixTimeSeconds().ToString());
+                        conn.Send(new AuthFailPacket(AuthFailReason.Banned, authBan));
                         conn.Dispose();
                         break;
                     }
@@ -200,7 +197,7 @@ namespace SharpChat
 
                         if (!auth.Success)
                         {
-                            conn.Send(SockChatServerPacket.UserConnect, @"n", conn.Version >= 2 ? @"auth" : @"authfail");
+                            conn.Send(new AuthFailPacket(AuthFailReason.AuthInvalid));
                             conn.Dispose();
                             break;
                         }
@@ -218,7 +215,7 @@ namespace SharpChat
 
                     if (aUser.IsBanned)
                     {
-                        conn.Send(SockChatServerPacket.UserConnect, @"n", conn.Version >= 2 ? @"baka" : @"joinfail", aUser.BannedUntil.ToUnixTimeSeconds().ToString());
+                        conn.Send(new AuthFailPacket(AuthFailReason.Banned, aUser.BannedUntil));
                         conn.Dispose();
                         break;
                     }
@@ -226,7 +223,7 @@ namespace SharpChat
                     // arbitrarily limit users to five connections
                     if (aUser.Connections.Count >= 5)
                     {
-                        conn.Send(SockChatServerPacket.UserConnect, @"n", conn.Version >= 2 ? @"conn" : @"sockfail");
+                        conn.Send(new AuthFailPacket(AuthFailReason.MaxSessions));
                         conn.Dispose();
                         break;
                     }
@@ -236,8 +233,8 @@ namespace SharpChat
                     SockChatChannel chan = Context.FindChannelByName(auth.DefaultChannel) ?? Context.Channels.FirstOrDefault();
 
                     // umi eats the first message for some reason so we'll send a blank padding msg
-                    conn.SendLog(EventChatMessage.Info(@"welcome", MessageFlags.RegularUser, @"say", Utils.InitialMessage));
-                    conn.SendLog(EventChatMessage.Info(@"welcome", MessageFlags.RegularUser, @"say", $@"Welcome to the temporary drop in chat, {aUser.Username}!"));
+                    conn.Send(new ContextMessagePacket(EventChatMessage.Info(@"welcome", MessageFlags.RegularUser, @"say", Utils.InitialMessage)));
+                    conn.Send(new ContextMessagePacket(EventChatMessage.Info(@"welcome", MessageFlags.RegularUser, @"say", $@"Welcome to the temporary drop in chat, {aUser.Username}!")));
 
                     Context.HandleJoin(aUser, chan, conn);
                     break;

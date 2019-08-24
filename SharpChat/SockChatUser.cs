@@ -1,4 +1,5 @@
 ﻿using Fleck;
+using SharpChat.Packet;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -83,12 +84,21 @@ namespace SharpChat
                 SilencedUntil = auth.SilencedUntil;
         }
 
+        public void Send(IServerPacket packet, int eventId = 0)
+        {
+            lock(Connections)
+                Connections.ForEach(c => c.Send(packet, eventId));
+        }
+
+        [Obsolete(@"Use Send(IServerPacket, int)")]
         public void Send(string data)
             => Connections.ForEach(c => c.Send(data));
 
+        [Obsolete(@"Use Send(IServerPacket, int)")]
         public void Send(SockChatServerPacket inst, params object[] parts)
             => Send(parts.Pack(inst));
 
+        [Obsolete(@"Use Send(IServerPacket, int)")]
         public void Send(SockChatUser user, string message, MessageFlags flags = MessageFlags.RegularUser)
         {
             user = user ?? SockChatServer.Bot;
@@ -100,11 +110,13 @@ namespace SharpChat
             );
         }
 
+        //[Obsolete(@"Use Send(IServerPacket, int)")]
         public void Send(bool error, string id, params string[] args)
         {
             Send(SockChatServer.Bot, SockChatMessage.PackBotMessage(error ? 1 : 0, id, args));
         }
 
+        [Obsolete(@"Use Send(IServerPacket, int)")]
         public void SendLog(IChatMessage msg)
         {
             Send(SockChatServerPacket.ContextPopulate, Constants.CTX_MSG, msg);
@@ -120,7 +132,7 @@ namespace SharpChat
         }
 
         public void ForceChannel(SockChatChannel chan = null)
-            => Send(SockChatServerPacket.UserSwitch, @"2", (chan ?? Channel).ToString());
+            => Send(new UserChannelForceJoinPacket(chan ?? Channel));
 
         public void AddConnection(SockChatConn conn)
             => Connections.Add(conn);

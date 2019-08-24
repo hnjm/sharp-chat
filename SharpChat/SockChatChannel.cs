@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using SharpChat.Packet;
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
@@ -56,21 +58,31 @@ namespace SharpChat
             }
         }
 
+        public void Send(IServerPacket packet, int eventId = 0)
+        {
+            lock (Users)
+                Users.ForEach(u => u.Send(packet, eventId));
+        }
+
+        [Obsolete(@"Use Send(IServerPacket, int)")]
         public void Send(string data)
         {
             lock(Users)
                 Users.ForEach(u => u.Send(data));
         }
 
+        [Obsolete(@"Use Send(IServerPacket, int)")]
         public void Send(SockChatServerPacket inst, params object[] parts)
             => Send(parts.Pack(inst));
 
+        [Obsolete(@"Use Send(IServerPacket, int)")]
         public void Send(SockChatUser user, string message, MessageFlags flags = MessageFlags.RegularUser)
         {
-            message = new[] { Utils.UnixNow, user.UserId.ToString(), message, SockChatMessage.NextMessageId, flags.Serialise() }.Pack(SockChatServerPacket.MessageAdd);
+            message = new[] { Utils.UnixNow, user.UserId.ToString(), message, SockChatMessage.NextMessageId.ToString(), flags.Serialise() }.Pack(SockChatServerPacket.MessageAdd);
             Send(message);
         }
 
+        //[Obsolete(@"Use Send(IServerPacket, int)")]
         public void Send(bool error, string id, params string[] args)
         {
             Send(SockChatServer.Bot, SockChatMessage.PackBotMessage(error ? 1 : 0, id, args));
@@ -78,43 +90,55 @@ namespace SharpChat
 
         public void UpdateUser(SockChatUser user)
         {
-            Send(SockChatServerPacket.UserUpdate, user.ToString());
+            Send(new UserUpdatePacket(user));
         }
 
-        public string GetUsersString(IEnumerable<SockChatUser> exclude = null)
+        public IEnumerable<SockChatUser> GetUsers(IEnumerable<SockChatUser> exclude = null)
         {
             lock (Users)
             {
-                StringBuilder sb = new StringBuilder();
                 IEnumerable<SockChatUser> users = Users;
 
                 if (exclude != null)
                     users = users.Except(exclude);
 
-                sb.Append(users.Count());
-
-                foreach (SockChatUser user in users)
-                {
-                    sb.Append('\t');
-                    sb.Append(user);
-                    sb.Append("\t1");
-                }
-
-                return sb.ToString();
+                return users.ToList();
             }
         }
 
-        public override string ToString()
+        public string GetUsersString(IEnumerable<SockChatUser> exclude = null)
+        {
+            StringBuilder sb = new StringBuilder();
+            IEnumerable<SockChatUser> users = GetUsers(exclude);
+
+            sb.Append(users.Count());
+
+            foreach (SockChatUser user in users)
+            {
+                sb.Append('\t');
+                sb.Append(user);
+                sb.Append("\t1");
+            }
+
+            return sb.ToString();
+        }
+
+        public string Pack(int targetVersion = 1)
         {
             StringBuilder sb = new StringBuilder();
 
             sb.Append(Name);
-            sb.Append('\t');
+            sb.Append(Constants.SEPARATOR);
             sb.Append(string.IsNullOrEmpty(Password) ? '0' : '1');
-            sb.Append('\t');
+            sb.Append(Constants.SEPARATOR);
             sb.Append(IsTemporary ? '1' : '0');
 
             return sb.ToString();
+        }
+
+        public override string ToString()
+        {
+            return Pack();
         }
     }
 }

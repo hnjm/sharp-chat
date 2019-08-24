@@ -18,6 +18,7 @@ namespace SharpChat
             Websocket = ws;
         }
 
+        [Obsolete(@"Use Send(IServerPacket, int)")]
         public void Send(string data)
         {
             if (!Websocket.IsAvailable)
@@ -25,9 +26,18 @@ namespace SharpChat
             Websocket.Send(data);
         }
 
+        public void Send(IServerPacket packet, int eventId = 0)
+        {
+            if (!Websocket.IsAvailable)
+                return;
+            Websocket.Send(packet.Pack(Version, eventId));
+        }
+
+        [Obsolete(@"Use Send(IServerPacket, int)")]
         public void Send(SockChatServerPacket inst, params object[] parts)
             => Send(parts.Pack(inst));
 
+        [Obsolete(@"Use Send(IServerPacket, int)")]
         public void SendLog(IChatMessage msg)
             => Send(SockChatServerPacket.ContextPopulate, Constants.CTX_MSG, msg);
 

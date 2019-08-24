@@ -19,7 +19,7 @@
         MessageAdd = 2,
         UserDisconnect = 3,
         ChannelEvent = 4,
-        UserSwitch = 5,         // Deprecated in V2 (perhaps not entirely)
+        UserSwitch = 5,
         MessageDelete = 6,
         ContextPopulate = 7,
         ContextClear = 8,       // Deprecated in V2
@@ -28,5 +28,26 @@
 
         // Version 2
         UpgradeAck = 11,
+    }
+
+    public enum SockChatServerChannelPacket
+    {
+        Create = 0,
+        Update = 1,
+        Delete = 2,
+    }
+
+    public enum SockChatServerMovePacket
+    {
+        UserJoined = 0,
+        UserLeft = 1,
+        ForcedMove = 2,
+    }
+
+    public enum SockChatServerContextPacket
+    {
+        Users = 0,
+        Message = 1,
+        Channels = 2,
     }
 }

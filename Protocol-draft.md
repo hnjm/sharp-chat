@@ -114,6 +114,33 @@ Informs the client that authentication has succeeded.
 
 <table>
     <tr>
+        <th colspan="2">Version 2</th>
+    </tr>
+    <tr>
+        <td><code>string</code></td>
+        <td>Literal string <code>y</code> for yes.</td>
+    </tr>
+    <tr>
+        <td><code>int</code></td>
+        <td>Session User ID.</td>
+    </tr>
+    <tr>
+        <td><code>string</code></td>
+        <td>Username</td>
+    </tr>
+    <tr>
+        <td><code>color (int)</code></td>
+        <td>Username color in packed format, documented below.</td>
+    </tr>
+    <tr>
+        <td><code>permissions (string)</code></td>
+        <td>User permissions, documented below.</td>
+    </tr>
+    <tr>
+        <td><code>string</code></td>
+        <td>Default channel the user will join following this packet.</td>
+    </tr>
+    <tr>
         <th colspan="2">Version 1</th>
     </tr>
     <tr>
@@ -258,11 +285,15 @@ Informs the client that a chat message has been received.
 
 <table>
     <tr>
-        <th colspan="2">Version 1</th>
+        <th colspan="2">Version 2</th>
+    </tr>
+    <tr>
+        <td><code>string</code></td>
+        <td>Channel name</td>
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>32-bit Unix timestamp of when the user joined.</td>
+        <td>32-bit Unix timestamp of when the message was received by the server.</td>
     </tr>
     <tr>
         <td><code>int</code></td>
@@ -274,7 +305,63 @@ Informs the client that a chat message has been received.
     <tr>
         <td><code>string</code></td>
         <td>
-            <p>Message (sanitised on the server).</p>
+            <p>Message, <b>NOT SANITISED</b></p>
+            <p>
+                If this is an informational message this field is formatted as follows and concatenated by the form feed character <code>\f</code>, respresented in ASCII by <code>0x0C</code>.
+                <table>
+                    <tr>
+                        <td><code>int</code></td>
+                        <td>
+                            Message type.
+                            <ul>
+                                <li><code>0</code> for a normal informational message.</li>
+                                <li><code>1</code> for an error.</li>
+                            </ul>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><code>string</code></td>
+                        <td>
+                            An id of a string in the legacy language files.
+                            A list can be found in the <code>botText</code> and <code>botErrText</code> sections of <a href="https://sockchat.flashii.net/legacy/lang/en/common.json">sockchat.flashii.net/legacy/lang/en/common.json</a> and <a href="https://sockchat.flashii.net/legacy/lang/en/core.json">sockchat.flashii.net/legacy/lang/en/common.json</a>.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><code>...string</code></td>
+                        <td>
+                            Any number of parameters used to format the language string.
+                        </td>
+                    </tr>
+                </table>
+            </p>
+        </td>
+    </tr>
+    <tr>
+        <td><code>int</code></td>
+        <td>Event ID.</td>
+    </tr>
+    <tr>
+        <td><code>message flags (string)</code></td>
+        <td>Message flags, documented below.</td>
+    </tr>
+    <tr>
+        <th colspan="2">Version 1</th>
+    </tr>
+    <tr>
+        <td><code>int</code></td>
+        <td>32-bit Unix timestamp of when the message was received by the server.</td>
+    </tr>
+    <tr>
+        <td><code>int</code></td>
+        <td>
+            User ID.
+            If <code>-1</code> this message is an informational message from the server and the next field takes on a special form.
+        </td>
+    </tr>
+    <tr>
+        <td><code>string</code></td>
+        <td>
+            <p>Message, sanitised by the server</p>
             <p>
                 If this is an informational message this field is formatted as follows and concatenated by the form feed character <code>\f</code>, respresented in ASCII by <code>0x0C</code>.
                 <table>
@@ -319,6 +406,33 @@ Informs the client that a chat message has been received.
 Informs the client that a user has disconnected.
 
 <table>
+    <tr>
+        <th colspan="2">Version 2</th>
+    </tr>
+    <tr>
+        <td><code>int</code></td>
+        <td>User ID.</td>
+    </tr>
+    <tr>
+        <td><code>string</code></td>
+        <td>
+            One of four disconnect reasons.
+            <ul>
+                <li><code>leave</code>: The user gracefully left, e.g. "x logged out".</li>
+                <li><code>timeout</code>: The user lost connection unexpectedly, e.g. "x timed out".</li>
+                <li><code>kick</code>: The user has been kicked, e.g. "x has been kicked".</li>
+                <li><code>flood</code>: The user has been kicked for exceeding the flood protection limit, e.g. "x has been kicked for spam".</li>
+            </ul>
+        </td>
+    </tr>
+    <tr>
+        <td><code>int</code></td>
+        <td>32-bit Unix timestamp of when the user disconnected.</td>
+    </tr>
+    <tr>
+        <td><code>int</code></td>
+        <td>Event ID.</td>
+    </tr>
     <tr>
         <th colspan="2">Version 1</th>
     </tr>

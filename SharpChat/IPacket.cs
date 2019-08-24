@@ -4,8 +4,8 @@ using System.Text;
 
 namespace SharpChat
 {
-    public interface IPacket
+    public interface IServerPacket
     {
-        string Pack(int version);
+        string Pack(int version, int eventId);
     }
 }
