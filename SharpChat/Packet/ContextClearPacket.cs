@@ -22,6 +22,9 @@ namespace SharpChat.Packet
 
         public string Pack(int version, int eventId)
         {
+            if (version > 1)
+                return string.Empty;
+
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)SockChatServerPacket.ContextClear);

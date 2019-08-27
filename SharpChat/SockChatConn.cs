@@ -32,7 +32,10 @@ namespace SharpChat
                 return;
             if (eventId < 1)
                 eventId = SockChatMessage.NextMessageId; // there needs to be a better solution for this
-            Websocket.Send(packet.Pack(Version, eventId));
+
+            string data = packet.Pack(Version, eventId);
+            if(!string.IsNullOrWhiteSpace(data))
+                Websocket.Send(data);
         }
 
         public void BumpPing()

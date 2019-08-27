@@ -38,7 +38,7 @@ Takes a variable number of parameters that are fed into the authentication scrip
     </tr>
     <tr>
         <td><code>...any</code></td>
-        <td>Any amount of data required to complete authentication.</td>
+        <td>Any amount of data required to complete authentication</td>
     </tr>
 </table>
 
@@ -55,7 +55,7 @@ Informs the server that the user has sent a message.
     </tr>
     <tr>
         <td><code>...string</code></td>
-        <td>Message text, additional packet parameters should be glued on the server using <code>\t</code>.</td>
+        <td>Message text, additional packet parameters should be glued on the server using <code>\t</code></td>
     </tr>
     <tr>
         <th colspan="2">Version 1</th>
@@ -66,7 +66,7 @@ Informs the server that the user has sent a message.
     </tr>
     <tr>
         <td><code>...string</code></td>
-        <td>Message text, additional packet parameters should be glued on the server using <code>\t</code>.</td>
+        <td>Message text, additional packet parameters should be glued on the server using <code>\t</code></td>
     </tr>
 </table>
 
@@ -95,7 +95,7 @@ Response to client packet `0`: Ping.
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>32-bit Unix timestamp when the packet was handled by the server.</td>
+        <td>32-bit Unix timestamp when the packet was handled by the server</td>
     </tr>
     <tr>
         <th colspan="2">Version 1</th>
@@ -109,6 +109,8 @@ Response to client packet `0`: Ping.
 ### Packet `1`: Join/Auth
 While authenticated this packet indicates that a new user has joined the server/channel. Before authentication this packet serves as a response to client packet `1`: Authentication.
 
+This packet behaves differently between version 1 and 2: In version 1 this packet is only sent to the channel that the user is about to join, in version 2 this packet is sent server wide.
+
 #### Successful authentication response
 Informs the client that authentication has succeeded.
 
@@ -118,11 +120,11 @@ Informs the client that authentication has succeeded.
     </tr>
     <tr>
         <td><code>string</code></td>
-        <td>Literal string <code>y</code> for yes.</td>
+        <td>Literal string <code>y</code> for yes</td>
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>Session User ID.</td>
+        <td>Session User ID</td>
     </tr>
     <tr>
         <td><code>string</code></td>
@@ -130,26 +132,26 @@ Informs the client that authentication has succeeded.
     </tr>
     <tr>
         <td><code>color (int)</code></td>
-        <td>Username color in packed format, documented below.</td>
+        <td>Username color in packed format, documented below</td>
     </tr>
     <tr>
         <td><code>permissions (string)</code></td>
-        <td>User permissions, documented below.</td>
+        <td>User permissions, documented below</td>
     </tr>
     <tr>
         <td><code>string</code></td>
-        <td>Default channel the user will join following this packet.</td>
+        <td>Default channel the user will join following this packet</td>
     </tr>
     <tr>
         <th colspan="2">Version 1</th>
     </tr>
     <tr>
         <td><code>string</code></td>
-        <td>Literal string <code>y</code> for yes.</td>
+        <td>Literal string <code>y</code> for yes</td>
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>Session User ID.</td>
+        <td>Session User ID</td>
     </tr>
     <tr>
         <td><code>string</code></td>
@@ -161,11 +163,11 @@ Informs the client that authentication has succeeded.
     </tr>
     <tr>
         <td><code>permissions (string)</code></td>
-        <td>User permissions, documented below.</td>
+        <td>User permissions, documented below</td>
     </tr>
     <tr>
         <td><code>string</code></td>
-        <td>Default channel the user will join following this packet.</td>
+        <td>Default channel the user will join following this packet</td>
     </tr>
 </table>
 
@@ -178,7 +180,7 @@ Informs the client that authentication has failed.
     </tr>
     <tr>
         <td><code>string</code></td>
-        <td>Literal string <code>n</code> for no.</td>
+        <td>Literal string <code>n</code> for no</td>
     </tr>
     <tr>
         <td><code>string</code></td>
@@ -193,14 +195,14 @@ Informs the client that authentication has failed.
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>If <code>baka</code>; A 32-bit Unix timestamp indicating the length of the ban.</td>
+        <td>If <code>baka</code>; A 32-bit Unix timestamp indicating the length of the ban</td>
     </tr>
     <tr>
         <th colspan="2">Version 1</th>
     </tr>
     <tr>
         <td><code>string</code></td>
-        <td>Literal string <code>n</code> for no.</td>
+        <td>Literal string <code>n</code> for no</td>
     </tr>
     <tr>
         <td><code>string</code></td>
@@ -216,7 +218,7 @@ Informs the client that authentication has failed.
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>If <code>joinfail</code>; A 32-bit Unix timestamp indicating the length of the ban.</td>
+        <td>If <code>joinfail</code>; A 32-bit Unix timestamp indicating the length of the ban</td>
     </tr>
 </table>
 
@@ -229,54 +231,54 @@ Informs the client that a user has joined.
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>32-bit Unix timestamp of when the user joined.</td>
+        <td>32-bit Unix timestamp of when the user joined</td>
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>User ID.</td>
+        <td>User ID</td>
     </tr>
     <tr>
         <td><code>string</code></td>
-        <td>Username.</td>
+        <td>Username</td>
     </tr>
     <tr>
         <td><code>color (int)</code></td>
-        <td>Username color in packed format, documented below.</td>
+        <td>Username color in packed format, documented below</td>
     </tr>
     <tr>
         <td><code>permissions (string)</code></td>
-        <td>User permissions, documented below.</td>
+        <td>User permissions, documented below</td>
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>Event ID.</td>
+        <td>Event ID</td>
     </tr>
     <tr>
         <th colspan="2">Version 1</th>
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>32-bit Unix timestamp of when the user joined.</td>
+        <td>32-bit Unix timestamp of when the user joined</td>
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>User ID.</td>
+        <td>User ID</td>
     </tr>
     <tr>
         <td><code>string</code></td>
-        <td>Username.</td>
+        <td>Username</td>
     </tr>
     <tr>
         <td><code>string</code></td>
-        <td>CSS username color.</td>
+        <td>CSS username color</td>
     </tr>
     <tr>
         <td><code>permissions (string)</code></td>
-        <td>User permissions, documented below.</td>
+        <td>User permissions, documented below</td>
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>Event ID.</td>
+        <td>Event ID</td>
     </tr>
 </table>
 
@@ -293,7 +295,7 @@ Informs the client that a chat message has been received.
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>32-bit Unix timestamp of when the message was received by the server.</td>
+        <td>32-bit Unix timestamp of when the message was received by the server</td>
     </tr>
     <tr>
         <td><code>int</code></td>
@@ -308,18 +310,18 @@ Informs the client that a chat message has been received.
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>Event ID.</td>
+        <td>Event ID</td>
     </tr>
     <tr>
         <td><code>message flags (string)</code></td>
-        <td>Message flags, documented below.</td>
+        <td>Message flags, documented below</td>
     </tr>
     <tr>
         <th colspan="2">Version 1</th>
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>32-bit Unix timestamp of when the message was received by the server.</td>
+        <td>32-bit Unix timestamp of when the message was received by the server</td>
     </tr>
     <tr>
         <td><code>int</code></td>
@@ -364,11 +366,11 @@ Informs the client that a chat message has been received.
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>Event ID.</td>
+        <td>Event ID</td>
     </tr>
     <tr>
         <td><code>message flags (string)</code></td>
-        <td>Message flags, documented below.</td>
+        <td>Message flags, documented below</td>
     </tr>
 </table>
 
@@ -381,7 +383,7 @@ Informs the client that a user has disconnected.
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>User ID.</td>
+        <td>User ID</td>
     </tr>
     <tr>
         <td><code>string</code></td>
@@ -397,22 +399,22 @@ Informs the client that a user has disconnected.
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>32-bit Unix timestamp of when the user disconnected.</td>
+        <td>32-bit Unix timestamp of when the user disconnected</td>
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>Event ID.</td>
+        <td>Event ID</td>
     </tr>
     <tr>
         <th colspan="2">Version 1</th>
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>User ID.</td>
+        <td>User ID</td>
     </tr>
     <tr>
         <td><code>string</code></td>
-        <td>Username.</td>
+        <td>Username</td>
     </tr>
     <tr>
         <td><code>string</code></td>
@@ -428,11 +430,11 @@ Informs the client that a user has disconnected.
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>32-bit Unix timestamp of when the user disconnected.</td>
+        <td>32-bit Unix timestamp of when the user disconnected</td>
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>Event ID.</td>
+        <td>Event ID</td>
     </tr>
 </table>
 
@@ -465,15 +467,15 @@ Informs the client that a channel has been created.
     </tr>
     <tr>
         <td><code>string</code></td>
-        <td>The name of the new channel.</td>
+        <td>The name of the new channel</td>
     </tr>
     <tr>
         <td><code>bool</code></td>
-        <td>Indicates whether the channel is password protected.</td>
+        <td>Indicates whether the channel is password protected</td>
     </tr>
     <tr>
         <td><code>bool</code></td>
-        <td>Indicates whether the channel is temporary, meaning the channel will be deleted after the last person departs.</td>
+        <td>Indicates whether the channel is temporary, meaning the channel will be deleted after the last person departs</td>
     </tr>
 </table>
 
@@ -486,19 +488,19 @@ Informs the client that details of a channel has changed.
     </tr>
     <tr>
         <td><code>string</code></td>
-        <td>The old/current name of the channel.</td>
+        <td>The old/current name of the channel</td>
     </tr>
     <tr>
         <td><code>string</code></td>
-        <td>The new name of the channel.</td>
+        <td>The new name of the channel</td>
     </tr>
     <tr>
         <td><code>bool</code></td>
-        <td>Indicates whether the channel is password protected.</td>
+        <td>Indicates whether the channel is password protected</td>
     </tr>
     <tr>
         <td><code>bool</code></td>
-        <td>Indicates whether the channel is temporary, meaning the channel will be deleted after the last person departs.</td>
+        <td>Indicates whether the channel is temporary, meaning the channel will be deleted after the last person departs</td>
     </tr>
 </table>
 
@@ -511,16 +513,12 @@ Informs the client that a channel has been deleted
     </tr>
     <tr>
         <td><code>string</code></td>
-        <td>The name of the channel that has been deleted.</td>
+        <td>The name of the channel that has been deleted</td>
     </tr>
 </table>
 
 ### Packet `5`: Channel switching
 This packet informs the client about channel switching.
-
-**DEPRECATED IN VERSION 2**: This packet is specific to the single channel instance nature of Version 1 and thus goes unused.
-
-**Consideration**: 5.2 could still be useful for forcing a user to enter a channel.
 
 <table>
     <tr>
@@ -531,9 +529,9 @@ This packet informs the client about channel switching.
         <td>
             Channel information update event ID.
             <ul>
-                <li><code>0</code>: A user joined the channel (again). Sent to all users in a channel.</li>
-                <li><code>1</code>: A user left the channel. Sent to all users in a channel.</li>
-                <li><code>2</code>: The client is to forcibly switch to a different channel.</li>
+                <li><code>0</code>: A user joined the channel. Sent to all users in said channel.</li>
+                <li><code>1</code>: A user left the channel. Sent to all users in said channel.</li>
+                <li><code>2</code>: The client is to forcibly join a channel.</li>
             </ul>
         </td>
     </tr>
@@ -542,25 +540,38 @@ This packet informs the client about channel switching.
 #### Sub-packet `0`: Channel join
 Informs the client that a user has joined the channel.
 
+In version 1 this packet is NOT sent when the user first connects to the server. In version 2 this packet is sent regardless.
+
 <table>
+    <tr>
+        <th colspan="2">Version 2</th>
+    </tr>
+    <tr>
+        <td><code>int</code></td>
+        <td>User ID</td>
+    </tr>
+    <tr>
+        <td><code>int</code></td>
+        <td>Event ID</td>
+    </tr>
     <tr>
         <th colspan="2">Version 1</th>
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>User ID.</td>
+        <td>User ID</td>
     </tr>
     <tr>
         <td><code>string</code></td>
-        <td>Username.</td>
+        <td>Username</td>
     </tr>
     <tr>
         <td><code>string</code></td>
-        <td>CSS username color.</td>
+        <td>CSS username color</td>
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>Event ID.</td>
+        <td>Event ID</td>
     </tr>
 </table>
 
@@ -573,11 +584,11 @@ Informs the client that a user has left the channel.
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>User ID.</td>
+        <td>User ID</td>
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>Event ID.</td>
+        <td>Event ID</td>
     </tr>
 </table>
 
@@ -590,7 +601,7 @@ Informs the client that it has been forcibly switched to a different channel.
     </tr>
     <tr>
         <td><code>string</code></td>
-        <td>The name of the channel that the user has been switched to.</td>
+        <td>The name of the channel that the user has been switched to</td>
     </tr>
 </table>
 
@@ -603,7 +614,7 @@ Informs the client that a message has been deleted.
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>Event ID of the deleted message.</td>
+        <td>Event ID of the deleted message</td>
     </tr>
 </table>
 
@@ -636,11 +647,11 @@ Informs the client about users already present in the channel.
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>Amount of users present in the channel.</td>
+        <td>Amount of users present in the channel</td>
     </tr>
     <tr>
         <td><code>Context User</code></td>
-        <td>An amount of repetitions of this object based on the number in the previous param, the object is described below.</td>
+        <td>An amount of repetitions of this object based on the number in the previous param, the object is described below</td>
     </tr>
 </table>
 
@@ -660,15 +671,15 @@ Informs the client about users already present in the channel.
     </tr>
     <tr>
         <td><code>color (int)</code></td>
-        <td>Username color in packed format, documented below.</td>
+        <td>Username color in packed format, documented below</td>
     </tr>
     <tr>
         <td><code>permissions (string)</code></td>
-        <td>User permissions, documented below.</td>
+        <td>User permissions, documented below</td>
     </tr>
     <tr>
         <td><code>bool</code></td>
-        <td>Whether the user should be visible in the users list.</td>
+        <td>Whether the user should be visible in the users list</td>
     </tr>
     <tr>
         <th colspan="2">Version 1</th>
@@ -687,11 +698,11 @@ Informs the client about users already present in the channel.
     </tr>
     <tr>
         <td><code>permissions (string)</code></td>
-        <td>User permissions, documented below.</td>
+        <td>User permissions, documented below</td>
     </tr>
     <tr>
         <td><code>bool</code></td>
-        <td>Whether the user should be visible in the users list.</td>
+        <td>Whether the user should be visible in the users list</td>
     </tr>
 </table>
 
@@ -716,11 +727,11 @@ Informs the client about an existing message in a channel.
     </tr>
     <tr>
         <td><code>color (int)</code></td>
-        <td>Username color in packed format, documented below.</td>
+        <td>Username color in packed format, documented below</td>
     </tr>
     <tr>
         <td><code>permissions (string)</code></td>
-        <td>User permissions, documented below.</td>
+        <td>User permissions, documented below</td>
     </tr>
     <tr>
         <td><code>string</code></td>
@@ -732,11 +743,11 @@ Informs the client about an existing message in a channel.
     </tr>
     <tr>
         <td><code>bool</code></td>
-        <td>Whether the client should notify the user about this message.</td>
+        <td>Whether the client should notify the user about this message</td>
     </tr>
     <tr>
         <td><code>message flags (string)</code></td>
-        <td>Message flags, documented below.</td>
+        <td>Message flags, documented below</td>
     </tr>
     <tr>
         <th colspan="2">Version 1</th>
@@ -759,7 +770,7 @@ Informs the client about an existing message in a channel.
     </tr>
     <tr>
         <td><code>permissions (string)</code></td>
-        <td>User permissions, documented below.</td>
+        <td>User permissions, documented below</td>
     </tr>
     <tr>
         <td><code>string</code></td>
@@ -771,11 +782,11 @@ Informs the client about an existing message in a channel.
     </tr>
     <tr>
         <td><code>bool</code></td>
-        <td>Whether the client should notify the user about this message.</td>
+        <td>Whether the client should notify the user about this message</td>
     </tr>
     <tr>
         <td><code>message flags (string)</code></td>
-        <td>Message flags, documented below.</td>
+        <td>Message flags, documented below</td>
     </tr>
 </table>
 
@@ -788,11 +799,11 @@ Informs the client about the channels on the server.
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>Amount of channels on the channel.</td>
+        <td>Amount of channels on the channel</td>
     </tr>
     <tr>
         <td><code>Context Channel</code></td>
-        <td>An amount of repetitions of this object based on the number in the previous param, the object is described below.</td>
+        <td>An amount of repetitions of this object based on the number in the previous param, the object is described below</td>
     </tr>
 </table>
 
@@ -808,11 +819,11 @@ Informs the client about the channels on the server.
     </tr>
     <tr>
         <td><code>bool</code></td>
-        <td>Indicates whether the channel is password protected.</td>
+        <td>Indicates whether the channel is password protected</td>
     </tr>
     <tr>
         <td><code>bool</code></td>
-        <td>Indicates whether the channel is temporary, meaning the channel will be deleted after the last person departs.</td>
+        <td>Indicates whether the channel is temporary, meaning the channel will be deleted after the last person departs</td>
     </tr>
 </table>
 
@@ -858,7 +869,7 @@ Informs the client that they have either been banned or kicked from the server.
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>A 32-bit Unix timestamp containing the ban expiration date and time.</td>
+        <td>A 32-bit Unix timestamp containing the ban expiration date and time</td>
     </tr>
 </table>
 
@@ -871,38 +882,38 @@ Informs that another user's details have been updated.
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>User ID of the affected user.</td>
+        <td>User ID of the affected user</td>
     </tr>
     <tr>
         <td><code>string</code></td>
-        <td>New username.</td>
+        <td>New username</td>
     </tr>
     <tr>
         <td><code>color (int)</code></td>
-        <td>Username color in packed format, documented below.</td>
+        <td>Username color in packed format, documented below</td>
     </tr>
     <tr>
         <td><code>permissions (string)</code></td>
-        <td>User permissions, documented below.</td>
+        <td>User permissions, documented below</td>
     </tr>
     <tr>
         <th colspan="2">Version 1</th>
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>User ID of the affected user.</td>
+        <td>User ID of the affected user</td>
     </tr>
     <tr>
         <td><code>string</code></td>
-        <td>New username.</td>
+        <td>New username</td>
     </tr>
     <tr>
         <td><code>string</code></td>
-        <td>New CSS username color.</td>
+        <td>New CSS username color</td>
     </tr>
     <tr>
         <td><code>permissions (string)</code></td>
-        <td>User permissions, documented below.</td>
+        <td>User permissions, documented below</td>
     </tr>
 </table>
 
@@ -917,11 +928,11 @@ The client must continue to operate as if it's talking to a Version 1 server unt
     </tr>
     <tr>
         <td><code>bool</code></td>
-        <td>Indicates whether the version upgrade was successful.</td>
+        <td>Indicates whether the version upgrade was successful</td>
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>If successful the current version will be returned. If unsuccessful the latest supported version should be returned which the client could use to decide to either disconnect or reattempt to upgrade.</td>
+        <td>If successful the current version will be returned. If unsuccessful the latest supported version should be returned which the client could use to decide to either disconnect or reattempt to upgrade</td>
     </tr>
 </table>
 
