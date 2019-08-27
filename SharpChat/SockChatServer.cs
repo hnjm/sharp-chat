@@ -233,14 +233,14 @@ namespace SharpChat
                     SockChatChannel chan = Context.FindChannelByName(auth.DefaultChannel) ?? Context.Channels.FirstOrDefault();
 
                     // umi eats the first message for some reason so we'll send a blank padding msg
-                    conn.Send(new ContextMessagePacket(EventChatMessage.Info(@"welcome", MessageFlags.RegularUser, @"say", Utils.InitialMessage)));
-                    conn.Send(new ContextMessagePacket(EventChatMessage.Info(@"welcome", MessageFlags.RegularUser, @"say", $@"Welcome to the temporary drop in chat, {aUser.Username}!")));
+                    conn.Send(new ContextMessagePacket(EventChatMessage.Info(@"welcome", SockChatMessageFlags.RegularUser, @"say", Utils.InitialMessage)));
+                    conn.Send(new ContextMessagePacket(EventChatMessage.Info(@"welcome", SockChatMessageFlags.RegularUser, @"say", $@"Welcome to the temporary drop in chat, {aUser.Username}!")));
 
                     Context.HandleJoin(aUser, chan, conn);
                     break;
 
                 case SockChatClientPacket.MessageSend:
-                    if (args.Length < 3 || !int.TryParse(args[1], out int mUserId))
+                    if (args.Length < 3)
                         break;
 
                     lock (Context)
@@ -252,11 +252,15 @@ namespace SharpChat
                             break;
 
                         if (conn.Version < 2)
+                        {
+                            if (!int.TryParse(args[1], out int mUserId) || mUser.UserId != mUserId)
+                                break;
                             mChan = Context.FindUserChannel(mUser);
+                        }
                         else
                             mChan = Context.FindChannelByName(args[1]);
 
-                        if (mChan == null || (mUser.IsSilenced && !mUser.IsModerator))
+                        if (mChan == null || !mUser.Channels.Contains(mChan) || (mUser.IsSilenced && !mUser.IsModerator))
                             break;
 
                         if (mUser.IsAway)
@@ -345,8 +349,8 @@ namespace SharpChat
 
                                     string whisperStr = string.Join(' ', parts.Skip(2));
 
-                                    whisperUser.Send(mUser, whisperStr, MessageFlags.RegularPM);
-                                    mUser.Send(mUser, $@"{whisperUser.DisplayName} {whisperStr}", MessageFlags.RegularPM);
+                                    whisperUser.Send(mUser, whisperStr, SockChatMessageFlags.RegularPM);
+                                    mUser.Send(mUser, $@"{whisperUser.DisplayName} {whisperStr}", SockChatMessageFlags.RegularPM);
                                     break;
                                 case @"action": // describe an action
                                 case @"me":
@@ -355,7 +359,7 @@ namespace SharpChat
 
                                     string actionMsg = string.Join(' ', parts.Skip(1));
                                     if (!string.IsNullOrWhiteSpace(actionMsg))
-                                        mChan.Send(mUser, @"<i>" + actionMsg + @"</i>", MessageFlags.Action);
+                                        mChan.Send(mUser, @"<i>" + actionMsg + @"</i>", SockChatMessageFlags.Action);
                                     break;
                                 case @"who": // gets all online users/online users in a channel if arg
                                     StringBuilder whoChanSB = new StringBuilder();

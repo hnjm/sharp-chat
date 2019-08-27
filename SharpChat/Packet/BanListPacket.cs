@@ -45,7 +45,7 @@ namespace SharpChat.Packet
                 sb.Append(Constants.SEPARATOR);
                 sb.Append(eventId);
                 sb.Append(Constants.SEPARATOR);
-                sb.Append(MessageFlags.RegularUser.Serialise());
+                sb.Append(SockChatMessageFlags.RegularUser.Serialise());
             }
 
             return sb.ToString();

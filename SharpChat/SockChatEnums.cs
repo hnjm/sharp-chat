@@ -1,4 +1,6 @@
-﻿namespace SharpChat
+﻿using System;
+
+namespace SharpChat
 {
     public enum SockChatClientPacket
     {
@@ -49,5 +51,19 @@
         Users = 0,
         Message = 1,
         Channels = 2,
+    }
+
+    [Flags]
+    public enum SockChatMessageFlags
+    {
+        Bold = 1,
+        Cursive = 1 << 1,
+        Underline = 1 << 2,
+        Colon = 1 << 3,
+        Private = 1 << 4,
+
+        RegularUser = Bold | Colon,
+        RegularPM = RegularUser | Private,
+        Action = Bold | Cursive,
     }
 }

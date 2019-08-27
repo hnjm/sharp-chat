@@ -32,9 +32,17 @@ namespace SharpChat
 
         public readonly List<SockChatConn> Connections = new List<SockChatConn>();
 
-        public SockChatChannel Channel { get; set; }
+        public SockChatChannel Channel {
+            get
+            {
+                lock (Channels)
+                    return Channels.FirstOrDefault();
+            }
+        }
 
         public readonly ChatRateLimiter RateLimiter = new ChatRateLimiter();
+
+        public readonly List<SockChatChannel> Channels = new List<SockChatChannel>();
 
         public bool IsSilenced
             => SilencedUntil != null && DateTimeOffset.UtcNow - SilencedUntil <= TimeSpan.Zero;
@@ -99,7 +107,7 @@ namespace SharpChat
             => Send(parts.Pack(inst));
 
         [Obsolete(@"Use Send(IServerPacket, int)")]
-        public void Send(SockChatUser user, string message, MessageFlags flags = MessageFlags.RegularUser)
+        public void Send(SockChatUser user, string message, SockChatMessageFlags flags = SockChatMessageFlags.RegularUser)
         {
             user = user ?? SockChatServer.Bot;
             Send(
@@ -110,7 +118,7 @@ namespace SharpChat
             );
         }
 
-        //[Obsolete(@"Use Send(IServerPacket, int)")]
+        [Obsolete(@"Use Send(IServerPacket, int)")]
         public void Send(bool error, string id, params string[] args)
         {
             Send(SockChatServer.Bot, SockChatMessage.PackBotMessage(error ? 1 : 0, id, args));

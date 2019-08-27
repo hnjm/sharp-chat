@@ -13,7 +13,7 @@ namespace SharpChat
         public SockChatChannel Channel { get; set; }
         public string Text { get; set; }
         public DateTimeOffset DateTime { get; set; }
-        public MessageFlags Flags { get; set; } = MessageFlags.RegularUser;
+        public SockChatMessageFlags Flags { get; set; } = SockChatMessageFlags.RegularUser;
 
         public override string ToString()
         {

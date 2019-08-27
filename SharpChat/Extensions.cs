@@ -78,15 +78,15 @@ namespace SharpChat
         public static void AppendNum(this StringBuilder sb, bool b)
             => sb.Append(b ? '1' : '0');
 
-        public static string Serialise(this MessageFlags flags)
+        public static string Serialise(this SockChatMessageFlags flags)
         {
             StringBuilder sb = new StringBuilder();
 
-            sb.AppendNum(flags.HasFlag(MessageFlags.Bold));
-            sb.AppendNum(flags.HasFlag(MessageFlags.Cursive));
-            sb.AppendNum(flags.HasFlag(MessageFlags.Underline));
-            sb.AppendNum(flags.HasFlag(MessageFlags.Colon));
-            sb.AppendNum(flags.HasFlag(MessageFlags.Private));
+            sb.AppendNum(flags.HasFlag(SockChatMessageFlags.Bold));
+            sb.AppendNum(flags.HasFlag(SockChatMessageFlags.Cursive));
+            sb.AppendNum(flags.HasFlag(SockChatMessageFlags.Underline));
+            sb.AppendNum(flags.HasFlag(SockChatMessageFlags.Colon));
+            sb.AppendNum(flags.HasFlag(SockChatMessageFlags.Private));
 
             return sb.ToString();
         }

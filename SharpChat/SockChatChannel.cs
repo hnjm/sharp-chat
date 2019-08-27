@@ -35,11 +35,12 @@ namespace SharpChat
         {
             lock (Users)
             {
-                if(user.Channel != this)
-                {
-                    user.Channel?.UserLeave(user);
-                    user.Channel = this;
-                }
+                lock (user.Channels)
+                    if (!user.Channels.Contains(this))
+                    {
+                        user.Channel?.UserLeave(user);
+                        user.Channels.Add(this);
+                    }
 
                 if(!Users.Contains(user))
                     Users.Add(user);
@@ -50,8 +51,9 @@ namespace SharpChat
         {
             lock (Users)
             {
-                if (user.Channel == this)
-                    user.Channel = null;
+                lock(user.Channels)
+                    if (user.Channels.Contains(this))
+                        user.Channels.Remove(this);
 
                 if(Users.Contains(user))
                     Users.Remove(user);
@@ -72,13 +74,13 @@ namespace SharpChat
         }
 
         [Obsolete(@"Use Send(IServerPacket, int)")]
-        public void Send(SockChatUser user, string message, MessageFlags flags = MessageFlags.RegularUser)
+        public void Send(SockChatUser user, string message, SockChatMessageFlags flags = SockChatMessageFlags.RegularUser)
         {
             message = new[] { DateTimeOffset.Now.ToUnixTimeSeconds().ToString(), user.UserId.ToString(), message, SockChatMessage.NextMessageId.ToString(), flags.Serialise() }.Pack(SockChatServerPacket.MessageAdd);
             Send(message);
         }
 
-        //[Obsolete(@"Use Send(IServerPacket, int)")]
+        [Obsolete(@"Use Send(IServerPacket, int)")]
         public void Send(bool error, string id, params string[] args)
         {
             Send(SockChatServer.Bot, SockChatMessage.PackBotMessage(error ? 1 : 0, id, args));
