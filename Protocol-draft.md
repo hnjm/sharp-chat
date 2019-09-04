@@ -1129,7 +1129,6 @@ Formatting IDs sent by user -1 in Version 1 of the protocol.
         <td>Shows the IP address of another user.</td>
         <td>First argument is the username, second argument is the IP address.</td>
     </tr>
-
     <tr>
         <th colspan="3">Error</th>
     </tr>
