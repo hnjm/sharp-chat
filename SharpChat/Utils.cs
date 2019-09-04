@@ -1,5 +1,4 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 
 namespace SharpChat
 {
@@ -17,7 +16,7 @@ namespace SharpChat
                 @"genesis denesis what nintendenis",
                 @"school supplies",
                 @"shosple colupis",
-               }[RNG.Next(0, 9)];
+            }[RNG.Next(0, 9)];
 
         public static string ReadFileOrDefault(string file, string def)
             => File.Exists(file) ? File.ReadAllText(file) : def;
