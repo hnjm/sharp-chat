@@ -14,9 +14,7 @@ namespace SharpChat
             Console.WriteLine(@"/____/_/ /_/\__,_/_/  / .___/\____/_/ /_/\__,_/\__/  ");
             Console.WriteLine(@"                     / _/     Multi-Session Sock Chat");
 #if DEBUG
-            Console.WriteLine(@" =================================================== ");
-            Console.WriteLine(@" =================== DEBUG BUILD =================== ");
-            Console.WriteLine(@" =================================================== ");
+            Console.WriteLine(@"============================================ DEBUG ==");
 #endif
 
             using (ManualResetEvent mre = new ManualResetEvent(false))

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text;
 
 namespace SharpChat.Packet
@@ -27,7 +28,7 @@ namespace SharpChat.Packet
             }
         }
 
-        public string Pack(int version, int eventId)
+        public IEnumerable<string> Pack(int version, int eventId)
         {
             StringBuilder sb = new StringBuilder();
 
@@ -77,7 +78,7 @@ namespace SharpChat.Packet
                     sb.Append(Expires.ToUnixTimeSeconds());
             }
 
-            return sb.ToString();
+            return new[] { sb.ToString() };
         }
     }
 }

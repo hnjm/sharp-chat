@@ -156,7 +156,7 @@ namespace SharpChat
 
                 case SockChatClientPacket.Upgrade:
 #pragma warning disable CS0162
-                    if (VERSION < 2)
+                    if (conn.LastPing != DateTimeOffset.MinValue || VERSION < 2)
                         break;
 #pragma warning restore CS0162
 
@@ -168,6 +168,7 @@ namespace SharpChat
 
                     conn.Version = uVersion;
                     conn.Send(new UpgradeAckPacket(true, conn.Version));
+                    conn.BumpPing();
                     break;
 
                 case SockChatClientPacket.Authenticate:
@@ -209,7 +210,7 @@ namespace SharpChat
                         else
                         {
                             aUser.ApplyAuth(auth);
-                            aUser.Channel?.UpdateUser(aUser);
+                            aUser.Channel?.Send(new UserUpdatePacket(aUser));
                         }
                     }
 
@@ -227,6 +228,9 @@ namespace SharpChat
                         conn.Dispose();
                         break;
                     }
+
+                    // Bumping the ping to prevent upgrading
+                    conn.BumpPing();
 
                     aUser.AddConnection(conn);
 
@@ -271,7 +275,7 @@ namespace SharpChat
                             if (mUser.Nickname == mUser.Username)
                                 mUser.Nickname = null;
 
-                            mChan.UpdateUser(mUser);
+                            mChan.Send(new UserUpdatePacket(mUser));
                         }
 
                         string message = string.Join('\t', args.Skip(2)).Trim();
@@ -283,7 +287,8 @@ namespace SharpChat
                         if (message.Length > 2000)
                             message = message.Substring(0, 2000);
 
-                        if (message[0] == '/')
+                        // These commands are only available in V1, all server side commands are to be replaced with packets and client side commands.
+                        if (conn.Version < 2 && message[0] == '/')
                         {
                             string[] parts = message.Substring(1).Split(' ');
                             string command = parts[0].Replace(@".", string.Empty).ToLowerInvariant();
@@ -300,9 +305,9 @@ namespace SharpChat
 
                                     if (!mUser.IsAway && !string.IsNullOrEmpty(afkStr))
                                     {
-                                        mUser.Nickname = @"&lt;" + afkStr + @"&gt;_" + mUser.DisplayName;
+                                        mUser.Nickname = string.Format(@"&lt;{0}&gt;_{1}", afkStr, mUser.DisplayName);
                                         mUser.IsAway = true;
-                                        mChan.UpdateUser(mUser);
+                                        mChan.Send(new UserUpdatePacket(mUser));
                                     }
                                     break;
                                 case @"nick": // sets a temporary nickname
@@ -327,9 +332,9 @@ namespace SharpChat
                                         break;
                                     }
 
-                                    mChan.Send(false, @"nick", mUser.DisplayName, nickStr ?? mUser.Username);
+                                    string previousName = mUser.DisplayName;
                                     mUser.Nickname = nickStr;
-                                    mChan.UpdateUser(mUser);
+                                    mChan.Send(new UserUpdatePacket(mUser, previousName));
                                     break;
                                 case @"whisper": // sends a pm to another user
                                 case @"msg":
@@ -358,8 +363,22 @@ namespace SharpChat
                                         break;
 
                                     string actionMsg = string.Join(' ', parts.Skip(1));
-                                    if (!string.IsNullOrWhiteSpace(actionMsg))
-                                        mChan.Send(mUser, @"<i>" + actionMsg + @"</i>", SockChatMessageFlags.Action);
+
+                                    lock (Lock)
+                                    {
+                                        SockChatMessage sMsg = new SockChatMessage
+                                        {
+                                            MessageId = SockChatMessage.NextMessageId,
+                                            Channel = mChan,
+                                            DateTime = DateTimeOffset.UtcNow,
+                                            User = mUser,
+                                            Text = actionMsg,
+                                            Flags = SockChatMessageFlags.Action,
+                                        };
+
+                                        Context.Messages.Add(sMsg);
+                                        mChan.Send(new ChatMessageAddPacket(sMsg), sMsg.MessageId);
+                                    }
                                     break;
                                 case @"who": // gets all online users/online users in a channel if arg
                                     StringBuilder whoChanSB = new StringBuilder();
@@ -382,7 +401,7 @@ namespace SharpChat
                                         }
 
                                         lock (whoChan.Users)
-                                            whoChan.Users.ForEach(u => {
+                                            whoChan.GetUsers().ForEach(u => {
                                                 whoChanSB.Append(@"<a href=""javascript:void(0);"" onclick=""UI.InsertChatText(this.innerHTML);""");
 
                                                 if (u == mUser)
@@ -550,6 +569,21 @@ namespace SharpChat
                                     {
                                         mUser.Send(true, @"cmdna", @"/say");
                                         break;
+                                    }
+
+                                    lock (Lock)
+                                    {
+                                        SockChatMessage sMsg = new SockChatMessage
+                                        {
+                                            MessageId = SockChatMessage.NextMessageId,
+                                            Channel = mChan,
+                                            DateTime = DateTimeOffset.UtcNow,
+                                            User = Bot,
+                                            Text = string.Join(' ', parts.Skip(1)),
+                                        };
+
+                                        Context.Messages.Add(sMsg);
+                                        mChan.Send(new ChatMessageAddPacket(sMsg), sMsg.MessageId);
                                     }
 
                                     Context.Broadcast(Bot, SockChatMessage.PackBotMessage(0, @"say", string.Join(' ', parts.Skip(1))));
@@ -767,7 +801,9 @@ namespace SharpChat
                                         break;
                                     }
 
-                                    ipUser.RemoteAddresses.Distinct().ForEach(ip => mUser.Send(false, @"ipaddr", ipUser.Username, ip));
+                                    ipUser.RemoteAddresses.Distinct().ForEach(
+                                        ip => mUser.Send(false, @"ipaddr", ipUser.Username, ip)
+                                    );
                                     break;
 
                                 default:

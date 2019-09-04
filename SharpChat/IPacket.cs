@@ -1,11 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Generic;
 
 namespace SharpChat
 {
     public interface IServerPacket
     {
-        string Pack(int version, int eventId);
+        IEnumerable<string> Pack(int version, int eventId);
     }
 }

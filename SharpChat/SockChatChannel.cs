@@ -1,6 +1,4 @@
-﻿using SharpChat.Packet;
-using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
@@ -66,59 +64,17 @@ namespace SharpChat
                 Users.ForEach(u => u.Send(packet, eventId));
         }
 
-        [Obsolete(@"Use Send(IServerPacket, int)")]
-        public void Send(string data)
-        {
-            lock(Users)
-                Users.ForEach(u => u.Send(data));
-        }
-
-        [Obsolete(@"Use Send(IServerPacket, int)")]
-        public void Send(SockChatUser user, string message, SockChatMessageFlags flags = SockChatMessageFlags.RegularUser)
-        {
-            message = new[] { DateTimeOffset.Now.ToUnixTimeSeconds().ToString(), user.UserId.ToString(), message, SockChatMessage.NextMessageId.ToString(), flags.Serialise() }.Pack(SockChatServerPacket.MessageAdd);
-            Send(message);
-        }
-
-        [Obsolete(@"Use Send(IServerPacket, int)")]
-        public void Send(bool error, string id, params string[] args)
-        {
-            Send(SockChatServer.Bot, SockChatMessage.PackBotMessage(error ? 1 : 0, id, args));
-        }
-
-        public void UpdateUser(SockChatUser user)
-        {
-            Send(new UserUpdatePacket(user));
-        }
-
         public IEnumerable<SockChatUser> GetUsers(IEnumerable<SockChatUser> exclude = null)
         {
             lock (Users)
             {
-                IEnumerable<SockChatUser> users = Users;
+                IEnumerable<SockChatUser> users = Users.OrderByDescending(x => x.Hierarchy);
 
                 if (exclude != null)
                     users = users.Except(exclude);
 
                 return users.ToList();
             }
-        }
-
-        public string GetUsersString(IEnumerable<SockChatUser> exclude = null)
-        {
-            StringBuilder sb = new StringBuilder();
-            IEnumerable<SockChatUser> users = GetUsers(exclude);
-
-            sb.Append(users.Count());
-
-            foreach (SockChatUser user in users)
-            {
-                sb.Append('\t');
-                sb.Append(user);
-                sb.Append("\t1");
-            }
-
-            return sb.ToString();
         }
 
         public string Pack(int targetVersion = 1)
@@ -132,11 +88,6 @@ namespace SharpChat
             sb.Append(IsTemporary ? '1' : '0');
 
             return sb.ToString();
-        }
-
-        public override string ToString()
-        {
-            return Pack();
         }
     }
 }

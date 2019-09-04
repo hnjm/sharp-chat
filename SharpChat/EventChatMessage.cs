@@ -6,15 +6,10 @@ namespace SharpChat
     public class EventChatMessage : IChatMessage
     {
         public int MessageId { get; set; }
-
         public string MessageIdStr { get; set; }
-
         public DateTimeOffset DateTime { get; set; } = DateTimeOffset.UtcNow;
-
         public SockChatMessageFlags Flags { get; set; }
-
         public SockChatChannel Channel { get; set; }
-
         public SockChatUser User => SockChatServer.Bot;
 
         public string Text
@@ -58,26 +53,6 @@ namespace SharpChat
             IsError = error;
             EventName = eventName;
             Parts = parts;
-        }
-
-        public override string ToString()
-        {
-            StringBuilder sb = new StringBuilder();
-
-            sb.Append(DateTime.ToUnixTimeSeconds());
-            sb.Append('\t');
-            sb.Append(User);
-            sb.Append('\t');
-            sb.Append(Text);
-            sb.Append('\t');
-            if (string.IsNullOrEmpty(MessageIdStr))
-                sb.Append(MessageId);
-            else
-                sb.Append(MessageIdStr);
-            sb.Append("\t0\t");
-            sb.Append(Flags.Serialise());
-
-            return sb.ToString();
         }
 
         // this is cursed

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text;
 
 namespace SharpChat.Packet
@@ -14,7 +15,7 @@ namespace SharpChat.Packet
             User = user ?? throw new ArgumentNullException(nameof(user));
         }
 
-        public string Pack(int version, int eventId)
+        public IEnumerable<string> Pack(int version, int eventId)
         {
             StringBuilder sb = new StringBuilder();
 
@@ -26,7 +27,7 @@ namespace SharpChat.Packet
             sb.Append(Constants.SEPARATOR);
             sb.Append(eventId);
 
-            return sb.ToString();
+            return new[] { sb.ToString() };
         }
     }
 }

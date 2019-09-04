@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text;
 
 namespace SharpChat.Packet
@@ -12,7 +13,7 @@ namespace SharpChat.Packet
             Message = message ?? throw new ArgumentNullException(nameof(message));
         }
 
-        public string Pack(int version, int eventId)
+        public IEnumerable<string> Pack(int version, int eventId)
         {
             StringBuilder sb = new StringBuilder();
 
@@ -34,6 +35,10 @@ namespace SharpChat.Packet
             if (version >= 2)
                 sb.Append(Message.Text);
             else
+            {
+                if (Message.Flags == SockChatMessageFlags.Action)
+                    sb.Append(@"<i>");
+
                 sb.Append(
                     Message.Text
                         .Replace(@"<", @"&lt;")
@@ -42,12 +47,16 @@ namespace SharpChat.Packet
                         .Replace("\t", @"    ")
                 );
 
+                if (Message.Flags == SockChatMessageFlags.Action)
+                    sb.Append(@"</i>");
+            }
+
             sb.Append(Constants.SEPARATOR);
             sb.Append(eventId);
             sb.Append(Constants.SEPARATOR);
             sb.Append(Message.Flags.Serialise());
 
-            return sb.ToString();
+            return new[] { sb.ToString() };
         }
     }
 }

@@ -99,23 +99,15 @@ namespace SharpChat
         }
 
         [Obsolete(@"Use Send(IServerPacket, int)")]
-        public void Send(string data)
-            => Connections.ForEach(c => c.Send(data));
-
-        [Obsolete(@"Use Send(IServerPacket, int)")]
-        public void Send(SockChatServerPacket inst, params object[] parts)
-            => Send(parts.Pack(inst));
-
-        [Obsolete(@"Use Send(IServerPacket, int)")]
         public void Send(SockChatUser user, string message, SockChatMessageFlags flags = SockChatMessageFlags.RegularUser)
         {
             user = user ?? SockChatServer.Bot;
-            Send(
-                SockChatServerPacket.MessageAdd,
+
+            Connections.ForEach(c => c.Send(new object[] {
                 DateTimeOffset.Now.ToUnixTimeSeconds().ToString(), user.UserId.ToString(),
                 message, SockChatMessage.NextMessageId,
                 flags.Serialise()
-            );
+            }.Pack(SockChatServerPacket.MessageAdd)));
         }
 
         [Obsolete(@"Use Send(IServerPacket, int)")]
@@ -176,11 +168,6 @@ namespace SharpChat
             sb.Append((int)CanCreateChannels);
 
             return sb.ToString();
-        }
-
-        public override string ToString()
-        {
-            return Pack();
         }
     }
 }

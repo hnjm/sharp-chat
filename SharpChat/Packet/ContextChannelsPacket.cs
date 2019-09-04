@@ -14,7 +14,7 @@ namespace SharpChat.Packet
             Channels = channels?.Where(c => c != null) ?? throw new ArgumentNullException(nameof(channels));
         }
 
-        public string Pack(int version, int eventId)
+        public IEnumerable<string> Pack(int version, int eventId)
         {
             StringBuilder sb = new StringBuilder();
 
@@ -30,7 +30,7 @@ namespace SharpChat.Packet
                 sb.Append(channel.Pack(version));
             }
 
-            return sb.ToString();
+            return new[] { sb.ToString() };
         }
     }
 }

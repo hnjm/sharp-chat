@@ -14,7 +14,7 @@ namespace SharpChat.Packet
             Users = users?.Where(u => u != null) ?? throw new ArgumentNullException(nameof(users));
         }
 
-        public string Pack(int version, int eventId)
+        public IEnumerable<string> Pack(int version, int eventId)
         {
             StringBuilder sb = new StringBuilder();
 
@@ -32,7 +32,7 @@ namespace SharpChat.Packet
                 sb.Append('1'); // visibility flag
             }
 
-            return sb.ToString();
+            return new[] { sb.ToString() };
         }
     }
 }

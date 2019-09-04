@@ -1,5 +1,6 @@
 ﻿using Fleck;
 using System;
+using System.Collections.Generic;
 
 namespace SharpChat
 {
@@ -9,7 +10,7 @@ namespace SharpChat
         
         public int Version { get; set; } = 1;
         public bool IsDisposed { get; private set; }
-        public DateTimeOffset LastPing { get; set; } = DateTimeOffset.UtcNow;
+        public DateTimeOffset LastPing { get; set; } = DateTimeOffset.MinValue;
 
         public string RemoteAddress => Websocket.RemoteAddress();
 
@@ -33,9 +34,12 @@ namespace SharpChat
             if (eventId < 1)
                 eventId = SockChatMessage.NextMessageId; // there needs to be a better solution for this
 
-            string data = packet.Pack(Version, eventId);
-            if(!string.IsNullOrWhiteSpace(data))
-                Websocket.Send(data);
+            IEnumerable<string> data = packet.Pack(Version, eventId);
+
+            if(data != null)
+                foreach(string line in data)
+                    if(!string.IsNullOrWhiteSpace(line))
+                        Websocket.Send(line);
         }
 
         public void BumpPing()

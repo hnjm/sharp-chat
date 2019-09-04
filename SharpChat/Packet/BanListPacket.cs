@@ -17,7 +17,7 @@ namespace SharpChat.Packet
             IPs = ips ?? throw new ArgumentNullException(nameof(ips));
         }
 
-        public string Pack(int version, int eventId)
+        public IEnumerable<string> Pack(int version, int eventId)
         {
             StringBuilder sb = new StringBuilder();
 
@@ -48,7 +48,7 @@ namespace SharpChat.Packet
                 sb.Append(SockChatMessageFlags.RegularUser.Serialise());
             }
 
-            return sb.ToString();
+            return new[] { sb.ToString() };
         }
     }
 }
