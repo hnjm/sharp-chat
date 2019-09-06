@@ -938,7 +938,7 @@ The client must continue to operate as if it's talking to a Version 1 server unt
 </table>
 
 ## User Permission String
-The User Permission String consists out of five (5) parts concatenated by the form feed operator, indentified in most languages as the escape sequence `\f` and defined as the ASCII character `0x0C`.
+The User Permission String consists out of five (5) parts concatenated by the form feed operator, indentified in most languages as the escape sequence ` ` and defined as the ASCII character `0x20`.
 In the original specification it appeared as if custom permission flags were possible, these have always gone completely unused and should thus be avoided.
 The parts are as follows:
 
