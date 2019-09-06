@@ -649,7 +649,7 @@ Informs that another user's details have been updated.
 </table>
 
 ## User Permission String
-The User Permission String consists out of five (5) parts concatenated by the form feed operator, indentified in most languages as the escape sequence ` ` and defined as the ASCII character `0x20`.
+The User Permission String consists out of five (5) parts concatenated by a space operator, indentified in most languages as the escape sequence <code> </code> and defined as the ASCII character `0x20`.
 In the original specification it appeared as if custom permission flags were possible, these have always gone completely unused and should thus be avoided.
 The parts are as follows:
 
