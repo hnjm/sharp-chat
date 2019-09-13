@@ -22,7 +22,9 @@ namespace SharpChat
         public int Hierarchy { get; set; }
         public string Nickname { get; set; }
 
-        public bool IsAway { get; set; }
+        public bool IsAway => !string.IsNullOrWhiteSpace(AwayMessage);
+        public string AwayMessage { get; set; }
+
         public DateTimeOffset SilencedUntil { get; set; }
         public DateTimeOffset BannedUntil { get; set; }
 
@@ -51,6 +53,7 @@ namespace SharpChat
         public bool IsAlive
             => Connections.Where(c => !c.HasTimedOut).Any();
 
+        [Obsolete(@"Use GetDisplayName instead")]
         public string DisplayName
             => !string.IsNullOrEmpty(Nickname)
                 ? (IsAway ? string.Empty : @"~") + Nickname
@@ -69,6 +72,26 @@ namespace SharpChat
             ApplyAuth(auth, true);
         }
 
+        public string GetDisplayName(int version, bool forceOriginal = false)
+        {
+            StringBuilder sb = new StringBuilder();
+
+            if(version < 2 && IsAway)
+                sb.AppendFormat(@"&lt;{0}&gt;_", AwayMessage.Substring(0, Math.Min(AwayMessage.Length, 5)).ToUpperInvariant());
+
+            if (forceOriginal || string.IsNullOrWhiteSpace(Nickname))
+                sb.Append(Username);
+            else
+            {
+                if (version < 2)
+                    sb.Append('~');
+
+                sb.Append(Nickname);
+            }
+
+            return sb.ToString();
+        }
+
         public void ApplyAuth(FlashiiAuth auth, bool invalidateRestrictions = false)
         {
             Username = auth.Username;
@@ -76,7 +99,7 @@ namespace SharpChat
             if (IsAway)
             {
                 Nickname = null;
-                IsAway = false;
+                AwayMessage = null;
             }
 
             Colour = new FlashiiColour(auth.ColourRaw);
@@ -152,7 +175,7 @@ namespace SharpChat
 
             sb.Append(UserId);
             sb.Append(Constants.SEPARATOR);
-            sb.Append(DisplayName);
+            sb.Append(GetDisplayName(targetVersion));
             sb.Append(Constants.SEPARATOR);
             if (targetVersion >= 2)
                 sb.Append(Colour.Raw);

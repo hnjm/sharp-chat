@@ -17,6 +17,13 @@ namespace SharpChat
             1;
 #endif
 
+        public const int MAX_CONNECTIONS =
+#if DEBUG
+            9001;
+#else
+            5;
+#endif
+
         public bool IsDisposed { get; private set; }
 
         public static readonly SockChatUser Bot = new SockChatUser
@@ -187,31 +194,28 @@ namespace SharpChat
                     SockChatUser aUser;
                     FlashiiAuth auth;
 
-                    lock (Context.Users)
+                    aUser = Context.FindUserBySock(conn);
+
+                    if (aUser != null || args.Length < 3 || !int.TryParse(args[1], out int aUserId))
+                        break;
+
+                    auth = FlashiiAuth.Attempt(aUserId, args[2], conn.RemoteAddress);
+
+                    if (!auth.Success)
                     {
-                        aUser = Context.FindUserBySock(conn);
+                        conn.Send(new AuthFailPacket(AuthFailReason.AuthInvalid));
+                        conn.Dispose();
+                        break;
+                    }
 
-                        if (aUser != null || args.Length < 3 || !int.TryParse(args[1], out int aUserId))
-                            break;
+                    aUser = Context.FindUserById(auth.UserId);
 
-                        auth = FlashiiAuth.Attempt(aUserId, args[2], conn.RemoteAddress);
-
-                        if (!auth.Success)
-                        {
-                            conn.Send(new AuthFailPacket(AuthFailReason.AuthInvalid));
-                            conn.Dispose();
-                            break;
-                        }
-
-                        aUser = Context.FindUserById(auth.UserId);
-
-                        if (aUser == null)
-                            aUser = new SockChatUser(auth);
-                        else
-                        {
-                            aUser.ApplyAuth(auth);
-                            aUser.Channel?.Send(new UserUpdatePacket(aUser));
-                        }
+                    if (aUser == null)
+                        aUser = new SockChatUser(auth);
+                    else
+                    {
+                        aUser.ApplyAuth(auth);
+                        aUser.Channel?.Send(new UserUpdatePacket(aUser));
                     }
 
                     if (aUser.IsBanned)
@@ -222,7 +226,7 @@ namespace SharpChat
                     }
 
                     // arbitrarily limit users to five connections
-                    if (aUser.Connections.Count >= 5)
+                    if (aUser.Connections.Count >= MAX_CONNECTIONS)
                     {
                         conn.Send(new AuthFailPacket(AuthFailReason.MaxSessions));
                         conn.Dispose();
@@ -257,8 +261,10 @@ namespace SharpChat
 
                         if (conn.Version < 2)
                         {
+#if !DEBUG
                             if (!int.TryParse(args[1], out int mUserId) || mUser.UserId != mUserId)
                                 break;
+#endif
                             mChan = Context.FindUserChannel(mUser);
                         }
                         else
@@ -269,12 +275,7 @@ namespace SharpChat
 
                         if (mUser.IsAway)
                         {
-                            mUser.IsAway = false;
-                            mUser.Nickname = mUser.Nickname.Substring(mUser.Nickname.IndexOf('_') + 1);
-
-                            if (mUser.Nickname == mUser.Username)
-                                mUser.Nickname = null;
-
+                            mUser.AwayMessage = null;
                             mChan.Send(new UserUpdatePacket(mUser));
                         }
 
@@ -301,12 +302,11 @@ namespace SharpChat
                                 case @"afk": // go afk
                                     string afkStr = parts.Length < 2 || string.IsNullOrEmpty(parts[1])
                                         ? @"AFK"
-                                        : (parts[1].Length > 5 ? parts[1].Substring(0, 5) : parts[1]).ToUpperInvariant().Trim();
+                                        : string.Join(' ', parts.Skip(1));
 
-                                    if (!mUser.IsAway && !string.IsNullOrEmpty(afkStr))
+                                    if (!string.IsNullOrEmpty(afkStr))
                                     {
-                                        mUser.Nickname = string.Format(@"&lt;{0}&gt;_{1}", afkStr, mUser.DisplayName);
-                                        mUser.IsAway = true;
+                                        mUser.AwayMessage = afkStr.Substring(0, Math.Min(afkStr.Length, 100)).Trim();
                                         mChan.Send(new UserUpdatePacket(mUser));
                                     }
                                     break;
@@ -332,7 +332,7 @@ namespace SharpChat
                                         break;
                                     }
 
-                                    string previousName = mUser.DisplayName;
+                                    string previousName = mUser.Nickname ?? mUser.Username;
                                     mUser.Nickname = nickStr;
                                     mChan.Send(new UserUpdatePacket(mUser, previousName));
                                     break;

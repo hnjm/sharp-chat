@@ -155,7 +155,7 @@ namespace SharpChat
         public SockChatUser FindUserByName(string name)
         {
             lock (Users)
-                return Users.FirstOrDefault(x => x.Username.ToLowerInvariant() == name.ToLowerInvariant() || x.DisplayName.ToLowerInvariant() == name.ToLowerInvariant());
+                return Users.FirstOrDefault(x => x.Username.ToLowerInvariant() == name.ToLowerInvariant() || x.Nickname.ToLowerInvariant() == name.ToLowerInvariant() || x.GetDisplayName(1).ToLowerInvariant() == name.ToLowerInvariant());
         }
 
         public SockChatUser FindUserBySock(SockChatConn conn)

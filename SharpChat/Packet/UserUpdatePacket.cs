@@ -34,7 +34,7 @@ namespace SharpChat.Packet
                 sb.Append("0\fnick\f");
                 sb.Append(PreviousName);
                 sb.Append('\f');
-                sb.Append(User.DisplayName);
+                sb.Append(User.GetDisplayName(version));
                 sb.Append(Constants.SEPARATOR);
                 sb.Append(eventId);
                 sb.Append(Constants.SEPARATOR);

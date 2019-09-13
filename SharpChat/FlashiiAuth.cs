@@ -55,7 +55,7 @@ namespace SharpChat
                     Success = true,
                     UserId = userId,
                     Username = @"Misaka-" + (userId - 10000),
-                    Colour = $@"rgb({RNG.Next(0, 255)}, {RNG.Next(0, 255)}, {RNG.Next(0, 255)})",
+                    ColourRaw = (RNG.Next(0, 255) << 16) | (RNG.Next(0, 255) << 8) | RNG.Next(0, 255),
                     DefaultChannel = @"Lounge",
                     Hierarchy = 0,
                     IsModerator = false,

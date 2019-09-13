@@ -5,6 +5,8 @@ VisualStudioVersion = 16.0.29025.244
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpChat", "SharpChat\SharpChat.csproj", "{DDB24C19-B802-4C96-AC15-0449C6FC77F2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpChatTest", "SharpChatTest\SharpChatTest.csproj", "{6CD6DB9D-E0FF-4DEB-8E28-0C3EA6BA26B2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{DDB24C19-B802-4C96-AC15-0449C6FC77F2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DDB24C19-B802-4C96-AC15-0449C6FC77F2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DDB24C19-B802-4C96-AC15-0449C6FC77F2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6CD6DB9D-E0FF-4DEB-8E28-0C3EA6BA26B2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6CD6DB9D-E0FF-4DEB-8E28-0C3EA6BA26B2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6CD6DB9D-E0FF-4DEB-8E28-0C3EA6BA26B2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6CD6DB9D-E0FF-4DEB-8E28-0C3EA6BA26B2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

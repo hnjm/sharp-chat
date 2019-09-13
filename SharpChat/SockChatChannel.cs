@@ -77,6 +77,7 @@ namespace SharpChat
             }
         }
 
+#pragma warning disable IDE0060 // Remove unused parameter
         public string Pack(int targetVersion = 1)
         {
             StringBuilder sb = new StringBuilder();
@@ -89,5 +90,6 @@ namespace SharpChat
 
             return sb.ToString();
         }
+#pragma warning restore IDE0060 // Remove unused parameter
     }
 }

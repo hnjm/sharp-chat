@@ -36,7 +36,7 @@ namespace SharpChat.Packet
 
             if (version < 2)
             {
-                sb.Append(User.DisplayName);
+                sb.Append(User.GetDisplayName(version));
                 sb.Append(Constants.SEPARATOR);
             }
 
