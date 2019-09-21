@@ -940,9 +940,9 @@ The client must continue to operate as if it's talking to a Version 1 server unt
     </tr>
 </table>
 
-## Timestamp, documented belows
+## Timestamps
 
-Timestamp, documented belows in Sock Chat are seconds elapsed since a certain date. Starting with Sock Chat V2 the epoch for the timestamp (documented below)s is different. Under Sock Chat V1 timestamp (documented below)s are regular Unix Epoch timestamp (documented below)s where `0` is `1970-01-01 00:00:00 UTC`. Starting with Sock Chat V2 the epoch has been moved to `2019-01-01 00:00:00 UTC`. In order to convert a Sock Chat V2 timestamp (documented below) to a Unix timestamp (documented below) add `1546300800` to it. Sock Chat V2 will realistically never serve messages that predate 2019.
+Timestamp, documented belows in Sock Chat are seconds elapsed since a certain date. Starting with Sock Chat V2 the epoch for the timestamps is different. Under Sock Chat V1 timestamps are regular Unix Epoch timestamps where `0` is `1970-01-01 00:00:00 UTC`. Starting with Sock Chat V2 the epoch has been moved to `2019-01-01 00:00:00 UTC`. In order to convert a Sock Chat V2 timestamp to a Unix timestamp add `1546300800` to it. Sock Chat V2 will realistically never serve messages that predate 2019.
 
 ## User Permission String
 The User Permission String consists out of five (5) parts concatenated by a space operator, indentified in most languages as the escape sequence <code> </code> and defined as the ASCII character `0x20`.
