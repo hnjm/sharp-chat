@@ -48,10 +48,13 @@ namespace SharpChat
     {
         private readonly List<IBan> BanList = new List<IBan>();
 
+        public readonly ChatContext Context;
+
         public bool IsDisposed { get; private set; }
 
-        public BanManager()
+        public BanManager(ChatContext context)
         {
+            Context = context;
             RefreshFlashiiBans();
         }
 

@@ -40,20 +40,26 @@ namespace SharpChat
 
         public readonly List<ChatUserConnection> Connections = new List<ChatUserConnection>();
 
+        public ChatUserConnection GetConnection(IWebSocketConnection conn)
+        {
+            lock (Connections)
+                return Connections.FirstOrDefault(x => x.Websocket == conn);
+        }
+
         public SockChatServer(ushort port)
         {
             Logger.Write("Starting Sock Chat server...");
 
             Context = new ChatContext(this);
 
-            Context.AddChannel(new ChatChannel(@"Lounge"));
+            Context.Channels.Add(new ChatChannel(@"Lounge"));
 #if DEBUG
-            Context.AddChannel(new ChatChannel(@"Programming"));
-            Context.AddChannel(new ChatChannel(@"Games"));
-            Context.AddChannel(new ChatChannel(@"Splatoon"));
-            Context.AddChannel(new ChatChannel(@"Password") { Password = @"meow", });
+            Context.Channels.Add(new ChatChannel(@"Programming"));
+            Context.Channels.Add(new ChatChannel(@"Games"));
+            Context.Channels.Add(new ChatChannel(@"Splatoon"));
+            Context.Channels.Add(new ChatChannel(@"Password") { Password = @"meow", });
 #endif
-            Context.AddChannel(new ChatChannel(@"Staff") { Hierarchy = 5 });
+            Context.Channels.Add(new ChatChannel(@"Staff") { Hierarchy = 5 });
 
             Server = new WebSocketServer($@"ws://0.0.0.0:{port}");
             Server.Start(sock =>
@@ -65,42 +71,36 @@ namespace SharpChat
             });
         }
 
-        private void OnOpen(IWebSocketConnection conn)
+        private void OnOpen(IWebSocketConnection ws)
         {
             lock(Connections)
-            {
-                ChatUserConnection sConn = Connections.FirstOrDefault(x => x.Websocket == conn);
-
-                if (sConn == null)
-                    Connections.Add(sConn = new ChatUserConnection(conn));
-            }
+                if (!Connections.Any(x => x.Websocket == ws))
+                    Connections.Add(new ChatUserConnection(ws));
 
             Context.Update();
         }
 
-        private void OnClose(IWebSocketConnection conn)
+        private void OnClose(IWebSocketConnection ws)
         {
-            ChatUser user = Context.Users.Get(conn);
+            ChatUserConnection conn = GetConnection(ws);
 
-            if (user != null)
+            // Remove connection from user
+            if (conn.User != null)
             {
-                user.RemoveConnection(conn);
+                conn.User.RemoveConnection(conn);
 
-                if (!user.Connections.Any())
-                    Context.UserLeave(null, user);
+                if (!conn.User.Connections.Any())
+                    Context.UserLeave(null, conn.User);
             }
 
+            // Update context
             Context.Update();
 
+            // Remove connection from server
             lock (Connections)
             {
-                ChatUserConnection sConn = Connections.FirstOrDefault(x => x.Websocket == conn);
-
-                if (sConn != null)
-                {
-                    Connections.Remove(sConn);
-                    sConn.Dispose();
-                }
+                Connections.Remove(conn);
+                conn?.Dispose();
             }
         }
 
@@ -114,30 +114,32 @@ namespace SharpChat
         {
             Context.Update();
 
-            ChatUserConnection conn;
-
-            lock (Connections)
-                conn = Connections.FirstOrDefault(x => x.Websocket == ws);
+            ChatUserConnection conn = GetConnection(ws);
 
             if (conn == null)
             {
-                Logger.Write(@"Somehow got to OnMessage without a valid SockChatConn.");
+                Logger.Write(@"Somehow got to OnMessage without a valid ChatUserConnection.");
                 ws.Close();
                 return;
             }
 
-            ChatUser floodUser = Context.Users.Get(conn);
-
-            if(floodUser != null)
+            if(conn.User != null)
             {
-                floodUser.RateLimiter.AddTimePoint();
+                conn.User.RateLimiter.AddTimePoint();
 
-                if(floodUser.RateLimiter.State == ChatRateLimitState.Kick)
+                if(conn.User.RateLimiter.State == ChatRateLimitState.Kick)
                 {
-                    Context.BanUser(floodUser, DateTimeOffset.UtcNow.AddSeconds(30), false, UserDisconnectReason.Flood);
+                    const int floodkick =
+#if DEBUG
+                        5;
+#else
+                        30;
+#endif
+
+                    Context.BanUser(conn.User, DateTimeOffset.UtcNow.AddSeconds(floodkick), false, UserDisconnectReason.Flood);
                     return;
-                } else if(floodUser.RateLimiter.State == ChatRateLimitState.Warning)
-                    floodUser.Send(false, @"flwarn");
+                } else if(conn.User.RateLimiter.State == ChatRateLimitState.Warning)
+                    conn.User.Send(false, @"flwarn");
             }
 
             string[] args = msg.Split('\t');
@@ -173,7 +175,7 @@ namespace SharpChat
                     break;
 
                 case SockChatClientPacket.Authenticate:
-                    if (Context.Users.Get(conn) != null)
+                    if (conn.User != null)
                         break;
 
                     DateTimeOffset authBan = Context.Bans.Check(conn.RemoteAddress);
@@ -188,7 +190,7 @@ namespace SharpChat
                     ChatUser aUser;
                     FlashiiAuth auth;
 
-                    aUser = Context.Users.Get(conn);
+                    aUser = conn.User;
 
                     if (aUser != null || args.Length < 3 || !int.TryParse(args[1], out int aUserId))
                         break;
@@ -249,7 +251,7 @@ namespace SharpChat
 
                     lock (Context)
                     {
-                        ChatUser mUser = Context.Users.Get(conn);
+                        ChatUser mUser = conn.User;
                         ChatChannel mChan;
 
                         if (mUser == null || string.IsNullOrWhiteSpace(args[2]))
@@ -281,8 +283,8 @@ namespace SharpChat
                         Logger.Write($@"<{mUser.Username}> {message}");
 #endif
 
-                        if (message.Length > 2000)
-                            message = message.Substring(0, 2000);
+                        if (message.Length > 5000)
+                            message = message.Substring(0, 5000);
 
                         // These commands are only available in V1, all server side commands are to be replaced with packets and client side commands.
                         if (conn.Version < 2 && message[0] == '/')
@@ -406,16 +408,17 @@ namespace SharpChat
                                         }
 
                                         lock (whoChan.Users)
-                                            whoChan.GetUsers().ForEach(u => {
+                                            foreach (ChatUser user in whoChan.GetUsers())
+                                            {
                                                 whoChanSB.Append(@"<a href=""javascript:void(0);"" onclick=""UI.InsertChatText(this.innerHTML);""");
 
-                                                if (u == mUser)
+                                                if (user == mUser)
                                                     whoChanSB.Append(@" style=""font-weight: bold;""");
 
                                                 whoChanSB.Append(@">");
-                                                whoChanSB.Append(u.GetDisplayName(1));
+                                                whoChanSB.Append(user.GetDisplayName(1));
                                                 whoChanSB.Append(@"</a>, ");
-                                            });
+                                            }
 
                                         if (whoChanSB.Length > 2)
                                             whoChanSB.Length -= 2;
@@ -425,16 +428,16 @@ namespace SharpChat
                                     else
                                     {
                                         lock (Context.Users)
-                                            Context.Users.ForEach(u => {
+                                            foreach(ChatUser user in Context.Users) {
                                                 whoChanSB.Append(@"<a href=""javascript:void(0);"" onclick=""UI.InsertChatText(this.innerHTML);""");
 
-                                                if (u == mUser)
+                                                if (user == mUser)
                                                     whoChanSB.Append(@" style=""font-weight: bold;""");
 
                                                 whoChanSB.Append(@">");
-                                                whoChanSB.Append(u.GetDisplayName(1));
+                                                whoChanSB.Append(user.GetDisplayName(1));
                                                 whoChanSB.Append(@"</a>, ");
-                                            });
+                                            }
 
                                         if (whoChanSB.Length > 2)
                                             whoChanSB.Length -= 2;
@@ -462,7 +465,16 @@ namespace SharpChat
                                     if (parts.Length < 2)
                                         break;
 
-                                    Context.SwitchChannel(mUser, parts[1], string.Join(' ', parts.Skip(2)));
+                                    ChatChannel joinChan = Context.Channels.Get(parts[1]);
+
+                                    if (joinChan == null)
+                                    {
+                                        mUser.Send(true, @"nochan", parts[1]);
+                                        mUser.ForceChannel();
+                                        break;
+                                    }
+
+                                    Context.SwitchChannel(mUser, joinChan, string.Join(' ', parts.Skip(2)));
                                     break;
                                 case @"create": // create a new channel
                                     if (mUser.CanCreateChannels == ChatUserChannelCreation.No)
@@ -497,14 +509,21 @@ namespace SharpChat
                                         Owner = mUser,
                                     };
 
-                                    string createChanResult = Context.AddChannel(createChan);
-
-                                    if (!string.IsNullOrEmpty(createChanResult))
+                                    try
                                     {
-                                        mUser.Send(Bot, createChanResult);
+                                        Context.Channels.Add(createChan);
+                                    }
+                                    catch (ChannelExistException)
+                                    {
+                                        mUser.Send(false, @"nischan", createChan.Name);
                                         break;
                                     }
-
+                                    catch (ChannelInvalidNameException)
+                                    {
+                                        mUser.Send(false, @"inchan");
+                                        break;
+                                    }
+                                    
                                     Context.SwitchChannel(mUser, createChan, createChan.Password);
                                     mUser.Send(false, @"crchan", createChan.Name);
                                     break;
@@ -530,7 +549,7 @@ namespace SharpChat
                                         break;
                                     }
 
-                                    Context.DeleteChannel(delChan);
+                                    Context.Channels.Remove(delChan);
                                     mUser.Send(false, @"delchan", delChan.Name);
                                     break;
                                 case @"password": // set a password on the channel
@@ -541,12 +560,12 @@ namespace SharpChat
                                         break;
                                     }
 
-                                    mChan.Password = string.Join(' ', parts.Skip(1)).Trim();
+                                    string chanPass = string.Join(' ', parts.Skip(1)).Trim();
 
-                                    if (string.IsNullOrEmpty(mChan.Password))
-                                        mChan.Password = null;
+                                    if (string.IsNullOrWhiteSpace(chanPass))
+                                        chanPass = string.Empty;
 
-                                    Context.UpdateChannel(mChan);
+                                    Context.Channels.Update(mChan, password: chanPass);
                                     mUser.Send(false, @"cpwdchan");
                                     break;
                                 case @"privilege": // sets a minimum hierarchy requirement on the channel
@@ -564,8 +583,7 @@ namespace SharpChat
                                         break;
                                     }
 
-                                    mChan.Hierarchy = chanHierarchy;
-                                    Context.UpdateChannel(mChan);
+                                    Context.Channels.Update(mChan, hierarchy: chanHierarchy);
                                     mUser.Send(false, @"cprivchan");
                                     break;
 
@@ -614,7 +632,7 @@ namespace SharpChat
                                         break;
                                     }
 
-                                    Context.DeleteMessage(delMsg);
+                                    Context.Events.Remove(delMsg);
                                     break;
                                 case @"kick": // kick a user from the server
                                 case @"ban": // ban a user from the server, this differs from /kick in that it adds all remote address to the ip banlist
@@ -806,9 +824,8 @@ namespace SharpChat
                                         break;
                                     }
 
-                                    ipUser.RemoteAddresses.Distinct().ForEach(
-                                        ip => mUser.Send(false, @"ipaddr", ipUser.Username, ip.ToString())
-                                    );
+                                    foreach (IPAddress ip in ipUser.RemoteAddresses.Distinct().ToArray())
+                                        mUser.Send(false, @"ipaddr", ipUser.Username, ip.ToString());
                                     break;
 
                                 default:
@@ -851,6 +868,7 @@ namespace SharpChat
                 return;
             IsDisposed = true;
 
+            Connections?.Clear();
             Server?.Dispose();
             Context?.Dispose();
 

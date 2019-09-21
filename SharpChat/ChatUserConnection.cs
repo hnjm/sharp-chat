@@ -12,6 +12,8 @@ namespace SharpChat
         public int Version { get; set; } = 1;
         public bool IsDisposed { get; private set; }
         public DateTimeOffset LastPing { get; set; } = DateTimeOffset.MinValue;
+        public ChatUser User { get; set; }
+
 
         private IPAddress _RemoteAddress = null;
 
@@ -38,7 +40,7 @@ namespace SharpChat
             Websocket = ws;
         }
 
-        [Obsolete(@"Use Send(IServerPacket, int)")]
+        [Obsolete(@"Use Send(IServerPacket)")]
         public void Send(string data)
         {
             if (!Websocket.IsAvailable)

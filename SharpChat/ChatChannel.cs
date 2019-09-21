@@ -15,7 +15,7 @@ namespace SharpChat
         public readonly List<ChatUser> Users = new List<ChatUser>();
 
         public bool HasPassword
-            => !string.IsNullOrEmpty(Password);
+            => !string.IsNullOrWhiteSpace(Password);
 
         public ChatChannel()
         {

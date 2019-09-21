@@ -9,11 +9,13 @@ namespace SharpChat
     {
         private readonly List<ChatUser> Users = new List<ChatUser>();
 
+        public readonly ChatContext Context;
+
         public bool IsDisposed { get; private set; }
 
-        public UserManager()
+        public UserManager(ChatContext context)
         {
-            //
+            Context = context;
         }
 
         public void Add(ChatUser user)
@@ -48,24 +50,6 @@ namespace SharpChat
 
             lock (Users)
                 return Users.FirstOrDefault(x => x.Username.ToLowerInvariant() == username || (includeNickName && x.Nickname.ToLowerInvariant() == username) || (includeV1Name && x.GetDisplayName(1).ToLowerInvariant() == username));
-        }
-
-        public ChatUser Get(ChatUserConnection conn)
-        {
-            if (conn == null)
-                return null;
-
-            lock (Users)
-                return Users.FirstOrDefault(x => x.Connections.Contains(conn));
-        }
-
-        public ChatUser Get(Fleck.IWebSocketConnection conn)
-        {
-            if (conn == null)
-                return null;
-
-            lock (Users)
-                return Users.FirstOrDefault(x => x.Connections.Any(y => y.Websocket == conn));
         }
 
         ~UserManager()

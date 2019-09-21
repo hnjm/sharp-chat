@@ -112,7 +112,7 @@ namespace SharpChat
                 Connections.ForEach(c => c.Send(packet));
         }
 
-        [Obsolete(@"Use Send(IServerPacket, int)")]
+        [Obsolete(@"Use Send(IServerPacket)")]
         public void Send(ChatUser user, string message, SockChatMessageFlags flags = SockChatMessageFlags.RegularUser)
         {
             user = user ?? SockChatServer.Bot;
@@ -135,7 +135,7 @@ namespace SharpChat
             Connections.ForEach(c => c.Send(packet));
         }
 
-        [Obsolete(@"Use Send(IServerPacket, int)")]
+        [Obsolete(@"Use Send(IServerPacket)")]
         public void Send(bool error, string id, params string[] args)
         {
             Send(SockChatServer.Bot, ChatMessage.PackBotMessage(error ? 1 : 0, id, args));
@@ -154,13 +154,20 @@ namespace SharpChat
             => Send(new UserChannelForceJoinPacket(chan ?? Channel));
 
         public void AddConnection(ChatUserConnection conn)
-            => Connections.Add(conn);
+        {
+            lock (Connections)
+                Connections.Add(conn);
+
+            conn.User = this;
+        }
 
         public void RemoveConnection(ChatUserConnection conn)
-           => Connections.Remove(conn);
+        {
+            conn.User = null;
 
-        public void RemoveConnection(IWebSocketConnection conn)
-            => Connections.Remove(Connections.FirstOrDefault(x => x.Websocket == conn));
+            lock(Connections)
+                Connections.Remove(conn);
+        }
 
         public string Pack(int targetVersion)
         {

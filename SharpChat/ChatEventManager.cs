@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SharpChat.Packet;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -8,11 +9,13 @@ namespace SharpChat
     {
         private readonly List<IChatMessage> Events = new List<IChatMessage>();
 
+        public readonly ChatContext Context;
+
         public bool IsDisposed { get; private set; }
 
-        public ChatEventManager()
+        public ChatEventManager(ChatContext context)
         {
-            //
+            Context = context;
         }
 
         public void Add(IChatMessage evt)
@@ -31,6 +34,8 @@ namespace SharpChat
 
             lock (Events)
                 Events.Remove(evt);
+
+            Context.Broadcast(new ChatMessageDeletePacket(evt.MessageId));
         }
 
         ~ChatEventManager()

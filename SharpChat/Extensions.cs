@@ -7,13 +7,6 @@ namespace SharpChat
 {
     public static class Extensions
     {
-        public static void ForEach<T>(this IEnumerable<T> collection, Action<T> action)
-        {
-            lock (collection)
-                foreach (T item in collection)
-                    action(item);
-        }
-
         public static string GetSignedHash(this string str, string key = null)
         {
             if (key == null)

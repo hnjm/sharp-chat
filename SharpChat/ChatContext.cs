@@ -14,15 +14,23 @@ namespace SharpChat
 
         public readonly SockChatServer Server;
         public readonly Timer BumpTimer;
-        public readonly BanManager Bans = new BanManager();
-        public readonly ChannelManager Channels = new ChannelManager();
-        public readonly UserManager Users = new UserManager();
-        public readonly ChatEventManager Events = new ChatEventManager();
+        public readonly BanManager Bans;
+        public readonly ChannelManager Channels;
+        public readonly UserManager Users;
+        public readonly ChatEventManager Events;
 
         public ChatContext(SockChatServer server)
         {
             Server = server;
-            BumpTimer = new Timer(e => BumpFlashiiOnline(), null, TimeSpan.Zero, TimeSpan.FromMinutes(1));
+            Bans = new BanManager(this);
+            Users = new UserManager(this);
+            Channels = new ChannelManager(this);
+            Events = new ChatEventManager(this);
+
+            BumpTimer = new Timer(e => {
+                lock (Users)
+                    FlashiiBump.Submit(Users);
+            }, null, TimeSpan.Zero, TimeSpan.FromMinutes(1));
         }
 
         public void Update()
@@ -51,71 +59,6 @@ namespace SharpChat
 
             user.Close();
             UserLeave(user.Channel, user, reason);
-        }
-
-        public ChatChannel DefaultChannel
-            => Channels.First();
-
-        public string AddChannel(ChatChannel chan)
-        {
-            lock (Channels)
-            {
-                ChatChannel eChan = Channels.Get(chan.Name);
-                if (eChan != null)
-                    return ChatMessage.PackBotMessage(1, @"nischan", chan.Name);
-
-                if (chan.Name.StartsWith(@"@") || chan.Name.StartsWith(@"*"))
-                    return ChatMessage.PackBotMessage(1, @"inchan");
-
-                Channels.Add(chan);
-
-                lock (Users)
-                    Users.Where(u => u.Hierarchy >= chan.Hierarchy).ForEach(u => u.Send(new ChannelCreatePacket(chan)));
-            }
-
-            return null;
-        }
-
-        public void DeleteChannel(ChatChannel chan)
-        {
-            if (chan == DefaultChannel)
-                return;
-
-            lock (chan.Users)
-                lock (Users)
-                    lock (Channels)
-                    {
-                        chan.Users.ForEach(u => SwitchChannel(u, DefaultChannel, string.Empty));
-                        Users.Where(u => u.Hierarchy >= chan.Hierarchy).ForEach(u => u.Send(new ChannelDeletePacket(chan)));
-                        Channels.Remove(chan);
-                    }
-        }
-
-        public void UpdateChannel(ChatChannel chan, string oldName = null)
-        {
-            lock (Users)
-                Users.Where(u => u.Hierarchy >= chan.Hierarchy).ForEach(u =>
-                {
-                    u.Send(new ChannelUpdatePacket(oldName ?? chan.Name, chan));
-
-                    /* Not entire sure how to recreate this behaviour at the moment
-                    if ($user->channel == $oldname && $oldname != "") {
-                        $user->runSock(function($sock) use ($channel) {
-                            $sock->send(pack_message(5, ["2", $channel->name]));
-                        });
-                        $user->channel = $channel->name;
-                    }
-                     */
-                    u.ForceChannel();
-                });
-        }
-
-        public void DeleteMessage(IChatMessage msg)
-        {
-            lock (Events)
-                Events.Remove(msg);
-
-            Broadcast(new ChatMessageDeletePacket(msg.MessageId));
         }
 
         public IEnumerable<IChatMessage> GetChannelBacklog(ChatChannel chan, int count = 15)
@@ -155,24 +98,10 @@ namespace SharpChat
             }
 
             if (chan.IsTemporary && chan.Owner == user)
-                DeleteChannel(chan);
+                Channels.Remove(chan);
 
             chan.UserLeave(user);
             chan.Send(new UserDisconnectPacket(DateTimeOffset.Now, user, reason));
-        }
-
-        public void SwitchChannel(ChatUser user, string chanName, string password)
-        {
-            ChatChannel chan = Channels.Get(chanName);
-
-            if (chan == null)
-            {
-                user.Send(true, @"nochan", chanName);
-                user.ForceChannel();
-                return;
-            }
-
-            SwitchChannel(user, chan, password);
         }
 
         public void SwitchChannel(ChatUser user, ChatChannel chan, string password)
@@ -227,7 +156,7 @@ namespace SharpChat
             chan.UserJoin(user);
 
             if(oldChan.IsTemporary && oldChan.Owner == user)
-                DeleteChannel(oldChan);
+                Channels.Remove(oldChan);
         }
 
         public void CheckPings()
@@ -256,28 +185,19 @@ namespace SharpChat
             }
         }
 
-        public void BumpFlashiiOnline()
-        {
-            List<FlashiiBump> bups = new List<FlashiiBump>();
-
-            lock (Users)
-                Users.Where(u => u.IsAlive).ForEach(u => bups.Add(new FlashiiBump { UserId = u.UserId, UserIP = u.RemoteAddresses.First().ToString() }));
-
-            if(bups.Any())
-                FlashiiBump.Submit(bups);
-        }
-
         public void Broadcast(IServerPacket packet)
         {
             lock (Users)
-                Users.ForEach(u => u.Send(packet));
+                foreach (ChatUser user in Users)
+                    user.Send(packet);
         }
 
-        [Obsolete(@"Use Broadcast(IServerPacket, int)")]
+        [Obsolete(@"Use Broadcast(IServerPacket)")]
         public void Broadcast(ChatUser user, string message, SockChatMessageFlags flags = SockChatMessageFlags.RegularUser)
         {
             lock (Users)
-                Users.ForEach(u => u.Send(user, message, flags));
+                foreach (ChatUser target in Users)
+                    target.Send(user, message, flags);
         }
 
         ~ChatContext()
