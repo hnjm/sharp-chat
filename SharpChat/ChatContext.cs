@@ -1,5 +1,4 @@
-﻿using Fleck;
-using SharpChat.Flashii;
+﻿using SharpChat.Flashii;
 using SharpChat.Packet;
 using System;
 using System.Collections.Generic;
@@ -61,7 +60,7 @@ namespace SharpChat
         {
             lock (Channels)
             {
-                ChatChannel eChan = FindChannelByName(chan.Name);
+                ChatChannel eChan = Channels.Get(chan.Name);
                 if (eChan != null)
                     return ChatMessage.PackBotMessage(1, @"nischan", chan.Name);
 
@@ -119,39 +118,6 @@ namespace SharpChat
             Broadcast(new ChatMessageDeletePacket(msg.MessageId));
         }
 
-        public ChatUser FindUserById(int userId)
-        {
-            lock (Users)
-                return Users.ToList().FirstOrDefault(x => x.UserId == userId);
-        }
-        public ChatUser FindUserByName(string name)
-        {
-            lock (Users)
-                return Users.FirstOrDefault(x => x.Username.ToLowerInvariant() == name.ToLowerInvariant() || x.Nickname.ToLowerInvariant() == name.ToLowerInvariant() || x.GetDisplayName(1).ToLowerInvariant() == name.ToLowerInvariant());
-        }
-
-        public ChatUser FindUserBySock(ChatUserConnection conn)
-        {
-            lock (Users)
-                return Users.ToList().FirstOrDefault(x => x.Connections.Any(y => y == conn));
-        }
-
-        public ChatUser FindUserBySock(IWebSocketConnection conn)
-        {
-            lock (Users)
-                return Users.ToList().FirstOrDefault(x => x.Connections.Any(y => y.Websocket == conn));
-        }
-
-        public ChatChannel FindChannelByName(string name)
-        {
-            return Channels.FirstOrDefault(x => x.Name.ToLowerInvariant().Trim() == name.ToLowerInvariant().Trim());
-        }
-
-        public ChatChannel FindUserChannel(ChatUser user)
-        {
-            return Channels.FirstOrDefault(c => c.Users.Contains(user));
-        }
-
         public IEnumerable<IChatMessage> GetChannelBacklog(ChatChannel chan, int count = 15)
         {
             return Events.Where(x => x.Channel == chan || x.Channel == null).Reverse().Take(count).Reverse().ToArray();
@@ -197,7 +163,7 @@ namespace SharpChat
 
         public void SwitchChannel(ChatUser user, string chanName, string password)
         {
-            ChatChannel chan = FindChannelByName(chanName);
+            ChatChannel chan = Channels.Get(chanName);
 
             if (chan == null)
             {

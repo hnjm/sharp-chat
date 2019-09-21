@@ -992,8 +992,7 @@ char* color_to_css(int raw) {
     if(raw & FLAG_INHERIT)
         return "inherit";
 
-    char* css = (char*)malloc(17);
-    memset(css, 0, 17);
+    char* css = malloc(17);
 
     sprintf(
         css,

@@ -80,17 +80,14 @@ namespace SharpChat
 
         private void OnClose(IWebSocketConnection conn)
         {
-            lock (Context.Users)
+            ChatUser user = Context.Users.Get(conn);
+
+            if (user != null)
             {
-                ChatUser user = Context.FindUserBySock(conn);
+                user.RemoveConnection(conn);
 
-                if (user != null)
-                {
-                    user.RemoveConnection(conn);
-
-                    if (!user.Connections.Any())
-                        Context.UserLeave(null, user);
-                }
+                if (!user.Connections.Any())
+                    Context.UserLeave(null, user);
             }
 
             Context.Update();
@@ -129,7 +126,7 @@ namespace SharpChat
                 return;
             }
 
-            ChatUser floodUser = Context.FindUserBySock(conn);
+            ChatUser floodUser = Context.Users.Get(conn);
 
             if(floodUser != null)
             {
@@ -176,7 +173,7 @@ namespace SharpChat
                     break;
 
                 case SockChatClientPacket.Authenticate:
-                    if (Context.FindUserBySock(conn) != null)
+                    if (Context.Users.Get(conn) != null)
                         break;
 
                     DateTimeOffset authBan = Context.Bans.Check(conn.RemoteAddress);
@@ -191,7 +188,7 @@ namespace SharpChat
                     ChatUser aUser;
                     FlashiiAuth auth;
 
-                    aUser = Context.FindUserBySock(conn);
+                    aUser = Context.Users.Get(conn);
 
                     if (aUser != null || args.Length < 3 || !int.TryParse(args[1], out int aUserId))
                         break;
@@ -205,7 +202,7 @@ namespace SharpChat
                         break;
                     }
 
-                    aUser = Context.FindUserById(auth.UserId);
+                    aUser = Context.Users.Get(auth.UserId);
 
                     if (aUser == null)
                         aUser = new ChatUser(auth);
@@ -237,7 +234,7 @@ namespace SharpChat
 
                     aUser.AddConnection(conn);
 
-                    ChatChannel chan = Context.FindChannelByName(auth.DefaultChannel) ?? Context.Channels.FirstOrDefault();
+                    ChatChannel chan = Context.Channels.Get(auth.DefaultChannel) ?? Context.Channels.FirstOrDefault();
 
                     // umi eats the first message for some reason so we'll send a blank padding msg
                     conn.Send(new ContextMessagePacket(EventChatMessage.Info(@"welcome", SockChatMessageFlags.RegularUser, @"say", Utils.InitialMessage)));
@@ -252,7 +249,7 @@ namespace SharpChat
 
                     lock (Context)
                     {
-                        ChatUser mUser = Context.FindUserBySock(conn);
+                        ChatUser mUser = Context.Users.Get(conn);
                         ChatChannel mChan;
 
                         if (mUser == null || string.IsNullOrWhiteSpace(args[2]))
@@ -264,10 +261,10 @@ namespace SharpChat
                             if (!int.TryParse(args[1], out int mUserId) || mUser.UserId != mUserId)
                                 break;
 #endif
-                            mChan = Context.FindUserChannel(mUser);
+                            mChan = Context.Channels.GetUser(mUser).FirstOrDefault();
                         }
                         else
-                            mChan = Context.FindChannelByName(args[1]);
+                            mChan = Context.Channels.Get(args[1]);
 
                         if (mChan == null || !mUser.Channels.Contains(mChan) || (mUser.IsSilenced && !mUser.IsModerator))
                             break;
@@ -334,7 +331,7 @@ namespace SharpChat
                                     else if (string.IsNullOrEmpty(nickStr))
                                         nickStr = null;
 
-                                    if (nickStr != null && Context.FindUserByName(nickStr) != null)
+                                    if (nickStr != null && Context.Users.Get(nickStr) != null)
                                     {
                                         mUser.Send(true, @"nameinuse", nickStr);
                                         break;
@@ -352,7 +349,7 @@ namespace SharpChat
                                         break;
                                     }
 
-                                    ChatUser whisperUser = Context.FindUserByName(parts[1]);
+                                    ChatUser whisperUser = Context.Users.Get(parts[1]);
 
                                     if (whisperUser == null)
                                     {
@@ -394,7 +391,7 @@ namespace SharpChat
 
                                     if (!string.IsNullOrEmpty(whoChanStr))
                                     {
-                                        ChatChannel whoChan = Context.FindChannelByName(whoChanStr);
+                                        ChatChannel whoChan = Context.Channels.Get(whoChanStr);
 
                                         if (whoChan == null)
                                         {
@@ -519,7 +516,7 @@ namespace SharpChat
                                     }
 
                                     string delChanName = string.Join('_', parts.Skip(1));
-                                    ChatChannel delChan = Context.FindChannelByName(delChanName);
+                                    ChatChannel delChan = Context.Channels.Get(delChanName);
 
                                     if (delChan == null)
                                     {
@@ -630,7 +627,7 @@ namespace SharpChat
                                     bool isBanning = command == @"ban";
 
                                     ChatUser banUser;
-                                    if (parts.Length < 2 || (banUser = Context.FindUserByName(parts[1])) == null)
+                                    if (parts.Length < 2 || (banUser = Context.Users.Get(parts[1])) == null)
                                     {
                                         mUser.Send(true, @"usernf", parts[1] ?? @"User");
                                         break;
@@ -671,7 +668,7 @@ namespace SharpChat
                                         break;
                                     }
 
-                                    ChatUser unbanUser = Context.FindUserByName(parts[1]);
+                                    ChatUser unbanUser = Context.Users.Get(parts[1]);
 
                                     if(Context.Bans.Check(unbanUser) <= DateTimeOffset.Now)
                                     {
@@ -723,7 +720,7 @@ namespace SharpChat
                                     }
 
                                     ChatUser silUser;
-                                    if (parts.Length < 2 || (silUser = Context.FindUserByName(parts[1])) == null)
+                                    if (parts.Length < 2 || (silUser = Context.Users.Get(parts[1])) == null)
                                     {
                                         mUser.Send(true, @"usernf", parts[1] ?? @"User");
                                         break;
@@ -772,7 +769,7 @@ namespace SharpChat
                                     }
 
                                     ChatUser unsilUser;
-                                    if(parts.Length < 2 || (unsilUser = Context.FindUserByName(parts[1])) == null)
+                                    if(parts.Length < 2 || (unsilUser = Context.Users.Get(parts[1])) == null)
                                     {
                                         mUser.Send(true, @"usernf", parts[1] ?? @"User");
                                         break;
@@ -803,7 +800,7 @@ namespace SharpChat
                                     }
 
                                     ChatUser ipUser;
-                                    if (parts.Length < 2 || (ipUser = Context.FindUserByName(parts[1])) == null)
+                                    if (parts.Length < 2 || (ipUser = Context.Users.Get(parts[1])) == null)
                                     {
                                         mUser.Send(true, @"usernf", parts[1] ?? string.Empty);
                                         break;

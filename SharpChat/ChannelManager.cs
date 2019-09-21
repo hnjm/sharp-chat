@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace SharpChat
 {
@@ -31,6 +32,24 @@ namespace SharpChat
 
             lock (Channels)
                 Channels.Remove(channel);
+        }
+
+        public ChatChannel Get(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                return null;
+
+            lock (Channels)
+                return Channels.FirstOrDefault(x => x.Name.ToLowerInvariant() == name.ToLowerInvariant());
+        }
+
+        public IEnumerable<ChatChannel> GetUser(ChatUser user)
+        {
+            if (user == null)
+                return null;
+
+            lock (Channels)
+                return Channels.Where(x => x.HasUser(user));
         }
 
         ~ChannelManager()

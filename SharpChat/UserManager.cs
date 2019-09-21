@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace SharpChat
 {
@@ -31,6 +32,40 @@ namespace SharpChat
 
             lock (Users)
                 Users.Remove(user);
+        }
+
+        public ChatUser Get(int userId)
+        {
+            lock (Users)
+                return Users.FirstOrDefault(x => x.UserId == userId);
+        }
+
+        public ChatUser Get(string username, bool includeNickName = true, bool includeV1Name = true)
+        {
+            if (string.IsNullOrWhiteSpace(username))
+                return null;
+            username = username.ToLowerInvariant();
+
+            lock (Users)
+                return Users.FirstOrDefault(x => x.Username.ToLowerInvariant() == username || (includeNickName && x.Nickname.ToLowerInvariant() == username) || (includeV1Name && x.GetDisplayName(1).ToLowerInvariant() == username));
+        }
+
+        public ChatUser Get(ChatUserConnection conn)
+        {
+            if (conn == null)
+                return null;
+
+            lock (Users)
+                return Users.FirstOrDefault(x => x.Connections.Contains(conn));
+        }
+
+        public ChatUser Get(Fleck.IWebSocketConnection conn)
+        {
+            if (conn == null)
+                return null;
+
+            lock (Users)
+                return Users.FirstOrDefault(x => x.Connections.Any(y => y.Websocket == conn));
         }
 
         ~UserManager()
