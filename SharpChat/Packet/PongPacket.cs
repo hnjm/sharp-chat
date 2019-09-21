@@ -21,7 +21,7 @@ namespace SharpChat.Packet
             sb.Append('\t');
 
             if (version >= 2)
-                sb.Append(PongTime.ToUnixTimeSeconds());
+                sb.Append(PongTime.ToSockChatSeconds(version));
             else
                 sb.Append(@"pong");
 

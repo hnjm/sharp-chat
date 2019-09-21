@@ -7,9 +7,9 @@ namespace SharpChat.Packet
     public class UserConnectPacket : ServerPacket
     {
         public DateTimeOffset Joined { get; private set; }
-        public SockChatUser User { get; private set; }
+        public ChatUser User { get; private set; }
 
-        public UserConnectPacket(DateTimeOffset joined, SockChatUser user)
+        public UserConnectPacket(DateTimeOffset joined, ChatUser user)
         {
             Joined = joined;
             User = user ?? throw new ArgumentNullException(nameof(user));
@@ -21,7 +21,7 @@ namespace SharpChat.Packet
 
             sb.Append((int)SockChatServerPacket.UserConnect);
             sb.Append('\t');
-            sb.Append(Joined.ToUnixTimeSeconds());
+            sb.Append(Joined.ToSockChatSeconds(version));
             sb.Append('\t');
             sb.Append(User.Pack(version));
             sb.Append('\t');

@@ -1,13 +1,12 @@
 ﻿using System;
-using System.Text;
 
 namespace SharpChat
 {
-    public class SockChatMessage : IChatMessage
+    public class ChatMessage : IChatMessage
     {
         public int MessageId { get; set; }
-        public SockChatUser User { get; set; }
-        public SockChatChannel Channel { get; set; }
+        public ChatUser User { get; set; }
+        public ChatChannel Channel { get; set; }
         public string Text { get; set; }
         public DateTimeOffset DateTime { get; set; }
         public SockChatMessageFlags Flags { get; set; } = SockChatMessageFlags.RegularUser;

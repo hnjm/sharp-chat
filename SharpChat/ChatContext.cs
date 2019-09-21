@@ -1,4 +1,5 @@
 ﻿using Fleck;
+using SharpChat.Flashii;
 using SharpChat.Packet;
 using System;
 using System.Collections.Generic;
@@ -8,46 +9,30 @@ using System.Threading;
 
 namespace SharpChat
 {
-    public class SockChatContext : IDisposable
+    public class ChatContext : IDisposable
     {
         public bool IsDisposed { get; private set; }
 
         public readonly SockChatServer Server;
-        public readonly List<SockChatUser> Users = new List<SockChatUser>();
-        public readonly List<SockChatChannel> Channels = new List<SockChatChannel>();
-        public readonly List<IChatMessage> Messages = new List<IChatMessage>();
-        public readonly Dictionary<IPAddress, DateTimeOffset> IPBans = new Dictionary<IPAddress, DateTimeOffset>();
         public readonly Timer BumpTimer;
+        public readonly BanManager Bans = new BanManager();
+        public readonly ChannelManager Channels = new ChannelManager();
+        public readonly UserManager Users = new UserManager();
+        public readonly ChatEventManager Events = new ChatEventManager();
 
-        public SockChatContext(SockChatServer server)
+        public ChatContext(SockChatServer server)
         {
             Server = server;
             BumpTimer = new Timer(e => BumpFlashiiOnline(), null, TimeSpan.Zero, TimeSpan.FromMinutes(1));
         }
 
-        public void CheckIPBanExpirations()
+        public void Update()
         {
-            lock(IPBans)
-                IPBans.Where(kvp => kvp.Value < DateTimeOffset.UtcNow).Select(kvp => kvp.Key).ToList().ForEach(ip => IPBans.Remove(ip));
+            Bans.RemoveExpired();
+            CheckPings();
         }
 
-        public bool CheckIPBan(IPAddress ipAddr)
-        {
-            return GetIPBanExpiration(ipAddr) > DateTimeOffset.UtcNow;
-        }
-
-        public DateTimeOffset GetIPBanExpiration(IPAddress ipAddr)
-        {
-            lock(IPBans)
-            {
-                if (!IPBans.ContainsKey(ipAddr))
-                    return DateTimeOffset.MinValue;
-
-                return IPBans[ipAddr];
-            }
-        }
-
-        public void BanUser(SockChatUser user, DateTimeOffset? until = null, bool banIPs = false, UserDisconnectReason reason = UserDisconnectReason.Kicked)
+        public void BanUser(ChatUser user, DateTimeOffset? until = null, bool banIPs = false, UserDisconnectReason reason = UserDisconnectReason.Kicked)
         {
             if (until.HasValue && until.Value <= DateTimeOffset.UtcNow)
                 until = null;
@@ -55,12 +40,12 @@ namespace SharpChat
             if (until.HasValue)
             {
                 user.Send(new ForceDisconnectPacket(ForceDisconnectReason.Banned, until.Value));
-                user.BannedUntil = until.Value;
+                Bans.Add(user, until.Value);
 
                 if (banIPs)
                     lock (user.Connections)
                         foreach (IPAddress ip in user.RemoteAddresses)
-                            IPBans[ip] = until.Value;
+                            Bans.Add(ip, until.Value);
             }
             else
                 user.Send(new ForceDisconnectPacket(ForceDisconnectReason.Kicked));
@@ -69,19 +54,19 @@ namespace SharpChat
             UserLeave(user.Channel, user, reason);
         }
 
-        public SockChatChannel DefaultChannel
+        public ChatChannel DefaultChannel
             => Channels.First();
 
-        public string AddChannel(SockChatChannel chan)
+        public string AddChannel(ChatChannel chan)
         {
             lock (Channels)
             {
-                SockChatChannel eChan = FindChannelByName(chan.Name);
+                ChatChannel eChan = FindChannelByName(chan.Name);
                 if (eChan != null)
-                    return SockChatMessage.PackBotMessage(1, @"nischan", chan.Name);
+                    return ChatMessage.PackBotMessage(1, @"nischan", chan.Name);
 
                 if (chan.Name.StartsWith(@"@") || chan.Name.StartsWith(@"*"))
-                    return SockChatMessage.PackBotMessage(1, @"inchan");
+                    return ChatMessage.PackBotMessage(1, @"inchan");
 
                 Channels.Add(chan);
 
@@ -92,7 +77,7 @@ namespace SharpChat
             return null;
         }
 
-        public void DeleteChannel(SockChatChannel chan)
+        public void DeleteChannel(ChatChannel chan)
         {
             if (chan == DefaultChannel)
                 return;
@@ -107,7 +92,7 @@ namespace SharpChat
                     }
         }
 
-        public void UpdateChannel(SockChatChannel chan, string oldName = null)
+        public void UpdateChannel(ChatChannel chan, string oldName = null)
         {
             lock (Users)
                 Users.Where(u => u.Hierarchy >= chan.Hierarchy).ForEach(u =>
@@ -128,51 +113,51 @@ namespace SharpChat
 
         public void DeleteMessage(IChatMessage msg)
         {
-            lock (Messages)
-                Messages.Remove(msg);
+            lock (Events)
+                Events.Remove(msg);
 
             Broadcast(new ChatMessageDeletePacket(msg.MessageId));
         }
 
-        public SockChatUser FindUserById(int userId)
+        public ChatUser FindUserById(int userId)
         {
             lock (Users)
                 return Users.ToList().FirstOrDefault(x => x.UserId == userId);
         }
-        public SockChatUser FindUserByName(string name)
+        public ChatUser FindUserByName(string name)
         {
             lock (Users)
                 return Users.FirstOrDefault(x => x.Username.ToLowerInvariant() == name.ToLowerInvariant() || x.Nickname.ToLowerInvariant() == name.ToLowerInvariant() || x.GetDisplayName(1).ToLowerInvariant() == name.ToLowerInvariant());
         }
 
-        public SockChatUser FindUserBySock(SockChatConn conn)
+        public ChatUser FindUserBySock(ChatUserConnection conn)
         {
             lock (Users)
                 return Users.ToList().FirstOrDefault(x => x.Connections.Any(y => y == conn));
         }
 
-        public SockChatUser FindUserBySock(IWebSocketConnection conn)
+        public ChatUser FindUserBySock(IWebSocketConnection conn)
         {
             lock (Users)
                 return Users.ToList().FirstOrDefault(x => x.Connections.Any(y => y.Websocket == conn));
         }
 
-        public SockChatChannel FindChannelByName(string name)
+        public ChatChannel FindChannelByName(string name)
         {
             return Channels.FirstOrDefault(x => x.Name.ToLowerInvariant().Trim() == name.ToLowerInvariant().Trim());
         }
 
-        public SockChatChannel FindUserChannel(SockChatUser user)
+        public ChatChannel FindUserChannel(ChatUser user)
         {
             return Channels.FirstOrDefault(c => c.Users.Contains(user));
         }
 
-        public IChatMessage[] GetChannelBacklog(SockChatChannel chan, int count = 15)
+        public IEnumerable<IChatMessage> GetChannelBacklog(ChatChannel chan, int count = 15)
         {
-            return Messages.Where(x => x.Channel == chan || x.Channel == null).Reverse().Take(count).Reverse().ToArray();
+            return Events.Where(x => x.Channel == chan || x.Channel == null).Reverse().Take(count).Reverse().ToArray();
         }
 
-        public void HandleJoin(SockChatUser user, SockChatChannel chan, SockChatConn conn)
+        public void HandleJoin(ChatUser user, ChatChannel chan, ChatUserConnection conn)
         {
             if (!chan.HasUser(user))
                 chan.Send(new UserConnectPacket(DateTimeOffset.Now, user));
@@ -180,7 +165,7 @@ namespace SharpChat
             conn.Send(new AuthSuccessPacket(user, chan));
             conn.Send(new ContextUsersPacket(chan.GetUsers(new[] { user })));
 
-            IChatMessage[] msgs = GetChannelBacklog(chan);
+            IEnumerable<IChatMessage> msgs = GetChannelBacklog(chan);
 
             foreach (IChatMessage msg in msgs)
                 conn.Send(new ContextMessagePacket(msg));
@@ -195,7 +180,7 @@ namespace SharpChat
                 Users.Add(user);
         }
 
-        public void UserLeave(SockChatChannel chan, SockChatUser user, UserDisconnectReason reason = UserDisconnectReason.Leave)
+        public void UserLeave(ChatChannel chan, ChatUser user, UserDisconnectReason reason = UserDisconnectReason.Leave)
         {
             if (chan == null)
             {
@@ -210,9 +195,9 @@ namespace SharpChat
             chan.Send(new UserDisconnectPacket(DateTimeOffset.Now, user, reason));
         }
 
-        public void SwitchChannel(SockChatUser user, string chanName, string password)
+        public void SwitchChannel(ChatUser user, string chanName, string password)
         {
-            SockChatChannel chan = FindChannelByName(chanName);
+            ChatChannel chan = FindChannelByName(chanName);
 
             if (chan == null)
             {
@@ -224,7 +209,7 @@ namespace SharpChat
             SwitchChannel(user, chan, password);
         }
 
-        public void SwitchChannel(SockChatUser user, SockChatChannel chan, string password)
+        public void SwitchChannel(ChatUser user, ChatChannel chan, string password)
         {
             if (user.Channel == chan)
             {
@@ -253,12 +238,12 @@ namespace SharpChat
             ForceChannelSwitch(user, chan);
         }
 
-        public void ForceChannelSwitch(SockChatUser user, SockChatChannel chan)
+        public void ForceChannelSwitch(ChatUser user, ChatChannel chan)
         {
             if (!Channels.Contains(chan))
                 return;
 
-            SockChatChannel oldChan = user.Channel;
+            ChatChannel oldChan = user.Channel;
 
             oldChan.Send(new UserChannelLeavePacket(user));
             chan.Send(new UserChannelJoinPacket(user));
@@ -266,7 +251,7 @@ namespace SharpChat
             user.Send(new ContextClearPacket(ContextClearMode.MessagesUsers));
             user.Send(new ContextUsersPacket(chan.GetUsers(new[] { user })));
 
-            IChatMessage[] msgs = GetChannelBacklog(chan);
+            IEnumerable<IChatMessage> msgs = GetChannelBacklog(chan);
 
             foreach (IChatMessage msg in msgs)
                 user.Send(new ContextMessagePacket(msg));
@@ -281,16 +266,16 @@ namespace SharpChat
 
         public void CheckPings()
         {
-            List<SockChatUser> users;
+            List<ChatUser> users;
 
             lock(Users)
-                users = new List<SockChatUser>(Users);
+                users = new List<ChatUser>(Users);
 
-            foreach (SockChatUser user in users)
+            foreach (ChatUser user in users)
             {
-                List<SockChatConn> conns = new List<SockChatConn>(user.Connections);
+                List<ChatUserConnection> conns = new List<ChatUserConnection>(user.Connections);
 
-                foreach (SockChatConn conn in conns)
+                foreach (ChatUserConnection conn in conns)
                 {
                     if (conn.HasTimedOut)
                     {
@@ -323,13 +308,13 @@ namespace SharpChat
         }
 
         [Obsolete(@"Use Broadcast(IServerPacket, int)")]
-        public void Broadcast(SockChatUser user, string message, SockChatMessageFlags flags = SockChatMessageFlags.RegularUser)
+        public void Broadcast(ChatUser user, string message, SockChatMessageFlags flags = SockChatMessageFlags.RegularUser)
         {
             lock (Users)
                 Users.ForEach(u => u.Send(user, message, flags));
         }
 
-        ~SockChatContext()
+        ~ChatContext()
             => Dispose(false);
 
         public void Dispose()
@@ -342,9 +327,10 @@ namespace SharpChat
             IsDisposed = true;
 
             BumpTimer?.Dispose();
-            Messages.Clear();
-            Channels.Clear();
-            Users.Clear();
+            Events?.Dispose();
+            Channels?.Dispose();
+            Users?.Dispose();
+            Bans?.Dispose();
 
             if (disposing)
                 GC.SuppressFinalize(this);

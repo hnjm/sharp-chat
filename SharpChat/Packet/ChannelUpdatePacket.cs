@@ -6,9 +6,9 @@ namespace SharpChat.Packet
     public class ChannelUpdatePacket : ServerPacket
     {
         public string PreviousName { get; private set; }
-        public SockChatChannel Channel { get; private set; }
+        public ChatChannel Channel { get; private set; }
 
-        public ChannelUpdatePacket(string previousName, SockChatChannel channel)
+        public ChannelUpdatePacket(string previousName, ChatChannel channel)
         {
             PreviousName = previousName;
             Channel = channel;

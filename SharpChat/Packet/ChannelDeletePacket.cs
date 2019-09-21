@@ -6,9 +6,9 @@ namespace SharpChat.Packet
 {
     public class ChannelDeletePacket : ServerPacket
     {
-        public SockChatChannel Channel { get; private set; }
+        public ChatChannel Channel { get; private set; }
 
-        public ChannelDeletePacket(SockChatChannel channel)
+        public ChannelDeletePacket(ChatChannel channel)
         {
             Channel = channel ?? throw new ArgumentNullException(nameof(channel));
         }

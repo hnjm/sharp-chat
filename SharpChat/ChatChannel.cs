@@ -4,32 +4,32 @@ using System.Text;
 
 namespace SharpChat
 {
-    public class SockChatChannel
+    public class ChatChannel
     {
         public string Name { get; set; }
         public string Password { get; set; } = string.Empty;
         public bool IsTemporary { get; set; } = false;
         public int Hierarchy { get; set; } = 0;
-        public SockChatUser Owner { get; set; } = null;
+        public ChatUser Owner { get; set; } = null;
 
-        public readonly List<SockChatUser> Users = new List<SockChatUser>();
+        public readonly List<ChatUser> Users = new List<ChatUser>();
 
         public bool HasPassword
             => !string.IsNullOrEmpty(Password);
 
-        public SockChatChannel()
+        public ChatChannel()
         {
         }
 
-        public SockChatChannel(string name)
+        public ChatChannel(string name)
         {
             Name = name;
         }
 
-        public bool HasUser(SockChatUser user)
+        public bool HasUser(ChatUser user)
             => Users.Contains(user);
 
-        public void UserJoin(SockChatUser user)
+        public void UserJoin(ChatUser user)
         {
             lock (Users)
             {
@@ -45,7 +45,7 @@ namespace SharpChat
             }
         }
 
-        public void UserLeave(SockChatUser user)
+        public void UserLeave(ChatUser user)
         {
             lock (Users)
             {
@@ -64,11 +64,11 @@ namespace SharpChat
                 Users.ForEach(u => u.Send(packet));
         }
 
-        public IEnumerable<SockChatUser> GetUsers(IEnumerable<SockChatUser> exclude = null)
+        public IEnumerable<ChatUser> GetUsers(IEnumerable<ChatUser> exclude = null)
         {
             lock (Users)
             {
-                IEnumerable<SockChatUser> users = Users.OrderByDescending(x => x.Hierarchy);
+                IEnumerable<ChatUser> users = Users.OrderByDescending(x => x.Hierarchy);
 
                 if (exclude != null)
                     users = users.Except(exclude);

@@ -18,7 +18,7 @@ Used to prevent the client from closing the session due to inactivity.
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>32-bit Unix timestamp</td>
+        <td>Timestamp, documented below</td>
     </tr>
     <tr>
         <th colspan="2">Version 1</th>
@@ -85,6 +85,9 @@ Informs the server that this client supports a newer version of the protocol. Th
     </tr>
 </table>
 
+### Packet `4`: Typing
+Informs the server that this client is writing a message. This packet has no arguments.
+
 ## Server
 These are the packets sent from the server to the client.
 
@@ -97,7 +100,7 @@ Response to client packet `0`: Ping.
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>32-bit Unix timestamp when the packet was handled by the server</td>
+        <td>Timestamp, documented below when the packet was handled by the server</td>
     </tr>
     <tr>
         <th colspan="2">Version 1</th>
@@ -197,7 +200,7 @@ Informs the client that authentication has failed.
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>If <code>baka</code>; A 32-bit Unix timestamp indicating the length of the ban</td>
+        <td>If <code>baka</code>; A timestamp (documented below) indicating the length of the ban</td>
     </tr>
     <tr>
         <th colspan="2">Version 1</th>
@@ -220,7 +223,7 @@ Informs the client that authentication has failed.
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>If <code>joinfail</code>; A 32-bit Unix timestamp indicating the length of the ban</td>
+        <td>If <code>joinfail</code>; A timestamp (documented below) indicating the length of the ban</td>
     </tr>
 </table>
 
@@ -233,7 +236,7 @@ Informs the client that a user has joined.
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>32-bit Unix timestamp of when the user joined</td>
+        <td>Timestamp, documented below of when the user joined</td>
     </tr>
     <tr>
         <td><code>int</code></td>
@@ -260,7 +263,7 @@ Informs the client that a user has joined.
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>32-bit Unix timestamp of when the user joined</td>
+        <td>Timestamp, documented below of when the user joined</td>
     </tr>
     <tr>
         <td><code>int</code></td>
@@ -297,7 +300,7 @@ Informs the client that a chat message has been received.
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>32-bit Unix timestamp of when the message was received by the server</td>
+        <td>Timestamp, documented below of when the message was received by the server</td>
     </tr>
     <tr>
         <td><code>int</code></td>
@@ -323,7 +326,7 @@ Informs the client that a chat message has been received.
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>32-bit Unix timestamp of when the message was received by the server</td>
+        <td>Timestamp, documented below of when the message was received by the server</td>
     </tr>
     <tr>
         <td><code>int</code></td>
@@ -396,7 +399,7 @@ Informs the client that a user has disconnected.
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>32-bit Unix timestamp of when the user disconnected</td>
+        <td>Timestamp, documented below of when the user disconnected</td>
     </tr>
     <tr>
         <td><code>int</code></td>
@@ -427,7 +430,7 @@ Informs the client that a user has disconnected.
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>32-bit Unix timestamp of when the user disconnected</td>
+        <td>Timestamp, documented below of when the user disconnected</td>
     </tr>
     <tr>
         <td><code>int</code></td>
@@ -712,7 +715,7 @@ Informs the client about an existing message in a channel.
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>32-bit Unix timestamp</td>
+        <td>Timestamp, documented below</td>
     </tr>
     <tr>
         <td><code>int</code></td>
@@ -751,7 +754,7 @@ Informs the client about an existing message in a channel.
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>32-bit Unix timestamp</td>
+        <td>Timestamp, documented below</td>
     </tr>
     <tr>
         <td><code>int</code></td>
@@ -860,13 +863,13 @@ Informs the client that they have either been banned or kicked from the server.
         <td>
             <ul>
                 <li><code>0</code>: The client has been kicked, can reconnect immediately.</li>
-                <li><code>1</code>: The client has been banned, can reconnect after the timestamp in the next param has expired.</li>
+                <li><code>1</code>: The client has been banned, can reconnect after the timestamp (documented below) in the next param has expired.</li>
             </ul>
         </td>
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>A 32-bit Unix timestamp containing the ban expiration date and time</td>
+        <td>A timestamp (documented below) containing the ban expiration date and time</td>
     </tr>
 </table>
 
@@ -936,6 +939,10 @@ The client must continue to operate as if it's talking to a Version 1 server unt
         <td>If successful the current version will be returned. If unsuccessful the latest supported version should be returned which the client could use to decide to either disconnect or reattempt to upgrade</td>
     </tr>
 </table>
+
+## Timestamp, documented belows
+
+Timestamp, documented belows in Sock Chat are seconds elapsed since a certain date. Starting with Sock Chat V2 the epoch for the timestamp (documented below)s is different. Under Sock Chat V1 timestamp (documented below)s are regular Unix Epoch timestamp (documented below)s where `0` is `1970-01-01 00:00:00 UTC`. Starting with Sock Chat V2 the epoch has been moved to `2019-01-01 00:00:00 UTC`. In order to convert a Sock Chat V2 timestamp (documented below) to a Unix timestamp (documented below) add `1546300800` to it. Sock Chat V2 will realistically never serve messages that predate 2019.
 
 ## User Permission String
 The User Permission String consists out of five (5) parts concatenated by a space operator, indentified in most languages as the escape sequence <code> </code> and defined as the ASCII character `0x20`.

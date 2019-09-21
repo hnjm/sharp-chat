@@ -73,7 +73,7 @@ namespace SharpChat.Packet
                 if (Expires == DateTimeOffset.MaxValue)
                     sb.Append(@"-1");
                 else
-                    sb.Append(Expires.ToUnixTimeSeconds());
+                    sb.Append(Expires.ToSockChatSeconds(version));
             }
 
             return new[] { sb.ToString() };

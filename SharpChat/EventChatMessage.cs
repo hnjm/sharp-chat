@@ -9,8 +9,8 @@ namespace SharpChat
         public string MessageIdStr { get; set; }
         public DateTimeOffset DateTime { get; set; } = DateTimeOffset.UtcNow;
         public SockChatMessageFlags Flags { get; set; }
-        public SockChatChannel Channel { get; set; }
-        public SockChatUser User => SockChatServer.Bot;
+        public ChatChannel Channel { get; set; }
+        public ChatUser User => SockChatServer.Bot;
 
         public string Text
         {
@@ -36,7 +36,7 @@ namespace SharpChat
         public string EventName { get; set; }
         public object[] Parts { get; set; }
 
-        public EventChatMessage(SockChatChannel chan, int msgId, SockChatMessageFlags flags, bool error, string eventName, params object[] parts)
+        public EventChatMessage(ChatChannel chan, int msgId, SockChatMessageFlags flags, bool error, string eventName, params object[] parts)
         {
             Channel = chan;
             MessageId = msgId;
@@ -45,7 +45,7 @@ namespace SharpChat
             EventName = eventName;
             Parts = parts;
         }
-        public EventChatMessage(SockChatChannel chan, string msgId, SockChatMessageFlags flags, bool error, string eventName, params object[] parts)
+        public EventChatMessage(ChatChannel chan, string msgId, SockChatMessageFlags flags, bool error, string eventName, params object[] parts)
         {
             Channel = chan;
             MessageIdStr = msgId;
@@ -61,34 +61,34 @@ namespace SharpChat
             => new EventChatMessage(null, msgId, SockChatMessageFlags.RegularUser, false, eventName, parts);
         public static EventChatMessage Info(int msgId, SockChatMessageFlags flags, string eventName, params object[] parts)
             => new EventChatMessage(null, msgId, flags, false, eventName, parts);
-        public static EventChatMessage Info(SockChatChannel chan, int msgId, string eventName, params object[] parts)
+        public static EventChatMessage Info(ChatChannel chan, int msgId, string eventName, params object[] parts)
             => new EventChatMessage(chan, msgId, SockChatMessageFlags.RegularUser, false, eventName, parts);
-        public static EventChatMessage Info(SockChatChannel chan, int msgId, SockChatMessageFlags flags, string eventName, params object[] parts)
+        public static EventChatMessage Info(ChatChannel chan, int msgId, SockChatMessageFlags flags, string eventName, params object[] parts)
             => new EventChatMessage(chan, msgId, flags, false, eventName, parts);
         public static EventChatMessage Info(string msgId, string eventName, params object[] parts)
             => new EventChatMessage(null, msgId, SockChatMessageFlags.RegularUser, false, eventName, parts);
         public static EventChatMessage Info(string msgId, SockChatMessageFlags flags, string eventName, params object[] parts)
             => new EventChatMessage(null, msgId, flags, false, eventName, parts);
-        public static EventChatMessage Info(SockChatChannel chan, string msgId, string eventName, params object[] parts)
+        public static EventChatMessage Info(ChatChannel chan, string msgId, string eventName, params object[] parts)
             => new EventChatMessage(chan, msgId, SockChatMessageFlags.RegularUser, false, eventName, parts);
-        public static EventChatMessage Info(SockChatChannel chan, string msgId, SockChatMessageFlags flags, string eventName, params object[] parts)
+        public static EventChatMessage Info(ChatChannel chan, string msgId, SockChatMessageFlags flags, string eventName, params object[] parts)
             => new EventChatMessage(chan, msgId, flags, false, eventName, parts);
 
         public static EventChatMessage Error(int msgId, string eventName, params object[] parts)
             => new EventChatMessage(null, msgId, SockChatMessageFlags.RegularUser, true, eventName, parts);
         public static EventChatMessage Error(int msgId, SockChatMessageFlags flags, string eventName, params object[] parts)
             => new EventChatMessage(null, msgId, flags, true, eventName, parts);
-        public static EventChatMessage Error(SockChatChannel chan, int msgId, string eventName, params object[] parts)
+        public static EventChatMessage Error(ChatChannel chan, int msgId, string eventName, params object[] parts)
             => new EventChatMessage(chan, msgId, SockChatMessageFlags.RegularUser, true, eventName, parts);
-        public static EventChatMessage Error(SockChatChannel chan, int msgId, SockChatMessageFlags flags, string eventName, params object[] parts)
+        public static EventChatMessage Error(ChatChannel chan, int msgId, SockChatMessageFlags flags, string eventName, params object[] parts)
             => new EventChatMessage(chan, msgId, flags, true, eventName, parts);
         public static EventChatMessage Error(string msgId, string eventName, params object[] parts)
             => new EventChatMessage(null, msgId, SockChatMessageFlags.RegularUser, true, eventName, parts);
         public static EventChatMessage Error(string msgId, SockChatMessageFlags flags, string eventName, params object[] parts)
             => new EventChatMessage(null, msgId, flags, true, eventName, parts);
-        public static EventChatMessage Error(SockChatChannel chan, string msgId, string eventName, params object[] parts)
+        public static EventChatMessage Error(ChatChannel chan, string msgId, string eventName, params object[] parts)
             => new EventChatMessage(chan, msgId, SockChatMessageFlags.RegularUser, true, eventName, parts);
-        public static EventChatMessage Error(SockChatChannel chan, string msgId, SockChatMessageFlags flags, string eventName, params object[] parts)
+        public static EventChatMessage Error(ChatChannel chan, string msgId, SockChatMessageFlags flags, string eventName, params object[] parts)
             => new EventChatMessage(chan, msgId, flags, true, eventName, parts);
     }
 }

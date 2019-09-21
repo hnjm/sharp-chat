@@ -6,10 +6,10 @@ namespace SharpChat.Packet
 {
     public class UserUpdatePacket : ServerPacket
     {
-        public SockChatUser User { get; private set; }
+        public ChatUser User { get; private set; }
         public string PreviousName { get; private set; }
 
-        public UserUpdatePacket(SockChatUser user, string previousName = null)
+        public UserUpdatePacket(ChatUser user, string previousName = null)
         {
             User = user ?? throw new ArgumentNullException(nameof(user));
             PreviousName = previousName;
@@ -27,7 +27,7 @@ namespace SharpChat.Packet
             {
                 sb.Append((int)SockChatServerPacket.MessageAdd);
                 sb.Append('\t');
-                sb.Append(DateTimeOffset.Now.ToUnixTimeSeconds());
+                sb.Append(DateTimeOffset.Now.ToSockChatSeconds(version));
                 sb.Append("\t-1\t0\fnick\f");
                 sb.Append(PreviousName);
                 sb.Append('\f');

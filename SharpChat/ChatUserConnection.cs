@@ -5,7 +5,7 @@ using System.Net;
 
 namespace SharpChat
 {
-    public class SockChatConn : IDisposable
+    public class ChatUserConnection : IDisposable
     {
         public readonly IWebSocketConnection Websocket;
         
@@ -33,7 +33,7 @@ namespace SharpChat
             }
         }
 
-        public SockChatConn(IWebSocketConnection ws)
+        public ChatUserConnection(IWebSocketConnection ws)
         {
             Websocket = ws;
         }
@@ -68,7 +68,7 @@ namespace SharpChat
         public void Dispose()
             => Dispose(true);
 
-        ~SockChatConn()
+        ~ChatUserConnection()
             => Dispose(false);
 
         private void Dispose(bool disposing)

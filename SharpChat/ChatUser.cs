@@ -1,4 +1,5 @@
 ﻿using Fleck;
+using SharpChat.Flashii;
 using SharpChat.Packet;
 using System;
 using System.Collections.Generic;
@@ -8,18 +9,18 @@ using System.Text;
 
 namespace SharpChat
 {
-    public enum SockChatUserChannel
+    public enum ChatUserChannelCreation
     {
         No = 0,
         OnlyTemporary = 1,
         Yes = 2,
     }
 
-    public class SockChatUser
+    public class ChatUser
     {
         public int UserId { get; set; }
         public string Username { get; set; }
-        public FlashiiColour Colour { get; set; }
+        public ChatColour Colour { get; set; }
         public int Hierarchy { get; set; }
         public string Nickname { get; set; }
 
@@ -27,15 +28,14 @@ namespace SharpChat
         public string AwayMessage { get; set; }
 
         public DateTimeOffset SilencedUntil { get; set; }
-        public DateTimeOffset BannedUntil { get; set; }
 
         public bool IsModerator { get; private set; } = false;
         public bool CanChangeNick { get; private set; } = false;
-        public SockChatUserChannel CanCreateChannels { get; private set; } = SockChatUserChannel.No;
+        public ChatUserChannelCreation CanCreateChannels { get; private set; } = ChatUserChannelCreation.No;
 
-        public readonly List<SockChatConn> Connections = new List<SockChatConn>();
+        public readonly List<ChatUserConnection> Connections = new List<ChatUserConnection>();
 
-        public SockChatChannel Channel {
+        public ChatChannel Channel {
             get
             {
                 lock (Channels)
@@ -45,29 +45,22 @@ namespace SharpChat
 
         public readonly ChatRateLimiter RateLimiter = new ChatRateLimiter();
 
-        public readonly List<SockChatChannel> Channels = new List<SockChatChannel>();
+        public readonly List<ChatChannel> Channels = new List<ChatChannel>();
 
         public bool IsSilenced
             => SilencedUntil != null && DateTimeOffset.UtcNow - SilencedUntil <= TimeSpan.Zero;
-        public bool IsBanned
-            => BannedUntil != null && DateTimeOffset.UtcNow - BannedUntil <= TimeSpan.Zero;
+
         public bool IsAlive
             => Connections.Where(c => !c.HasTimedOut).Any();
-
-        [Obsolete(@"Use GetDisplayName instead")]
-        public string DisplayName
-            => !string.IsNullOrEmpty(Nickname)
-                ? (IsAway ? string.Empty : @"~") + Nickname
-                : Username;
 
         public IEnumerable<IPAddress> RemoteAddresses
             => Connections.Select(c => c.RemoteAddress);
 
-        public SockChatUser()
+        public ChatUser()
         {
         }
 
-        public SockChatUser(FlashiiAuth auth)
+        public ChatUser(FlashiiAuth auth)
         {
             UserId = auth.UserId;
             ApplyAuth(auth, true);
@@ -103,14 +96,11 @@ namespace SharpChat
                 AwayMessage = null;
             }
 
-            Colour = new FlashiiColour(auth.ColourRaw);
+            Colour = new ChatColour(auth.ColourRaw);
             Hierarchy = auth.Hierarchy;
             IsModerator = auth.IsModerator;
             CanChangeNick = auth.CanChangeNick;
             CanCreateChannels = auth.CanCreateChannels;
-
-            if(invalidateRestrictions || !IsBanned)
-                BannedUntil = auth.BannedUntil;
 
             if(invalidateRestrictions || !IsSilenced)
                 SilencedUntil = auth.SilencedUntil;
@@ -123,14 +113,14 @@ namespace SharpChat
         }
 
         [Obsolete(@"Use Send(IServerPacket, int)")]
-        public void Send(SockChatUser user, string message, SockChatMessageFlags flags = SockChatMessageFlags.RegularUser)
+        public void Send(ChatUser user, string message, SockChatMessageFlags flags = SockChatMessageFlags.RegularUser)
         {
             user = user ?? SockChatServer.Bot;
 
             StringBuilder sb = new StringBuilder();
             sb.Append((int)SockChatServerPacket.MessageAdd);
             sb.Append('\t');
-            sb.Append(DateTimeOffset.Now.ToUnixTimeSeconds());
+            sb.Append(DateTimeOffset.Now.ToSockChatSeconds(1));
             sb.Append('\t');
             sb.Append(user.UserId);
             sb.Append('\t');
@@ -148,7 +138,7 @@ namespace SharpChat
         [Obsolete(@"Use Send(IServerPacket, int)")]
         public void Send(bool error, string id, params string[] args)
         {
-            Send(SockChatServer.Bot, SockChatMessage.PackBotMessage(error ? 1 : 0, id, args));
+            Send(SockChatServer.Bot, ChatMessage.PackBotMessage(error ? 1 : 0, id, args));
         }
 
         public void Close()
@@ -160,28 +150,19 @@ namespace SharpChat
             }
         }
 
-        public void ForceChannel(SockChatChannel chan = null)
+        public void ForceChannel(ChatChannel chan = null)
             => Send(new UserChannelForceJoinPacket(chan ?? Channel));
 
-        public void AddConnection(SockChatConn conn)
+        public void AddConnection(ChatUserConnection conn)
             => Connections.Add(conn);
 
-        public void RemoveConnection(SockChatConn conn)
+        public void RemoveConnection(ChatUserConnection conn)
            => Connections.Remove(conn);
 
         public void RemoveConnection(IWebSocketConnection conn)
             => Connections.Remove(Connections.FirstOrDefault(x => x.Websocket == conn));
 
-        public bool HasConnection(SockChatConn conn)
-            => Connections.Contains(conn);
-
-        public bool HasConnection(IWebSocketConnection ws)
-            => Connections.Any(x => x.Websocket == ws);
-
-        public SockChatConn GetConnection(IWebSocketConnection ws)
-            => Connections.FirstOrDefault(x => x.Websocket == ws);
-
-        public string Pack(int targetVersion = 1)
+        public string Pack(int targetVersion)
         {
             StringBuilder sb = new StringBuilder();
 

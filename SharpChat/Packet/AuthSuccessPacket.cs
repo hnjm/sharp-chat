@@ -6,10 +6,10 @@ namespace SharpChat.Packet
 {
     public class AuthSuccessPacket : ServerPacket
     {
-        public SockChatUser User { get; private set; }
-        public SockChatChannel Channel { get; private set; }
+        public ChatUser User { get; private set; }
+        public ChatChannel Channel { get; private set; }
 
-        public AuthSuccessPacket(SockChatUser user, SockChatChannel channel)
+        public AuthSuccessPacket(ChatUser user, ChatChannel channel)
         {
             User = user ?? throw new ArgumentNullException(nameof(user));
             Channel = channel ?? throw new ArgumentNullException(nameof(channel));

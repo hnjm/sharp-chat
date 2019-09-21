@@ -8,7 +8,7 @@ namespace SharpChat
         string Text { get; }
         DateTimeOffset DateTime { get; }
         SockChatMessageFlags Flags { get; }
-        SockChatChannel Channel { get;  }
-        SockChatUser User { get; }
+        ChatChannel Channel { get;  }
+        ChatUser User { get; }
     }
 }

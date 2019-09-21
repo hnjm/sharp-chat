@@ -44,5 +44,15 @@ namespace SharpChat
 
             return sb.ToString();
         }
+
+        public static long ToSockChatSeconds(this DateTimeOffset dto, int version)
+        {
+            long seconds = dto.ToUnixTimeSeconds();
+
+            if (version >= 2) // SCv2 epoch is the start of 2019
+                seconds -= 1546300800;
+
+            return seconds;
+        }
     }
 }

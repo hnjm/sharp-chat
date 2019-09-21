@@ -26,7 +26,7 @@ namespace SharpChat.Packet
                 sb.Append('\t');
             }
 
-            sb.Append(Message.DateTime.ToUnixTimeSeconds());
+            sb.Append(Message.DateTime.ToSockChatSeconds(version));
             sb.Append('\t');
 
             sb.Append(Message.User?.UserId ?? -1);

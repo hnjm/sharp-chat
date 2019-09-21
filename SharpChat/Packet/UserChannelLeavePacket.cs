@@ -6,9 +6,9 @@ namespace SharpChat.Packet
 {
     public class UserChannelLeavePacket : ServerPacket
     {
-        public SockChatUser User { get; private set; }
+        public ChatUser User { get; private set; }
 
-        public UserChannelLeavePacket(SockChatUser user)
+        public UserChannelLeavePacket(ChatUser user)
         {
             User = user ?? throw new ArgumentNullException(nameof(user));
         }

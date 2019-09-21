@@ -15,10 +15,10 @@ namespace SharpChat.Packet
     public class UserDisconnectPacket : ServerPacket
     {
         public DateTimeOffset Disconnected { get; private set; }
-        public SockChatUser User { get; private set; }
+        public ChatUser User { get; private set; }
         public UserDisconnectReason Reason { get; private set; }
 
-        public UserDisconnectPacket(DateTimeOffset disconnected, SockChatUser user, UserDisconnectReason reason)
+        public UserDisconnectPacket(DateTimeOffset disconnected, ChatUser user, UserDisconnectReason reason)
         {
             Disconnected = disconnected;
             User = user ?? throw new ArgumentNullException(nameof(user));
@@ -58,7 +58,7 @@ namespace SharpChat.Packet
             }
 
             sb.Append('\t');
-            sb.Append(Disconnected.ToUnixTimeSeconds());
+            sb.Append(Disconnected.ToSockChatSeconds(version));
             sb.Append('\t');
             sb.Append(SequenceId);
 

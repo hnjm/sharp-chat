@@ -1,17 +1,17 @@
 ﻿namespace SharpChat
 {
-    public class FlashiiColour
+    public class ChatColour
     {
         public const int INHERIT = 0x40000000;
 
         public int Raw { get; set; }
 
-        public FlashiiColour(bool inherit = true)
+        public ChatColour(bool inherit = true)
         {
             Inherit = inherit;
         }
 
-        public FlashiiColour(int colour)
+        public ChatColour(int colour)
         {
             Raw = colour;
         }

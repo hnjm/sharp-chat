@@ -1,4 +1,5 @@
 ﻿using Fleck;
+using SharpChat.Flashii;
 using SharpChat.Packet;
 using System;
 using System.Collections.Generic;
@@ -26,33 +27,33 @@ namespace SharpChat
 
         public bool IsDisposed { get; private set; }
 
-        public static readonly SockChatUser Bot = new SockChatUser
+        public static readonly ChatUser Bot = new ChatUser
         {
             UserId = -1,
             Username = @"ChatBot",
             Hierarchy = 0,
-            Colour = new FlashiiColour(),
+            Colour = new ChatColour(),
         };
 
         public readonly WebSocketServer Server;
-        public readonly SockChatContext Context;
+        public readonly ChatContext Context;
 
-        public readonly List<SockChatConn> Connections = new List<SockChatConn>();
+        public readonly List<ChatUserConnection> Connections = new List<ChatUserConnection>();
 
         public SockChatServer(ushort port)
         {
             Logger.Write("Starting Sock Chat server...");
 
-            Context = new SockChatContext(this);
+            Context = new ChatContext(this);
 
-            Context.AddChannel(new SockChatChannel(@"Lounge"));
+            Context.AddChannel(new ChatChannel(@"Lounge"));
 #if DEBUG
-            Context.AddChannel(new SockChatChannel(@"Programming"));
-            Context.AddChannel(new SockChatChannel(@"Games"));
-            Context.AddChannel(new SockChatChannel(@"Splatoon"));
-            Context.AddChannel(new SockChatChannel(@"Password") { Password = @"meow", });
+            Context.AddChannel(new ChatChannel(@"Programming"));
+            Context.AddChannel(new ChatChannel(@"Games"));
+            Context.AddChannel(new ChatChannel(@"Splatoon"));
+            Context.AddChannel(new ChatChannel(@"Password") { Password = @"meow", });
 #endif
-            Context.AddChannel(new SockChatChannel(@"Staff") { Hierarchy = 5 });
+            Context.AddChannel(new ChatChannel(@"Staff") { Hierarchy = 5 });
 
             Server = new WebSocketServer($@"ws://0.0.0.0:{port}");
             Server.Start(sock =>
@@ -68,21 +69,20 @@ namespace SharpChat
         {
             lock(Connections)
             {
-                SockChatConn sConn = Connections.FirstOrDefault(x => x.Websocket == conn);
+                ChatUserConnection sConn = Connections.FirstOrDefault(x => x.Websocket == conn);
 
                 if (sConn == null)
-                    Connections.Add(sConn = new SockChatConn(conn));
+                    Connections.Add(sConn = new ChatUserConnection(conn));
             }
 
-            Context.CheckIPBanExpirations();
-            Context.CheckPings();
+            Context.Update();
         }
 
         private void OnClose(IWebSocketConnection conn)
         {
             lock (Context.Users)
             {
-                SockChatUser user = Context.FindUserBySock(conn);
+                ChatUser user = Context.FindUserBySock(conn);
 
                 if (user != null)
                 {
@@ -93,12 +93,11 @@ namespace SharpChat
                 }
             }
 
-            Context.CheckIPBanExpirations();
-            Context.CheckPings();
+            Context.Update();
 
             lock (Connections)
             {
-                SockChatConn sConn = Connections.FirstOrDefault(x => x.Websocket == conn);
+                ChatUserConnection sConn = Connections.FirstOrDefault(x => x.Websocket == conn);
 
                 if (sConn != null)
                 {
@@ -111,16 +110,14 @@ namespace SharpChat
         private void OnError(IWebSocketConnection conn, Exception ex)
         {
             Logger.Write($@"[{conn.ConnectionInfo.ClientIpAddress}] {ex}");
-            Context.CheckIPBanExpirations();
-            Context.CheckPings();
+            Context.Update();
         }
 
         private void OnMessage(IWebSocketConnection ws, string msg)
         {
-            Context.CheckIPBanExpirations();
-            Context.CheckPings();
+            Context.Update();
 
-            SockChatConn conn;
+            ChatUserConnection conn;
 
             lock (Connections)
                 conn = Connections.FirstOrDefault(x => x.Websocket == ws);
@@ -132,7 +129,7 @@ namespace SharpChat
                 return;
             }
 
-            SockChatUser floodUser = Context.FindUserBySock(conn);
+            ChatUser floodUser = Context.FindUserBySock(conn);
 
             if(floodUser != null)
             {
@@ -182,7 +179,7 @@ namespace SharpChat
                     if (Context.FindUserBySock(conn) != null)
                         break;
 
-                    DateTimeOffset authBan = Context.GetIPBanExpiration(conn.RemoteAddress);
+                    DateTimeOffset authBan = Context.Bans.Check(conn.RemoteAddress);
 
                     if (authBan > DateTimeOffset.UtcNow)
                     {
@@ -191,7 +188,7 @@ namespace SharpChat
                         break;
                     }
 
-                    SockChatUser aUser;
+                    ChatUser aUser;
                     FlashiiAuth auth;
 
                     aUser = Context.FindUserBySock(conn);
@@ -211,16 +208,18 @@ namespace SharpChat
                     aUser = Context.FindUserById(auth.UserId);
 
                     if (aUser == null)
-                        aUser = new SockChatUser(auth);
+                        aUser = new ChatUser(auth);
                     else
                     {
                         aUser.ApplyAuth(auth);
                         aUser.Channel?.Send(new UserUpdatePacket(aUser));
                     }
 
-                    if (aUser.IsBanned)
+                    DateTimeOffset aBanned = Context.Bans.Check(aUser);
+
+                    if (aBanned > DateTimeOffset.Now)
                     {
-                        conn.Send(new AuthFailPacket(AuthFailReason.Banned, aUser.BannedUntil));
+                        conn.Send(new AuthFailPacket(AuthFailReason.Banned, aBanned));
                         conn.Dispose();
                         break;
                     }
@@ -238,7 +237,7 @@ namespace SharpChat
 
                     aUser.AddConnection(conn);
 
-                    SockChatChannel chan = Context.FindChannelByName(auth.DefaultChannel) ?? Context.Channels.FirstOrDefault();
+                    ChatChannel chan = Context.FindChannelByName(auth.DefaultChannel) ?? Context.Channels.FirstOrDefault();
 
                     // umi eats the first message for some reason so we'll send a blank padding msg
                     conn.Send(new ContextMessagePacket(EventChatMessage.Info(@"welcome", SockChatMessageFlags.RegularUser, @"say", Utils.InitialMessage)));
@@ -253,8 +252,8 @@ namespace SharpChat
 
                     lock (Context)
                     {
-                        SockChatUser mUser = Context.FindUserBySock(conn);
-                        SockChatChannel mChan;
+                        ChatUser mUser = Context.FindUserBySock(conn);
+                        ChatChannel mChan;
 
                         if (mUser == null || string.IsNullOrWhiteSpace(args[2]))
                             break;
@@ -353,7 +352,7 @@ namespace SharpChat
                                         break;
                                     }
 
-                                    SockChatUser whisperUser = Context.FindUserByName(parts[1]);
+                                    ChatUser whisperUser = Context.FindUserByName(parts[1]);
 
                                     if (whisperUser == null)
                                     {
@@ -364,7 +363,7 @@ namespace SharpChat
                                     string whisperStr = string.Join(' ', parts.Skip(2));
 
                                     whisperUser.Send(mUser, whisperStr, SockChatMessageFlags.RegularPM);
-                                    mUser.Send(mUser, $@"{whisperUser.DisplayName} {whisperStr}", SockChatMessageFlags.RegularPM);
+                                    mUser.Send(mUser, $@"{whisperUser.GetDisplayName(1)} {whisperStr}", SockChatMessageFlags.RegularPM);
                                     break;
                                 case @"action": // describe an action
                                 case @"me":
@@ -375,7 +374,7 @@ namespace SharpChat
 
                                     lock (Lock)
                                     {
-                                        SockChatMessage sMsg = new SockChatMessage
+                                        ChatMessage sMsg = new ChatMessage
                                         {
                                             MessageId = ServerPacket.NextSequenceId(),
                                             Channel = mChan,
@@ -385,7 +384,7 @@ namespace SharpChat
                                             Flags = SockChatMessageFlags.Action,
                                         };
 
-                                        Context.Messages.Add(sMsg);
+                                        Context.Events.Add(sMsg);
                                         mChan.Send(new ChatMessageAddPacket(sMsg));
                                     }
                                     break;
@@ -395,7 +394,7 @@ namespace SharpChat
 
                                     if (!string.IsNullOrEmpty(whoChanStr))
                                     {
-                                        SockChatChannel whoChan = Context.FindChannelByName(whoChanStr);
+                                        ChatChannel whoChan = Context.FindChannelByName(whoChanStr);
 
                                         if (whoChan == null)
                                         {
@@ -417,7 +416,7 @@ namespace SharpChat
                                                     whoChanSB.Append(@" style=""font-weight: bold;""");
 
                                                 whoChanSB.Append(@">");
-                                                whoChanSB.Append(u.DisplayName);
+                                                whoChanSB.Append(u.GetDisplayName(1));
                                                 whoChanSB.Append(@"</a>, ");
                                             });
 
@@ -436,7 +435,7 @@ namespace SharpChat
                                                     whoChanSB.Append(@" style=""font-weight: bold;""");
 
                                                 whoChanSB.Append(@">");
-                                                whoChanSB.Append(u.DisplayName);
+                                                whoChanSB.Append(u.GetDisplayName(1));
                                                 whoChanSB.Append(@"</a>, ");
                                             });
 
@@ -469,7 +468,7 @@ namespace SharpChat
                                     Context.SwitchChannel(mUser, parts[1], string.Join(' ', parts.Skip(2)));
                                     break;
                                 case @"create": // create a new channel
-                                    if (mUser.CanCreateChannels == SockChatUserChannel.No)
+                                    if (mUser.CanCreateChannels == ChatUserChannelCreation.No)
                                     {
                                         mUser.Send(true, @"cmdna", @"/create");
                                         break;
@@ -493,10 +492,10 @@ namespace SharpChat
                                     }
 
                                     string createChanName = string.Join('_', parts.Skip(createChanHasHierarchy ? 2 : 1));
-                                    SockChatChannel createChan = new SockChatChannel
+                                    ChatChannel createChan = new ChatChannel
                                     {
                                         Name = createChanName,
-                                        IsTemporary = mUser.CanCreateChannels == SockChatUserChannel.OnlyTemporary,
+                                        IsTemporary = mUser.CanCreateChannels == ChatUserChannelCreation.OnlyTemporary,
                                         Hierarchy = createChanHierarchy,
                                         Owner = mUser,
                                     };
@@ -520,7 +519,7 @@ namespace SharpChat
                                     }
 
                                     string delChanName = string.Join('_', parts.Skip(1));
-                                    SockChatChannel delChan = Context.FindChannelByName(delChanName);
+                                    ChatChannel delChan = Context.FindChannelByName(delChanName);
 
                                     if (delChan == null)
                                     {
@@ -582,7 +581,7 @@ namespace SharpChat
 
                                     lock (Lock)
                                     {
-                                        SockChatMessage sMsg = new SockChatMessage
+                                        ChatMessage sMsg = new ChatMessage
                                         {
                                             MessageId = ServerPacket.NextSequenceId(),
                                             Channel = mChan,
@@ -591,11 +590,11 @@ namespace SharpChat
                                             Text = string.Join(' ', parts.Skip(1)),
                                         };
 
-                                        Context.Messages.Add(sMsg);
+                                        Context.Events.Add(sMsg);
                                         mChan.Send(new ChatMessageAddPacket(sMsg));
                                     }
 
-                                    Context.Broadcast(Bot, SockChatMessage.PackBotMessage(0, @"say", string.Join(' ', parts.Skip(1))));
+                                    Context.Broadcast(Bot, ChatMessage.PackBotMessage(0, @"say", string.Join(' ', parts.Skip(1))));
                                     break;
                                 case @"delmsg": // deletes a message
                                     if (!mUser.IsModerator)
@@ -610,7 +609,7 @@ namespace SharpChat
                                         break;
                                     }
 
-                                    IChatMessage delMsg = Context.Messages.FirstOrDefault(m => m.MessageId == delMsgId);
+                                    IChatMessage delMsg = Context.Events.FirstOrDefault(m => m.MessageId == delMsgId);
 
                                     if (delMsg == null || delMsg.User.Hierarchy > mUser.Hierarchy)
                                     {
@@ -630,16 +629,16 @@ namespace SharpChat
 
                                     bool isBanning = command == @"ban";
 
-                                    SockChatUser banUser;
+                                    ChatUser banUser;
                                     if (parts.Length < 2 || (banUser = Context.FindUserByName(parts[1])) == null)
                                     {
                                         mUser.Send(true, @"usernf", parts[1] ?? @"User");
                                         break;
                                     }
 
-                                    if (banUser == mUser || banUser.Hierarchy >= mUser.Hierarchy || banUser.IsBanned)
+                                    if (banUser == mUser || banUser.Hierarchy >= mUser.Hierarchy || Context.Bans.Check(banUser) > DateTimeOffset.Now)
                                     {
-                                        mUser.Send(true, @"kickna", banUser.DisplayName);
+                                        mUser.Send(true, @"kickna", banUser.GetDisplayName(1));
                                         break;
                                     }
 
@@ -672,15 +671,15 @@ namespace SharpChat
                                         break;
                                     }
 
-                                    SockChatUser unbanUser = Context.FindUserByName(parts[1]);
+                                    ChatUser unbanUser = Context.FindUserByName(parts[1]);
 
-                                    if(unbanUser == null || !unbanUser.IsBanned)
+                                    if(Context.Bans.Check(unbanUser) <= DateTimeOffset.Now)
                                     {
-                                        mUser.Send(true, @"notban", unbanUser?.DisplayName ?? parts[1]);
+                                        mUser.Send(true, @"notban", unbanUser?.GetDisplayName(1) ?? parts[1]);
                                         break;
                                     }
 
-                                    unbanUser.BannedUntil = DateTimeOffset.MinValue;
+                                    Context.Bans.Remove(unbanUser);
                                     mUser.Send(false, @"unban", unbanUser.Username);
                                     break;
                                 case @"pardonip": // unban an ip
@@ -697,13 +696,13 @@ namespace SharpChat
                                         break;
                                     }
 
-                                    if (!Context.CheckIPBan(unbanIP))
+                                    if (Context.Bans.Check(unbanIP) <= DateTimeOffset.Now)
                                     {
                                         mUser.Send(true, @"notban", unbanIP.ToString());
                                         break;
                                     }
 
-                                    Context.IPBans.Remove(unbanIP);
+                                    Context.Bans.Remove(unbanIP);
                                     mUser.Send(false, @"unban", unbanIP.ToString());
                                     break;
                                 case @"bans": // gets a list of bans
@@ -714,7 +713,7 @@ namespace SharpChat
                                         break;
                                     }
 
-                                    mUser.Send(new BanListPacket(Context.Users.Where(u => u.IsBanned), Context.IPBans));
+                                    mUser.Send(new BanListPacket(Context.Bans, Context.Users));
                                     break;
                                 case @"silence": // silence a user
                                     if (!mUser.IsModerator)
@@ -723,7 +722,7 @@ namespace SharpChat
                                         break;
                                     }
 
-                                    SockChatUser silUser;
+                                    ChatUser silUser;
                                     if (parts.Length < 2 || (silUser = Context.FindUserByName(parts[1])) == null)
                                     {
                                         mUser.Send(true, @"usernf", parts[1] ?? @"User");
@@ -763,7 +762,7 @@ namespace SharpChat
 
                                     silUser.SilencedUntil = silenceUntil;
                                     silUser.Send(false, @"silence");
-                                    mUser.Send(false, @"silok", silUser.DisplayName);
+                                    mUser.Send(false, @"silok", silUser.GetDisplayName(1));
                                     break;
                                 case @"unsilence": // unsilence a user
                                     if (!mUser.IsModerator)
@@ -772,7 +771,7 @@ namespace SharpChat
                                         break;
                                     }
 
-                                    SockChatUser unsilUser;
+                                    ChatUser unsilUser;
                                     if(parts.Length < 2 || (unsilUser = Context.FindUserByName(parts[1])) == null)
                                     {
                                         mUser.Send(true, @"usernf", parts[1] ?? @"User");
@@ -793,7 +792,7 @@ namespace SharpChat
 
                                     unsilUser.SilencedUntil = DateTimeOffset.MinValue;
                                     unsilUser.Send(false, @"unsil");
-                                    mUser.Send(false, @"usilok", unsilUser.DisplayName);
+                                    mUser.Send(false, @"usilok", unsilUser.GetDisplayName(1));
                                     break;
                                 case @"ip": // gets a user's ip (from all connections in this case)
                                 case @"whois":
@@ -803,7 +802,7 @@ namespace SharpChat
                                         break;
                                     }
 
-                                    SockChatUser ipUser;
+                                    ChatUser ipUser;
                                     if (parts.Length < 2 || (ipUser = Context.FindUserByName(parts[1])) == null)
                                     {
                                         mUser.Send(true, @"usernf", parts[1] ?? string.Empty);
@@ -824,7 +823,7 @@ namespace SharpChat
 
                         lock (Lock)
                         {
-                            SockChatMessage sMsg = new SockChatMessage
+                            ChatMessage sMsg = new ChatMessage
                             {
                                 MessageId = ServerPacket.NextSequenceId(),
                                 Channel = mChan,
@@ -833,7 +832,7 @@ namespace SharpChat
                                 Text = message,
                             };
 
-                            Context.Messages.Add(sMsg);
+                            Context.Events.Add(sMsg);
                             mChan.Send(new ChatMessageAddPacket(sMsg));
                         }
                     }

@@ -7,9 +7,9 @@ namespace SharpChat.Packet
 {
     public class ContextUsersPacket : ServerPacket
     {
-        public IEnumerable<SockChatUser> Users { get; private set; }
+        public IEnumerable<ChatUser> Users { get; private set; }
 
-        public ContextUsersPacket(IEnumerable<SockChatUser> users)
+        public ContextUsersPacket(IEnumerable<ChatUser> users)
         {
             Users = users?.Where(u => u != null) ?? throw new ArgumentNullException(nameof(users));
         }
@@ -24,7 +24,7 @@ namespace SharpChat.Packet
             sb.Append('\t');
             sb.Append(Users.Count());
 
-            foreach(SockChatUser user in Users)
+            foreach(ChatUser user in Users)
             {
                 sb.Append('\t');
                 sb.Append(user.Pack(version));

@@ -42,7 +42,7 @@ namespace SharpChat.Packet
             if(Reason == ForceDisconnectReason.Banned)
             {
                 sb.Append('\t');
-                sb.Append(Expires.ToUnixTimeSeconds());
+                sb.Append(Expires.ToSockChatSeconds(version));
             }
 
             return new[] { sb.ToString() };

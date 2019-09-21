@@ -4,7 +4,7 @@ using System.Collections.Specialized;
 using System.Net;
 using System.Text;
 
-namespace SharpChat
+namespace SharpChat.Flashii
 {
     public class FlashiiAuth
     {
@@ -36,7 +36,7 @@ namespace SharpChat
         public bool CanChangeNick { get; set; }
 
         [JsonProperty(@"can_create_chan")]
-        public SockChatUserChannel CanCreateChannels { get; set; }
+        public ChatUserChannelCreation CanCreateChannels { get; set; }
 
         [JsonProperty(@"is_banned")]
         public DateTimeOffset BannedUntil { get; set; }
@@ -60,7 +60,7 @@ namespace SharpChat
                     BannedUntil = DateTimeOffset.MinValue,
                     SilencedUntil = DateTimeOffset.MinValue,
                     CanChangeNick = false,
-                    CanCreateChannels = SockChatUserChannel.No
+                    CanCreateChannels = ChatUserChannelCreation.No
                 };
 #endif
 

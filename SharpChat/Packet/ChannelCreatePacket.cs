@@ -5,9 +5,9 @@ namespace SharpChat.Packet
 {
     public class ChannelCreatePacket : ServerPacket
     {
-        public SockChatChannel Channel { get; private set; }
+        public ChatChannel Channel { get; private set; }
 
-        public ChannelCreatePacket(SockChatChannel channel)
+        public ChannelCreatePacket(ChatChannel channel)
         {
             Channel = channel;
         }

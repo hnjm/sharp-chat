@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Net;
 
-namespace SharpChat
+namespace SharpChat.Flashii
 {
     public class FlashiiBump
     {
