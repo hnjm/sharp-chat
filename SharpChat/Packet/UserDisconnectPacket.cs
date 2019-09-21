@@ -12,7 +12,7 @@ namespace SharpChat.Packet
         Flood,
     }
 
-    public class UserDisconnectPacket : IServerPacket
+    public class UserDisconnectPacket : ServerPacket
     {
         public DateTimeOffset Disconnected { get; private set; }
         public SockChatUser User { get; private set; }
@@ -25,19 +25,19 @@ namespace SharpChat.Packet
             Reason = reason;
         }
 
-        public IEnumerable<string> Pack(int version, int eventId)
+        public override IEnumerable<string> Pack(int version)
         {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)SockChatServerPacket.UserDisconnect);
-            sb.Append(Constants.SEPARATOR);
+            sb.Append('\t');
             sb.Append(User.UserId);
-            sb.Append(Constants.SEPARATOR);
+            sb.Append('\t');
 
             if (version < 2)
             {
                 sb.Append(User.GetDisplayName(version));
-                sb.Append(Constants.SEPARATOR);
+                sb.Append('\t');
             }
 
             switch(Reason)
@@ -57,10 +57,10 @@ namespace SharpChat.Packet
                     break;
             }
 
-            sb.Append(Constants.SEPARATOR);
+            sb.Append('\t');
             sb.Append(Disconnected.ToUnixTimeSeconds());
-            sb.Append(Constants.SEPARATOR);
-            sb.Append(eventId);
+            sb.Append('\t');
+            sb.Append(SequenceId);
 
             return new[] { sb.ToString() };
         }

@@ -4,7 +4,7 @@ using System.Text;
 
 namespace SharpChat.Packet
 {
-    public class UserUpdatePacket : IServerPacket
+    public class UserUpdatePacket : ServerPacket
     {
         public SockChatUser User { get; private set; }
         public string PreviousName { get; private set; }
@@ -15,7 +15,7 @@ namespace SharpChat.Packet
             PreviousName = previousName;
         }
 
-        public IEnumerable<string> Pack(int version, int eventId)
+        public override IEnumerable<string> Pack(int version)
         {
             string[] lines = new string[2];
 
@@ -26,30 +26,27 @@ namespace SharpChat.Packet
             if (version < 2 && !isSilent)
             {
                 sb.Append((int)SockChatServerPacket.MessageAdd);
-                sb.Append(Constants.SEPARATOR);
+                sb.Append('\t');
                 sb.Append(DateTimeOffset.Now.ToUnixTimeSeconds());
-                sb.Append(Constants.SEPARATOR);
-                sb.Append(-1);
-                sb.Append(Constants.SEPARATOR);
-                sb.Append("0\fnick\f");
+                sb.Append("\t-1\t0\fnick\f");
                 sb.Append(PreviousName);
                 sb.Append('\f');
                 sb.Append(User.GetDisplayName(version));
-                sb.Append(Constants.SEPARATOR);
-                sb.Append(eventId);
-                sb.Append(Constants.SEPARATOR);
+                sb.Append('\t');
+                sb.Append(SequenceId);
+                sb.Append('\t');
                 sb.Append(SockChatMessageFlags.RegularUser.Serialise());
                 lines[0] = sb.ToString();
                 sb.Clear();
             }
 
             sb.Append((int)SockChatServerPacket.UserUpdate);
-            sb.Append(Constants.SEPARATOR);
+            sb.Append('\t');
             sb.Append(User.Pack(version));
 
             if(version >= 2)
             {
-                sb.Append(Constants.SEPARATOR);
+                sb.Append('\t');
                 sb.Append(isSilent ? '1' : '0');
             }
 

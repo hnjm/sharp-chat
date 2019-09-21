@@ -18,13 +18,13 @@ namespace SharpChat
             {
                 StringBuilder sb = new StringBuilder();
 
-                sb.AppendNum(IsError);
-                sb.Append(Constants.MISC_SEPARATOR);
+                sb.Append(IsError ? '1' : '0');
+                sb.Append('\f');
                 sb.Append(EventName);
 
                 foreach (object part in Parts)
                 {
-                    sb.Append(Constants.MISC_SEPARATOR);
+                    sb.Append('\f');
                     sb.Append(part);
                 }
 

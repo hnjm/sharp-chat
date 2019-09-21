@@ -11,7 +11,7 @@ namespace SharpChat.Packet
         Banned,
     }
 
-    public class AuthFailPacket : IServerPacket
+    public class AuthFailPacket : ServerPacket
     {
         public AuthFailReason Reason { get; private set; }
         public DateTimeOffset Expires { get; private set; }
@@ -28,14 +28,12 @@ namespace SharpChat.Packet
             }
         }
 
-        public IEnumerable<string> Pack(int version, int eventId)
+        public override IEnumerable<string> Pack(int version)
         {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)SockChatServerPacket.UserConnect);
-            sb.Append(Constants.SEPARATOR);
-            sb.Append('n');
-            sb.Append(Constants.SEPARATOR);
+            sb.Append("\tn\t");
 
             if (version >= 2) {
                 switch (Reason)
@@ -70,7 +68,7 @@ namespace SharpChat.Packet
 
             if(Reason == AuthFailReason.Banned)
             {
-                sb.Append(Constants.SEPARATOR);
+                sb.Append('\t');
 
                 if (Expires == DateTimeOffset.MaxValue)
                     sb.Append(@"-1");

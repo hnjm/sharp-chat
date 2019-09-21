@@ -5,7 +5,7 @@ using System.Text;
 
 namespace SharpChat.Packet
 {
-    public class ContextChannelsPacket : IServerPacket
+    public class ContextChannelsPacket : ServerPacket
     {
         public IEnumerable<SockChatChannel> Channels { get; private set; }
 
@@ -14,19 +14,19 @@ namespace SharpChat.Packet
             Channels = channels?.Where(c => c != null) ?? throw new ArgumentNullException(nameof(channels));
         }
 
-        public IEnumerable<string> Pack(int version, int eventId)
+        public override IEnumerable<string> Pack(int version)
         {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)SockChatServerPacket.ContextPopulate);
-            sb.Append(Constants.SEPARATOR);
+            sb.Append('\t');
             sb.Append((int)SockChatServerContextPacket.Channels);
-            sb.Append(Constants.SEPARATOR);
+            sb.Append('\t');
             sb.Append(Channels.Count());
 
             foreach (SockChatChannel channel in Channels)
             {
-                sb.Append(Constants.SEPARATOR);
+                sb.Append('\t');
                 sb.Append(channel.Pack(version));
             }
 

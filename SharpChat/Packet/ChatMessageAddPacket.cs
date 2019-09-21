@@ -4,7 +4,7 @@ using System.Text;
 
 namespace SharpChat.Packet
 {
-    public class ChatMessageAddPacket : IServerPacket
+    public class ChatMessageAddPacket : ServerPacket
     {
         public IChatMessage Message { get; private set; }
 
@@ -13,24 +13,24 @@ namespace SharpChat.Packet
             Message = message ?? throw new ArgumentNullException(nameof(message));
         }
 
-        public IEnumerable<string> Pack(int version, int eventId)
+        public override IEnumerable<string> Pack(int version)
         {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)SockChatServerPacket.MessageAdd);
-            sb.Append(Constants.SEPARATOR);
+            sb.Append('\t');
 
             if(version >= 2)
             {
                 sb.Append(Message.Channel?.Name ?? @"@broadcast");
-                sb.Append(Constants.SEPARATOR);
+                sb.Append('\t');
             }
 
             sb.Append(Message.DateTime.ToUnixTimeSeconds());
-            sb.Append(Constants.SEPARATOR);
+            sb.Append('\t');
 
             sb.Append(Message.User?.UserId ?? -1);
-            sb.Append(Constants.SEPARATOR);
+            sb.Append('\t');
 
             if (version >= 2)
                 sb.Append(Message.Text);
@@ -51,9 +51,9 @@ namespace SharpChat.Packet
                     sb.Append(@"</i>");
             }
 
-            sb.Append(Constants.SEPARATOR);
-            sb.Append(eventId);
-            sb.Append(Constants.SEPARATOR);
+            sb.Append('\t');
+            sb.Append(SequenceId);
+            sb.Append('\t');
             sb.Append(Message.Flags.Serialise());
 
             return new[] { sb.ToString() };

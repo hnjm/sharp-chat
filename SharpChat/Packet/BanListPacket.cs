@@ -6,7 +6,7 @@ using System.Text;
 
 namespace SharpChat.Packet
 {
-    public class BanListPacket : IServerPacket
+    public class BanListPacket : ServerPacket
     {
         public IEnumerable<SockChatUser> Users { get; private set; }
         public Dictionary<IPAddress, DateTimeOffset> IPs { get; private set; }
@@ -17,7 +17,7 @@ namespace SharpChat.Packet
             IPs = ips ?? throw new ArgumentNullException(nameof(ips));
         }
 
-        public IEnumerable<string> Pack(int version, int eventId)
+        public override IEnumerable<string> Pack(int version)
         {
             StringBuilder sb = new StringBuilder();
 
@@ -27,12 +27,9 @@ namespace SharpChat.Packet
             } else
             {
                 sb.Append((int)SockChatServerPacket.MessageAdd);
-                sb.Append(Constants.SEPARATOR);
+                sb.Append('\t');
                 sb.Append(DateTimeOffset.Now.ToUnixTimeSeconds());
-                sb.Append(Constants.SEPARATOR);
-                sb.Append(-1);
-                sb.Append(Constants.SEPARATOR);
-                sb.Append("0\fbanlist\f");
+                sb.Append("'\t-1\t0\fbanlist\f");
 
                 foreach (SockChatUser user in Users)
                     sb.AppendFormat(@"<a href=""javascript:void(0);"" onclick=""Chat.SendMessageWrapper('/unban '+ this.innerHTML);"">{0}</a>, ", user.Username);
@@ -42,9 +39,9 @@ namespace SharpChat.Packet
                 if(Users.Any() || IPs.Any())
                     sb.Length -= 2;
 
-                sb.Append(Constants.SEPARATOR);
-                sb.Append(eventId);
-                sb.Append(Constants.SEPARATOR);
+                sb.Append('\t');
+                sb.Append(SequenceId);
+                sb.Append('\t');
                 sb.Append(SockChatMessageFlags.RegularUser.Serialise());
             }
 

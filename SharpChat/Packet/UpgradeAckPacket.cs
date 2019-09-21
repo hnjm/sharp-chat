@@ -3,7 +3,7 @@ using System.Text;
 
 namespace SharpChat.Packet
 {
-    public class UpgradeAckPacket : IServerPacket
+    public class UpgradeAckPacket : ServerPacket
     {
         public bool Success { get; private set; }
         public int Version { get; private set; }
@@ -14,14 +14,14 @@ namespace SharpChat.Packet
             Version = version;
         }
 
-        public IEnumerable<string> Pack(int version, int eventId)
+        public override IEnumerable<string> Pack(int version)
         {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)SockChatServerPacket.UpgradeAck);
-            sb.Append(Constants.SEPARATOR);
+            sb.Append('\t');
             sb.Append(Success ? '1' : '0');
-            sb.Append(Constants.SEPARATOR);
+            sb.Append('\t');
             sb.Append(Version);
 
             return new[] { sb.ToString() };

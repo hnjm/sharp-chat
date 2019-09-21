@@ -3,6 +3,7 @@ using SharpChat.Packet;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Text;
 
 namespace SharpChat
@@ -59,8 +60,8 @@ namespace SharpChat
                 ? (IsAway ? string.Empty : @"~") + Nickname
                 : Username;
 
-        public IEnumerable<string> RemoteAddresses
-            => Connections.Select(c => c.Websocket.RemoteAddress());
+        public IEnumerable<IPAddress> RemoteAddresses
+            => Connections.Select(c => c.RemoteAddress);
 
         public SockChatUser()
         {
@@ -115,10 +116,10 @@ namespace SharpChat
                 SilencedUntil = auth.SilencedUntil;
         }
 
-        public void Send(IServerPacket packet, int eventId = 0)
+        public void Send(IServerPacket packet)
         {
             lock(Connections)
-                Connections.ForEach(c => c.Send(packet, eventId));
+                Connections.ForEach(c => c.Send(packet));
         }
 
         [Obsolete(@"Use Send(IServerPacket, int)")]
@@ -126,11 +127,22 @@ namespace SharpChat
         {
             user = user ?? SockChatServer.Bot;
 
-            Connections.ForEach(c => c.Send(new object[] {
-                DateTimeOffset.Now.ToUnixTimeSeconds().ToString(), user.UserId.ToString(),
-                message, SockChatMessage.NextMessageId,
-                flags.Serialise()
-            }.Pack(SockChatServerPacket.MessageAdd)));
+            StringBuilder sb = new StringBuilder();
+            sb.Append((int)SockChatServerPacket.MessageAdd);
+            sb.Append('\t');
+            sb.Append(DateTimeOffset.Now.ToUnixTimeSeconds());
+            sb.Append('\t');
+            sb.Append(user.UserId);
+            sb.Append('\t');
+            sb.Append(message);
+            sb.Append('\t');
+            sb.Append(ServerPacket.NextSequenceId());
+            sb.Append('\t');
+            sb.Append(flags.Serialise());
+
+            string packet = sb.ToString();
+
+            Connections.ForEach(c => c.Send(packet));
         }
 
         [Obsolete(@"Use Send(IServerPacket, int)")]
@@ -174,19 +186,19 @@ namespace SharpChat
             StringBuilder sb = new StringBuilder();
 
             sb.Append(UserId);
-            sb.Append(Constants.SEPARATOR);
+            sb.Append('\t');
             sb.Append(GetDisplayName(targetVersion));
-            sb.Append(Constants.SEPARATOR);
+            sb.Append('\t');
             if (targetVersion >= 2)
                 sb.Append(Colour.Raw);
             else
                 sb.Append(Colour);
-            sb.Append(Constants.SEPARATOR);
+            sb.Append('\t');
             sb.Append(Hierarchy);
             sb.Append(' ');
-            sb.Append(IsModerator.AsChar());
+            sb.Append(IsModerator ? '1' : '0');
             sb.Append(@" 0 ");
-            sb.Append(CanChangeNick.AsChar());
+            sb.Append(CanChangeNick ? '1' : '0');
             sb.Append(' ');
             sb.Append((int)CanCreateChannels);
 

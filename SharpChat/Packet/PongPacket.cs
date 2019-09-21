@@ -4,7 +4,7 @@ using System.Text;
 
 namespace SharpChat.Packet
 {
-    public class PongPacket : IServerPacket
+    public class PongPacket : ServerPacket
     {
         public DateTimeOffset PongTime { get; private set; }
 
@@ -13,12 +13,12 @@ namespace SharpChat.Packet
             PongTime = dto;
         }
 
-        public IEnumerable<string> Pack(int version, int eventId)
+        public override IEnumerable<string> Pack(int version)
         {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)SockChatServerPacket.Pong);
-            sb.Append(Constants.SEPARATOR);
+            sb.Append('\t');
 
             if (version >= 2)
                 sb.Append(PongTime.ToUnixTimeSeconds());

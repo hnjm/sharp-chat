@@ -5,7 +5,7 @@ using System.Text;
 
 namespace SharpChat.Packet
 {
-    public class ContextUsersPacket : IServerPacket
+    public class ContextUsersPacket : ServerPacket
     {
         public IEnumerable<SockChatUser> Users { get; private set; }
 
@@ -14,21 +14,21 @@ namespace SharpChat.Packet
             Users = users?.Where(u => u != null) ?? throw new ArgumentNullException(nameof(users));
         }
 
-        public IEnumerable<string> Pack(int version, int eventId)
+        public override IEnumerable<string> Pack(int version)
         {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)SockChatServerPacket.ContextPopulate);
-            sb.Append(Constants.SEPARATOR);
+            sb.Append('\t');
             sb.Append((int)SockChatServerContextPacket.Users);
-            sb.Append(Constants.SEPARATOR);
+            sb.Append('\t');
             sb.Append(Users.Count());
 
             foreach(SockChatUser user in Users)
             {
-                sb.Append(Constants.SEPARATOR);
+                sb.Append('\t');
                 sb.Append(user.Pack(version));
-                sb.Append(Constants.SEPARATOR);
+                sb.Append('\t');
                 sb.Append('1'); // visibility flag
             }
 

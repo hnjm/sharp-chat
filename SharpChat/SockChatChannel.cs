@@ -58,10 +58,10 @@ namespace SharpChat
             }
         }
 
-        public void Send(IServerPacket packet, int eventId = 0)
+        public void Send(IServerPacket packet)
         {
             lock (Users)
-                Users.ForEach(u => u.Send(packet, eventId));
+                Users.ForEach(u => u.Send(packet));
         }
 
         public IEnumerable<SockChatUser> GetUsers(IEnumerable<SockChatUser> exclude = null)
@@ -83,9 +83,9 @@ namespace SharpChat
             StringBuilder sb = new StringBuilder();
 
             sb.Append(Name);
-            sb.Append(Constants.SEPARATOR);
+            sb.Append('\t');
             sb.Append(string.IsNullOrEmpty(Password) ? '0' : '1');
-            sb.Append(Constants.SEPARATOR);
+            sb.Append('\t');
             sb.Append(IsTemporary ? '1' : '0');
 
             return sb.ToString();

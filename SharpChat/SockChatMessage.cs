@@ -5,9 +5,6 @@ namespace SharpChat
 {
     public class SockChatMessage : IChatMessage
     {
-        public static int MessageIdCounter { get; private set; } = 0;
-        public static int NextMessageId => ++MessageIdCounter;
-
         public int MessageId { get; set; }
         public SockChatUser User { get; set; }
         public SockChatChannel Channel { get; set; }

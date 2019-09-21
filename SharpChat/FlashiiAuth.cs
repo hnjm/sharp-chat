@@ -1,9 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Specialized;
-using System.IO;
 using System.Net;
-using System.Security.Cryptography;
 using System.Text;
 
 namespace SharpChat
@@ -46,7 +44,7 @@ namespace SharpChat
         [JsonProperty(@"is_silenced")]
         public DateTimeOffset SilencedUntil { get; set; }
 
-        public static FlashiiAuth Attempt(int userId, string token, string ip)
+        public static FlashiiAuth Attempt(int userId, string token, IPAddress ip)
         {
 #if DEBUG
             if (userId >= 10000)
@@ -74,7 +72,7 @@ namespace SharpChat
                     {
                         { @"user_id", userId.ToString() },
                         { @"token", token },
-                        { @"ip", ip },
+                        { @"ip", ip.ToString() },
                         { @"hash", $@"{userId}#{token}#{ip}".GetSignedHash() },
                     }));
 

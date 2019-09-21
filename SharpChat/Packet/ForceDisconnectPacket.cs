@@ -10,7 +10,7 @@ namespace SharpChat.Packet
         Banned = 1,
     }
 
-    public class ForceDisconnectPacket : IServerPacket
+    public class ForceDisconnectPacket : ServerPacket
     {
         public ForceDisconnectReason Reason { get; private set; }
         public DateTimeOffset Expires { get; private set; }
@@ -27,12 +27,12 @@ namespace SharpChat.Packet
             }
         }
 
-        public IEnumerable<string> Pack(int version, int eventId)
+        public override IEnumerable<string> Pack(int version)
         {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)SockChatServerPacket.BAKA);
-            sb.Append(Constants.SEPARATOR);
+            sb.Append('\t');
 
             if (version >= 2)
                 sb.Append((int)Reason);
@@ -41,7 +41,7 @@ namespace SharpChat.Packet
 
             if(Reason == ForceDisconnectReason.Banned)
             {
-                sb.Append(Constants.SEPARATOR);
+                sb.Append('\t');
                 sb.Append(Expires.ToUnixTimeSeconds());
             }
 

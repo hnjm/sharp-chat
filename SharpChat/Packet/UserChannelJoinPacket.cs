@@ -4,7 +4,7 @@ using System.Text;
 
 namespace SharpChat.Packet
 {
-    public class UserChannelJoinPacket : IServerPacket
+    public class UserChannelJoinPacket : ServerPacket
     {
         public SockChatUser User { get; private set; }
 
@@ -13,21 +13,21 @@ namespace SharpChat.Packet
             User = user ?? throw new ArgumentNullException(nameof(user));
         }
 
-        public IEnumerable<string> Pack(int version, int eventId)
+        public override IEnumerable<string> Pack(int version)
         {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)SockChatServerPacket.UserSwitch);
-            sb.Append(Constants.SEPARATOR);
+            sb.Append('\t');
             sb.Append((int)SockChatServerMovePacket.UserJoined);
-            sb.Append(Constants.SEPARATOR);
+            sb.Append('\t');
             sb.Append(User.UserId);
-            sb.Append(Constants.SEPARATOR);
+            sb.Append('\t');
             sb.Append(User.GetDisplayName(version));
-            sb.Append(Constants.SEPARATOR);
+            sb.Append('\t');
             sb.Append(User.Colour);
-            sb.Append(Constants.SEPARATOR);
-            sb.Append(eventId);
+            sb.Append('\t');
+            sb.Append(SequenceId);
 
             return new[] { sb.ToString() };
         }

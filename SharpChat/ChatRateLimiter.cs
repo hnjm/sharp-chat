@@ -26,10 +26,12 @@ namespace SharpChat
                 {
                     if(TimePoints.Count == FLOOD_PROTECTION_AMOUNT)
                     {
-                        if ((TimePoints.Last() - TimePoints.First()).TotalSeconds <= FLOOD_PROTECTION_THRESHOLD)
+                        DateTimeOffset lastTimePoint = TimePoints.Last();
+
+                        if ((lastTimePoint - TimePoints.First()).TotalSeconds <= FLOOD_PROTECTION_THRESHOLD)
                             return ChatRateLimitState.Kick;
 
-                        if ((TimePoints.Last() - TimePoints.Skip(5).First()).TotalSeconds <= FLOOD_PROTECTION_THRESHOLD)
+                        if ((lastTimePoint - TimePoints.Skip(5).First()).TotalSeconds <= FLOOD_PROTECTION_THRESHOLD)
                             return ChatRateLimitState.Warning;
                     }
 

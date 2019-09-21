@@ -1,6 +1,7 @@
 ﻿using Fleck;
 using System;
 using System.Collections.Generic;
+using System.Net;
 
 namespace SharpChat
 {
@@ -12,7 +13,25 @@ namespace SharpChat
         public bool IsDisposed { get; private set; }
         public DateTimeOffset LastPing { get; set; } = DateTimeOffset.MinValue;
 
-        public string RemoteAddress => Websocket.RemoteAddress();
+        private IPAddress _RemoteAddress = null;
+
+        public IPAddress RemoteAddress
+        {
+            get
+            {
+                if(_RemoteAddress == null)
+                {
+                    if ((Websocket.ConnectionInfo.ClientIpAddress == @"127.0.0.1" || Websocket.ConnectionInfo.ClientIpAddress == @"::1")
+                        && Websocket.ConnectionInfo.Headers.ContainsKey(@"X-Real-IP"))
+                        _RemoteAddress = IPAddress.Parse(Websocket.ConnectionInfo.Headers[@"X-Real-IP"]);
+                    else
+                        _RemoteAddress = IPAddress.Parse(Websocket.ConnectionInfo.ClientIpAddress);
+                }
+
+                return _RemoteAddress;
+
+            }
+        }
 
         public SockChatConn(IWebSocketConnection ws)
         {
@@ -27,14 +46,12 @@ namespace SharpChat
             Websocket.Send(data);
         }
 
-        public void Send(IServerPacket packet, int eventId = 0)
+        public void Send(IServerPacket packet)
         {
             if (!Websocket.IsAvailable)
                 return;
-            if (eventId < 1)
-                eventId = SockChatMessage.NextMessageId; // there needs to be a better solution for this
 
-            IEnumerable<string> data = packet.Pack(Version, eventId);
+            IEnumerable<string> data = packet.Pack(Version);
 
             if(data != null)
                 foreach(string line in data)

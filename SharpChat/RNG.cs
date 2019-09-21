@@ -23,17 +23,5 @@ namespace SharpChat
             lock (random)
                 return random.Next(min, max);
         }
-
-        public static void NextBytes(byte[] buffer)
-        {
-            lock (random)
-                random.NextBytes(buffer);
-        }
-
-        public static double NextDouble()
-        {
-            lock (random)
-                return random.NextDouble();
-        }
     }
 }

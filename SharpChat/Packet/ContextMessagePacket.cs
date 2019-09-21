@@ -4,7 +4,7 @@ using System.Text;
 
 namespace SharpChat.Packet
 {
-    public class ContextMessagePacket : IServerPacket
+    public class ContextMessagePacket : ServerPacket
     {
         public IChatMessage Message { get; private set; }
         public bool Notify { get; private set; }
@@ -15,38 +15,38 @@ namespace SharpChat.Packet
             Notify = notify;
         }
 
-        public IEnumerable<string> Pack(int version, int eventId)
+        public override IEnumerable<string> Pack(int version)
         {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)SockChatServerPacket.ContextPopulate);
-            sb.Append(Constants.SEPARATOR);
+            sb.Append('\t');
             sb.Append((int)SockChatServerContextPacket.Message);
-            sb.Append(Constants.SEPARATOR);
+            sb.Append('\t');
             sb.Append(Message.DateTime.ToUnixTimeSeconds());
-            sb.Append(Constants.SEPARATOR);
+            sb.Append('\t');
 
             sb.Append(Message.User.UserId);
-            sb.Append(Constants.SEPARATOR);
+            sb.Append('\t');
             sb.Append(Message.User.Username);
-            sb.Append(Constants.SEPARATOR);
+            sb.Append('\t');
 
             if(version >= 2)
                 sb.Append(Message.User.Colour.Raw);
             else
                 sb.Append(Message.User.Colour);
 
-            sb.Append(Constants.SEPARATOR);
+            sb.Append('\t');
 
             sb.Append(Message.User.Hierarchy);
             sb.Append(' ');
-            sb.Append(Message.User.IsModerator.AsChar());
+            sb.Append(Message.User.IsModerator ? '1' : '0');
             sb.Append(@" 0 ");
-            sb.Append(Message.User.CanChangeNick.AsChar());
+            sb.Append(Message.User.CanChangeNick ? '1' : '0');
             sb.Append(' ');
             sb.Append((int)Message.User.CanCreateChannels);
 
-            sb.Append(Constants.SEPARATOR);
+            sb.Append('\t');
 
             if (version >= 2)
                 sb.Append(Message.Text);
@@ -59,16 +59,16 @@ namespace SharpChat.Packet
                         .Replace("\t", @"    ")
                 );
 
-            sb.Append(Constants.SEPARATOR);
+            sb.Append('\t');
 
             if(Message is EventChatMessage ecm && !string.IsNullOrEmpty(ecm.MessageIdStr))
                 sb.Append(ecm.MessageIdStr);
             else
-                sb.Append(eventId);
+                sb.Append(SequenceId);
 
-            sb.Append(Constants.SEPARATOR);
+            sb.Append('\t');
             sb.Append(Notify ? '1' : '0');
-            sb.Append(Constants.SEPARATOR);
+            sb.Append('\t');
             sb.Append(Message.Flags.Serialise());
 
             return new[] { sb.ToString() };

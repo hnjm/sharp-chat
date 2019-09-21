@@ -9,7 +9,7 @@ namespace SharpChatTest
     {
         static int UserId = 10000;
 
-        static void Main(string[] args)
+        static void Main()
         {
             PureWebSocket[] socks = new PureWebSocket[100];
 
