@@ -944,10 +944,10 @@ The client must continue to operate as if it's talking to a Version 1 server unt
 </table>
 
 ### Packet `12`: Typing
-Informs that another user is typing.
+Informs the client that one or more users are typing.
 
 ### Packet `13`: Flood protection warning
-Informs the user that they might be kicked soon for flood protection. This packet has no arguments.
+Informs the client that they might be kicked soon for flood protection. This packet has no arguments.
 
 ## Timestamps
 

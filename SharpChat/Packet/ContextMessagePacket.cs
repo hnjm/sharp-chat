@@ -25,27 +25,7 @@ namespace SharpChat.Packet
             sb.Append('\t');
             sb.Append(Message.DateTime.ToSockChatSeconds(version));
             sb.Append('\t');
-
-            sb.Append(Message.Sender.UserId);
-            sb.Append('\t');
-            sb.Append(Message.Sender.Username);
-            sb.Append('\t');
-
-            if(version >= 2)
-                sb.Append(Message.Sender.Colour.Raw);
-            else
-                sb.Append(Message.Sender.Colour);
-
-            sb.Append('\t');
-
-            sb.Append(Message.Sender.Hierarchy);
-            sb.Append(' ');
-            sb.Append(Message.Sender.IsModerator ? '1' : '0');
-            sb.Append(@" 0 ");
-            sb.Append(Message.Sender.CanChangeNick ? '1' : '0');
-            sb.Append(' ');
-            sb.Append((int)Message.Sender.CanCreateChannels);
-
+            sb.Append(Message.Sender.Pack(version));
             sb.Append('\t');
 
             if (version >= 2)
@@ -60,12 +40,7 @@ namespace SharpChat.Packet
                 );
 
             sb.Append('\t');
-
-            if(Message is EventChatMessage ecm && !string.IsNullOrEmpty(ecm.MessageIdStr))
-                sb.Append(ecm.MessageIdStr);
-            else
-                sb.Append(Message.SequenceId);
-
+            sb.Append(Message.SequenceId);
             sb.Append('\t');
             sb.Append(Notify ? '1' : '0');
 

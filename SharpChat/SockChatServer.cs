@@ -27,9 +27,9 @@ namespace SharpChat
 
         public const int FLOOD_KICK_LENGTH =
 #if DEBUG
-                        5;
+            5;
 #else
-                        30;
+            30;
 #endif
 
         public const int MSG_LENGTH_MAX = 5000;
@@ -226,9 +226,12 @@ namespace SharpChat
 
                     ChatChannel chan = Context.Channels.Get(auth.DefaultChannel) ?? Context.Channels.FirstOrDefault();
 
-                    // umi eats the first message for some reason so we'll send a blank padding msg
-                    conn.Send(new ContextMessagePacket(EventChatMessage.Info(@"welcome", ChatMessageFlags.Log, @"say", Utils.InitialMessage)));
-                    conn.Send(new ContextMessagePacket(EventChatMessage.Info(@"welcome", ChatMessageFlags.Log, @"say", $@"Welcome to the temporary drop in chat, {aUser.Username}!")));
+                    if(conn.Version < 2)
+                    {
+                        // umi eats the first message for some reason so we'll send a blank padding msg
+                        conn.Send(new LegacyCommandResponse(LCR.WELCOME, false, Utils.InitialMessage));
+                        conn.Send(new LegacyCommandResponse(LCR.WELCOME, false, $@"Welcome to Flashii Chat, {aUser.Username}!"));
+                    }
 
                     Context.HandleJoin(aUser, chan, conn);
                     break;
@@ -354,7 +357,7 @@ namespace SharpChat
                 case @"nick": // sets a temporary nickname
                     if (!user.CanChangeNick)
                     {
-                        user.Send(true, @"cmdna", @"/nick");
+                        user.Send(new LegacyCommandResponse(LCR.COMMAND_NOT_ALLOWED, true, $@"/{command}"));
                         break;
                     }
 
@@ -387,7 +390,7 @@ namespace SharpChat
                 case @"msg":
                     if (parts.Length < 3)
                     {
-                        user.Send(true, @"cmderr");
+                        user.Send(new LegacyCommandResponse(LCR.COMMAND_FORMAT_ERROR));
                         break;
                     }
 
@@ -485,7 +488,7 @@ namespace SharpChat
                 case @"delete":
                     if (parts.Length < 2)
                     {
-                        user.Send(true, @"cmderr");
+                        user.Send(new LegacyCommandResponse(LCR.COMMAND_FORMAT_ERROR));
                         break;
                     }
 
@@ -512,14 +515,14 @@ namespace SharpChat
                 case @"create": // create a new channel
                     if (user.CanCreateChannels == ChatUserChannelCreation.No)
                     {
-                        user.Send(true, @"cmdna", @"/create");
+                        user.Send(new LegacyCommandResponse(LCR.COMMAND_NOT_ALLOWED, true, $@"/{command}"));
                         break;
                     }
 
                     bool createChanHasHierarchy;
                     if (parts.Length < 2 || (createChanHasHierarchy = parts[1].All(char.IsDigit) && parts.Length < 3))
                     {
-                        user.Send(true, @"cmderr");
+                        user.Send(new LegacyCommandResponse(LCR.COMMAND_FORMAT_ERROR));
                         break;
                     }
 
@@ -563,7 +566,7 @@ namespace SharpChat
                 case @"delchan": // delete a channel
                     if (parts.Length < 2 || string.IsNullOrWhiteSpace(parts[1]))
                     {
-                        user.Send(true, @"cmderr");
+                        user.Send(new LegacyCommandResponse(LCR.COMMAND_FORMAT_ERROR));
                         break;
                     }
 
@@ -589,7 +592,7 @@ namespace SharpChat
                 case @"pwd":
                     if (!user.IsModerator || channel.Owner != user)
                     {
-                        user.Send(true, @"cmdna", @"/pwd");
+                        user.Send(new LegacyCommandResponse(LCR.COMMAND_NOT_ALLOWED, true, $@"/{command}"));
                         break;
                     }
 
@@ -606,7 +609,7 @@ namespace SharpChat
                 case @"priv":
                     if (!user.IsModerator || channel.Owner != user)
                     {
-                        user.Send(true, @"cmdna", @"/priv");
+                        user.Send(new LegacyCommandResponse(LCR.COMMAND_NOT_ALLOWED, true, $@"/{command}"));
                         break;
                     }
 
@@ -623,7 +626,7 @@ namespace SharpChat
                 case @"say": // pretend to be the bot
                     if (!user.IsModerator)
                     {
-                        user.Send(true, @"cmdna", @"/say");
+                        user.Send(new LegacyCommandResponse(LCR.COMMAND_NOT_ALLOWED, true, $@"/{command}"));
                         break;
                     }
 
@@ -632,13 +635,13 @@ namespace SharpChat
                 case @"delmsg": // deletes a message
                     if (!user.IsModerator)
                     {
-                        user.Send(true, @"cmdna", @"/delmsg");
+                        user.Send(new LegacyCommandResponse(LCR.COMMAND_NOT_ALLOWED, true, $@"/{command}"));
                         break;
                     }
 
                     if (parts.Length < 2 || !parts[1].All(char.IsDigit) || !int.TryParse(parts[1], out int delSeqId))
                     {
-                        user.Send(true, @"cmderr");
+                        user.Send(new LegacyCommandResponse(LCR.COMMAND_FORMAT_ERROR));
                         break;
                     }
 
@@ -656,7 +659,7 @@ namespace SharpChat
                 case @"ban": // ban a user from the server, this differs from /kick in that it adds all remote address to the ip banlist
                     if (!user.IsModerator)
                     {
-                        user.Send(true, @"cmdna", $@"/{command}");
+                        user.Send(new LegacyCommandResponse(LCR.COMMAND_NOT_ALLOWED, true, $@"/{command}"));
                         break;
                     }
 
@@ -681,7 +684,7 @@ namespace SharpChat
                     {
                         if (!double.TryParse(parts[2], out double silenceSeconds))
                         {
-                            user.Send(true, @"cmderr");
+                            user.Send(new LegacyCommandResponse(LCR.COMMAND_FORMAT_ERROR));
                             break;
                         }
 
@@ -694,7 +697,7 @@ namespace SharpChat
                 case @"unban":
                     if (!user.IsModerator)
                     {
-                        user.Send(true, @"cmdna", @"/unban");
+                        user.Send(new LegacyCommandResponse(LCR.COMMAND_NOT_ALLOWED, true, $@"/{command}"));
                         break;
                     }
 
@@ -719,7 +722,7 @@ namespace SharpChat
                 case @"unbanip":
                     if (!user.IsModerator)
                     {
-                        user.Send(true, @"cmdna", @"/unbanip");
+                        user.Send(new LegacyCommandResponse(LCR.COMMAND_NOT_ALLOWED, true, $@"/{command}"));
                         break;
                     }
 
@@ -742,7 +745,7 @@ namespace SharpChat
                 case @"banned":
                     if (!user.IsModerator)
                     {
-                        user.Send(true, @"cmdna", @"/bans");
+                        user.Send(new LegacyCommandResponse(LCR.COMMAND_NOT_ALLOWED, true, $@"/{command}"));
                         break;
                     }
 
@@ -751,7 +754,7 @@ namespace SharpChat
                 case @"silence": // silence a user
                     if (!user.IsModerator)
                     {
-                        user.Send(true, @"cmdna", @"/silence");
+                        user.Send(new LegacyCommandResponse(LCR.COMMAND_NOT_ALLOWED, true, $@"/{command}"));
                         break;
                     }
 
@@ -786,7 +789,7 @@ namespace SharpChat
                     {
                         if (!double.TryParse(parts[2], out double silenceSeconds))
                         {
-                            user.Send(true, @"cmderr");
+                            user.Send(new LegacyCommandResponse(LCR.COMMAND_FORMAT_ERROR));
                             break;
                         }
 
@@ -800,7 +803,7 @@ namespace SharpChat
                 case @"unsilence": // unsilence a user
                     if (!user.IsModerator)
                     {
-                        user.Send(true, @"cmdna", @"/silence");
+                        user.Send(new LegacyCommandResponse(LCR.COMMAND_NOT_ALLOWED, true, $@"/{command}"));
                         break;
                     }
 
@@ -831,7 +834,7 @@ namespace SharpChat
                 case @"whois":
                     if (!user.IsModerator)
                     {
-                        user.Send(true, @"cmdna", @"/ip");
+                        user.Send(new LegacyCommandResponse(LCR.COMMAND_NOT_ALLOWED, true, @"/ip"));
                         break;
                     }
 
@@ -843,11 +846,11 @@ namespace SharpChat
                     }
 
                     foreach (IPAddress ip in ipUser.RemoteAddresses.Distinct().ToArray())
-                        user.Send(false, @"ipaddr", ipUser.Username, ip.ToString());
+                        user.Send(new LegacyCommandResponse(LCR.IP_ADDRESS, false, ipUser.Username, ip));
                     break;
 
                 default:
-                    user.Send(true, @"nocmd", command);
+                    user.Send(new LegacyCommandResponse(LCR.COMMAND_NOT_FOUND, true, command));
                     break;
             }
 

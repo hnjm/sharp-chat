@@ -137,7 +137,8 @@ namespace SharpChat
 
             string packet = sb.ToString();
 
-            Connections.ForEach(c => c.Send(packet));
+            lock(Connections)
+                Connections.ForEach(c => c.Send(packet));
         }
 
         [Obsolete(@"Use Send(IServerPacket)")]
