@@ -11,6 +11,7 @@ namespace SharpChat
 
         // Version 2
         Upgrade = 3,
+        Typing = 4,
     }
 
     public enum SockChatServerPacket
