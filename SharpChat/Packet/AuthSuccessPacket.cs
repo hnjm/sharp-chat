@@ -22,8 +22,11 @@ namespace SharpChat.Packet
             sb.Append((int)SockChatServerPacket.UserConnect);
             sb.Append("\ty\t");
             sb.Append(User.Pack(version));
-            sb.Append('\t');
-            sb.Append(Channel.Name);
+
+            if(version < 2) {
+                sb.Append('\t');
+                sb.Append(Channel.Name);
+            }
 
             return new[] { sb.ToString() };
         }

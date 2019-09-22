@@ -31,6 +31,8 @@ namespace SharpChat
 
         // Version 2
         UpgradeAck = 11,
+        Typing = 12,
+        FloodWarning = 13,
     }
 
     public enum SockChatServerChannelPacket

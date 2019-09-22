@@ -86,7 +86,17 @@ Informs the server that this client supports a newer version of the protocol. Th
 </table>
 
 ### Packet `4`: Typing
-Informs the server that this client is writing a message. This packet has no arguments.
+Informs the server that this client is writing a message.
+
+<table>
+    <tr>
+        <th colspan="2">Version 2</th>
+    </tr>
+    <tr>
+        <td><code>string</code></td>
+        <td>Channel name</td>
+    </tr>
+</table>
 
 ## Server
 These are the packets sent from the server to the client.
@@ -136,16 +146,12 @@ Informs the client that authentication has succeeded.
         <td>Username</td>
     </tr>
     <tr>
-        <td><code>color (int)</code></td>
+        <td><code>color</code></td>
         <td>Username color in packed format, documented below</td>
     </tr>
     <tr>
         <td><code>permissions (string)</code></td>
         <td>User permissions, documented below</td>
-    </tr>
-    <tr>
-        <td><code>string</code></td>
-        <td>Default channel the user will join following this packet</td>
     </tr>
     <tr>
         <th colspan="2">Version 1</th>
@@ -247,7 +253,7 @@ Informs the client that a user has joined.
         <td>Username</td>
     </tr>
     <tr>
-        <td><code>color (int)</code></td>
+        <td><code>color</code></td>
         <td>Username color in packed format, documented below</td>
     </tr>
     <tr>
@@ -256,7 +262,7 @@ Informs the client that a user has joined.
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>Event ID</td>
+        <td>Sequence ID</td>
     </tr>
     <tr>
         <th colspan="2">Version 1</th>
@@ -283,7 +289,7 @@ Informs the client that a user has joined.
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>Event ID</td>
+        <td>Sequence ID</td>
     </tr>
 </table>
 
@@ -296,7 +302,7 @@ Informs the client that a chat message has been received.
     </tr>
     <tr>
         <td><code>string</code></td>
-        <td>Channel name</td>
+        <td>Target name: Channel name, <code>@broadcast</code> or <code>@log</code>.</td>
     </tr>
     <tr>
         <td><code>int</code></td>
@@ -304,10 +310,7 @@ Informs the client that a chat message has been received.
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>
-            User ID.
-            If <code>-1</code> this message is an informational message from the server and the next field takes on a special form.
-        </td>
+        <td>User ID</td>
     </tr>
     <tr>
         <td><code>string</code></td>
@@ -315,10 +318,10 @@ Informs the client that a chat message has been received.
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>Event ID</td>
+        <td>Sequence ID</td>
     </tr>
     <tr>
-        <td><code>message flags (string)</code></td>
+        <td><code>message flags</code></td>
         <td>Message flags, documented below</td>
     </tr>
     <tr>
@@ -366,10 +369,10 @@ Informs the client that a chat message has been received.
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>Event ID</td>
+        <td>Sequence ID</td>
     </tr>
     <tr>
-        <td><code>message flags (string)</code></td>
+        <td><code>message flags</code></td>
         <td>Message flags, documented below</td>
     </tr>
 </table>
@@ -403,7 +406,7 @@ Informs the client that a user has disconnected.
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>Event ID</td>
+        <td>Sequence ID</td>
     </tr>
     <tr>
         <th colspan="2">Version 1</th>
@@ -434,7 +437,7 @@ Informs the client that a user has disconnected.
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>Event ID</td>
+        <td>Sequence ID</td>
     </tr>
 </table>
 
@@ -552,7 +555,7 @@ In version 1 this packet is NOT sent when the user first connects to the server.
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>Event ID</td>
+        <td>Sequence ID</td>
     </tr>
     <tr>
         <th colspan="2">Version 1</th>
@@ -571,7 +574,7 @@ In version 1 this packet is NOT sent when the user first connects to the server.
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>Event ID</td>
+        <td>Sequence ID</td>
     </tr>
 </table>
 
@@ -588,7 +591,7 @@ Informs the client that a user has left the channel.
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>Event ID</td>
+        <td>Sequence ID</td>
     </tr>
 </table>
 
@@ -614,7 +617,7 @@ Informs the client that a message has been deleted.
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>Event ID of the deleted message</td>
+        <td>Sequence ID of the deleted message</td>
     </tr>
 </table>
 
@@ -670,7 +673,7 @@ Informs the client about users already present in the channel.
         <td>Username</td>
     </tr>
     <tr>
-        <td><code>color (int)</code></td>
+        <td><code>color</code></td>
         <td>Username color in packed format, documented below</td>
     </tr>
     <tr>
@@ -726,7 +729,7 @@ Informs the client about an existing message in a channel.
         <td>Username</td>
     </tr>
     <tr>
-        <td><code>color (int)</code></td>
+        <td><code>color</code></td>
         <td>Username color in packed format, documented below</td>
     </tr>
     <tr>
@@ -739,14 +742,14 @@ Informs the client about an existing message in a channel.
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>Event ID</td>
+        <td>Sequence ID</td>
     </tr>
     <tr>
         <td><code>bool</code></td>
         <td>Whether the client should notify the user about this message</td>
     </tr>
     <tr>
-        <td><code>message flags (string)</code></td>
+        <td><code>message flags</code></td>
         <td>Message flags, documented below</td>
     </tr>
     <tr>
@@ -778,14 +781,14 @@ Informs the client about an existing message in a channel.
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>Event ID</td>
+        <td>Sequence ID</td>
     </tr>
     <tr>
         <td><code>bool</code></td>
         <td>Whether the client should notify the user about this message</td>
     </tr>
     <tr>
-        <td><code>message flags (string)</code></td>
+        <td><code>message flags</code></td>
         <td>Message flags, documented below</td>
     </tr>
 </table>
@@ -889,7 +892,7 @@ Informs that another user's details have been updated.
         <td>New username</td>
     </tr>
     <tr>
-        <td><code>color (int)</code></td>
+        <td><code>color</code></td>
         <td>Username color in packed format, documented below</td>
     </tr>
     <tr>
@@ -939,6 +942,12 @@ The client must continue to operate as if it's talking to a Version 1 server unt
         <td>If successful the current version will be returned. If unsuccessful the latest supported version should be returned which the client could use to decide to either disconnect or reattempt to upgrade</td>
     </tr>
 </table>
+
+### Packet `12`: Typing
+Informs that another user is typing.
+
+### Packet `13`: Flood protection warning
+Informs the user that they might be kicked soon for flood protection. This packet has no arguments.
 
 ## Timestamps
 

@@ -22,10 +22,15 @@ namespace SharpChat.Packet
             sb.Append((int)SockChatServerMovePacket.UserJoined);
             sb.Append('\t');
             sb.Append(User.UserId);
-            sb.Append('\t');
-            sb.Append(User.GetDisplayName(version));
-            sb.Append('\t');
-            sb.Append(User.Colour);
+
+            if(version < 2)
+            {
+                sb.Append('\t');
+                sb.Append(User.GetDisplayName(version));
+                sb.Append('\t');
+                sb.Append(User.Colour);
+            }
+
             sb.Append('\t');
             sb.Append(SequenceId);
 

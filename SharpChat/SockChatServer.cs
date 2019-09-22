@@ -25,6 +25,13 @@ namespace SharpChat
             5;
 #endif
 
+        public const int FLOOD_KICK_LENGTH =
+#if DEBUG
+                        5;
+#else
+                        30;
+#endif
+
         public const int MSG_LENGTH_MAX = 5000;
 
         public bool IsDisposed { get; private set; }
@@ -134,17 +141,10 @@ namespace SharpChat
 
                 if(conn.User.RateLimiter.State == ChatRateLimitState.Kick)
                 {
-                    const int floodkick =
-#if DEBUG
-                        5;
-#else
-                        30;
-#endif
-
-                    Context.BanUser(conn.User, DateTimeOffset.UtcNow.AddSeconds(floodkick), false, UserDisconnectReason.Flood);
+                    Context.BanUser(conn.User, DateTimeOffset.UtcNow.AddSeconds(FLOOD_KICK_LENGTH), false, UserDisconnectReason.Flood);
                     return;
                 } else if(conn.User.RateLimiter.State == ChatRateLimitState.Warning)
-                    conn.User.Send(false, @"flwarn");
+                    conn.User.Send(new FloodWarningPacket()); // make it so this thing only sends once
             }
 
             string[] args = msg.Split('\t');
