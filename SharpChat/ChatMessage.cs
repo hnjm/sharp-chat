@@ -4,12 +4,12 @@ namespace SharpChat
 {
     public class ChatMessage : IChatMessage
     {
-        public int MessageId { get; set; }
-        public ChatUser User { get; set; }
-        public ChatChannel Channel { get; set; }
+        public ChatUser Sender { get; set; }
+        public IPacketTarget Target { get; set; }
         public string Text { get; set; }
         public DateTimeOffset DateTime { get; set; }
-        public SockChatMessageFlags Flags { get; set; } = SockChatMessageFlags.RegularUser;
+        public ChatMessageFlags Flags { get; set; } = ChatMessageFlags.None;
+        public int SequenceId { get; set; }
 
         public static string PackBotMessage(int type, string id, params string[] parts)
         {

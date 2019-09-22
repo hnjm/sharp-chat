@@ -1,5 +1,4 @@
-﻿using Fleck;
-using SharpChat.Flashii;
+﻿using SharpChat.Flashii;
 using SharpChat.Packet;
 using System;
 using System.Collections.Generic;
@@ -16,7 +15,7 @@ namespace SharpChat
         Yes = 2,
     }
 
-    public class ChatUser
+    public class ChatUser : IPacketTarget
     {
         public int UserId { get; set; }
         public string Username { get; set; }
@@ -34,6 +33,8 @@ namespace SharpChat
         public ChatUserChannelCreation CanCreateChannels { get; private set; } = ChatUserChannelCreation.No;
 
         public readonly List<ChatUserConnection> Connections = new List<ChatUserConnection>();
+
+        public string TargetName => @"@log";
 
         public ChatChannel Channel {
             get
@@ -128,7 +129,11 @@ namespace SharpChat
             sb.Append('\t');
             sb.Append(ServerPacket.NextSequenceId());
             sb.Append('\t');
-            sb.Append(flags.Serialise());
+            sb.Append(flags.HasFlag(SockChatMessageFlags.Bold) ? '1' : '0');
+            sb.Append(flags.HasFlag(SockChatMessageFlags.Cursive) ? '1' : '0');
+            sb.Append(flags.HasFlag(SockChatMessageFlags.Underline) ? '1' : '0');
+            sb.Append(flags.HasFlag(SockChatMessageFlags.Colon) ? '1' : '0');
+            sb.Append(flags.HasFlag(SockChatMessageFlags.Private) ? '1' : '0');
 
             string packet = sb.ToString();
 

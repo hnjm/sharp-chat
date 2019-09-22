@@ -25,6 +25,8 @@ namespace SharpChat
             5;
 #endif
 
+        public const int MSG_LENGTH_MAX = 5000;
+
         public bool IsDisposed { get; private set; }
 
         public static readonly ChatUser Bot = new ChatUser
@@ -87,10 +89,13 @@ namespace SharpChat
             // Remove connection from user
             if (conn.User != null)
             {
-                conn.User.RemoveConnection(conn);
+                // RemoveConnection sets conn.User to null so we must grab a local copy.
+                ChatUser user = conn.User;
 
-                if (!conn.User.Connections.Any())
-                    Context.UserLeave(null, conn.User);
+                user.RemoveConnection(conn);
+
+                if (!user.Connections.Any())
+                    Context.UserLeave(null, user);
             }
 
             // Update context
@@ -157,23 +162,6 @@ namespace SharpChat
                     conn.Send(new PongPacket(conn.LastPing));
                     break;
 
-                case SockChatClientPacket.Upgrade:
-#pragma warning disable CS0162
-                    if (conn.LastPing != DateTimeOffset.MinValue || VERSION < 2)
-                        break;
-#pragma warning restore CS0162
-
-                    if (!int.TryParse(args[1], out int uVersion) || uVersion < 2 || uVersion > VERSION)
-                    {
-                        conn.Send(new UpgradeAckPacket(false, VERSION));
-                        break;
-                    }
-
-                    conn.Version = uVersion;
-                    conn.Send(new UpgradeAckPacket(true, conn.Version));
-                    conn.BumpPing();
-                    break;
-
                 case SockChatClientPacket.Authenticate:
                     if (conn.User != null)
                         break;
@@ -223,7 +211,7 @@ namespace SharpChat
                         break;
                     }
 
-                    // arbitrarily limit users to five connections
+                    // Enforce a maximum amount of connections per user
                     if (aUser.Connections.Count >= MAX_CONNECTIONS)
                     {
                         conn.Send(new AuthFailPacket(AuthFailReason.MaxSessions));
@@ -239,8 +227,8 @@ namespace SharpChat
                     ChatChannel chan = Context.Channels.Get(auth.DefaultChannel) ?? Context.Channels.FirstOrDefault();
 
                     // umi eats the first message for some reason so we'll send a blank padding msg
-                    conn.Send(new ContextMessagePacket(EventChatMessage.Info(@"welcome", SockChatMessageFlags.RegularUser, @"say", Utils.InitialMessage)));
-                    conn.Send(new ContextMessagePacket(EventChatMessage.Info(@"welcome", SockChatMessageFlags.RegularUser, @"say", $@"Welcome to the temporary drop in chat, {aUser.Username}!")));
+                    conn.Send(new ContextMessagePacket(EventChatMessage.Info(@"welcome", ChatMessageFlags.Log, @"say", Utils.InitialMessage)));
+                    conn.Send(new ContextMessagePacket(EventChatMessage.Info(@"welcome", ChatMessageFlags.Log, @"say", $@"Welcome to the temporary drop in chat, {aUser.Username}!")));
 
                     Context.HandleJoin(aUser, chan, conn);
                     break;
@@ -252,7 +240,7 @@ namespace SharpChat
                     lock (Context)
                     {
                         ChatUser mUser = conn.User;
-                        ChatChannel mChan;
+                        ChatChannel mChannel;
 
                         if (mUser == null || string.IsNullOrWhiteSpace(args[2]))
                             break;
@@ -260,58 +248,86 @@ namespace SharpChat
                         if (conn.Version < 2)
                         {
 #if !DEBUG
+                            // Extra validation step, not necessary at all but enforces proper formatting in SCv1.
                             if (!int.TryParse(args[1], out int mUserId) || mUser.UserId != mUserId)
                                 break;
 #endif
-                            mChan = Context.Channels.GetUser(mUser).FirstOrDefault();
+                            mChannel = Context.Channels.GetUser(mUser).FirstOrDefault();
                         }
                         else
-                            mChan = Context.Channels.Get(args[1]);
+                            mChannel = Context.Channels.Get(args[1]);
 
-                        if (mChan == null || !mUser.Channels.Contains(mChan) || (mUser.IsSilenced && !mUser.IsModerator))
+                        if (mChannel == null || !mUser.Channels.Contains(mChannel) || (mUser.IsSilenced && !mUser.IsModerator))
                             break;
 
                         if (mUser.IsAway)
                         {
                             mUser.AwayMessage = null;
-                            mChan.Send(new UserUpdatePacket(mUser));
+                            mChannel.Send(new UserUpdatePacket(mUser));
                         }
 
-                        string message = string.Join('\t', args.Skip(2)).Trim();
+                        string messageText = string.Join('\t', args.Skip(2));
+
+                        if (messageText.Length > MSG_LENGTH_MAX)
+                            messageText = messageText.Substring(0, MSG_LENGTH_MAX);
+
+                        messageText = messageText.Trim();
 
 #if DEBUG
-                        Logger.Write($@"<{mUser.Username}> {message}");
+                        Logger.Write($@"<{mUser.Username}> {messageText}");
 #endif
 
-                        if (message.Length > 5000)
-                            message = message.Substring(0, 5000);
+                        ChatMessage message = null;
 
                         // These commands are only available in V1, all server side commands are to be replaced with packets and client side commands.
-                        if (conn.Version < 2 && message[0] == '/') {
-                            HandleV1Command(message, mUser, mChan);
-                            break;
+                        if (conn.Version < 2 && messageText[0] == '/') {
+                            message = HandleV1Command(messageText, mUser, mChannel);
+
+                            if (message == null)
+                                break;
                         }
 
-                        lock (Lock)
-                        {
-                            ChatMessage sMsg = new ChatMessage
+                        if(message == null)
+                            message = new ChatMessage
                             {
-                                MessageId = ServerPacket.NextSequenceId(),
-                                Channel = mChan,
+                                Target = mChannel,
                                 DateTime = DateTimeOffset.UtcNow,
-                                User = mUser,
-                                Text = message,
+                                Sender = mUser,
+                                Text = messageText,
                             };
 
-                            Context.Events.Add(sMsg);
-                            mChan.Send(new ChatMessageAddPacket(sMsg));
-                        }
+                        Context.Events.Add(message);
+                        mChannel.Send(new ChatMessageAddPacket(message));
                     }
+                    break;
+
+                case SockChatClientPacket.Upgrade:
+#pragma warning disable CS0162
+                    if (conn.User != null || conn.LastPing != DateTimeOffset.MinValue || VERSION < 2)
+                        break;
+#pragma warning restore CS0162
+
+                    if (!int.TryParse(args[1], out int uVersion) || uVersion < 2 || uVersion > VERSION)
+                    {
+                        conn.Send(new UpgradeAckPacket(false, VERSION));
+                        break;
+                    }
+
+                    conn.Version = uVersion;
+                    conn.Send(new UpgradeAckPacket(true, conn.Version));
+                    conn.BumpPing();
+                    break;
+
+                case SockChatClientPacket.Typing:
+                    if (conn.Version < 2 || conn.User == null)
+                        break;
+
+                    Logger.Write($@"Typing packet received from {conn.User.UserId} {conn.User.Username}");
                     break;
             }
         }
 
-        public void HandleV1Command(string message, ChatUser user, ChatChannel channel)
+        public ChatMessage HandleV1Command(string message, ChatUser user, ChatChannel channel)
         {
             string[] parts = message.Substring(1).Split(' ');
             string command = parts[0].Replace(@".", string.Empty).ToLowerInvariant();
@@ -395,22 +411,14 @@ namespace SharpChat
 
                     string actionMsg = string.Join(' ', parts.Skip(1));
 
-                    lock (Lock)
+                    return new ChatMessage
                     {
-                        ChatMessage sMsg = new ChatMessage
-                        {
-                            MessageId = ServerPacket.NextSequenceId(),
-                            Channel = channel,
-                            DateTime = DateTimeOffset.UtcNow,
-                            User = user,
-                            Text = actionMsg,
-                            Flags = SockChatMessageFlags.Action,
-                        };
-
-                        Context.Events.Add(sMsg);
-                        channel.Send(new ChatMessageAddPacket(sMsg));
-                    }
-                    break;
+                        Target = channel,
+                        DateTime = DateTimeOffset.UtcNow,
+                        Sender = user,
+                        Text = actionMsg,
+                        Flags = ChatMessageFlags.Action,
+                    };
                 case @"who": // gets all online users/online users in a channel if arg
                     StringBuilder whoChanSB = new StringBuilder();
                     string whoChanStr = parts.Length > 1 && !string.IsNullOrEmpty(parts[1]) ? parts[1] : string.Empty;
@@ -619,21 +627,6 @@ namespace SharpChat
                         break;
                     }
 
-                    lock (Lock)
-                    {
-                        ChatMessage sMsg = new ChatMessage
-                        {
-                            MessageId = ServerPacket.NextSequenceId(),
-                            Channel = channel,
-                            DateTime = DateTimeOffset.UtcNow,
-                            User = Bot,
-                            Text = string.Join(' ', parts.Skip(1)),
-                        };
-
-                        Context.Events.Add(sMsg);
-                        channel.Send(new ChatMessageAddPacket(sMsg));
-                    }
-
                     Context.Broadcast(Bot, ChatMessage.PackBotMessage(0, @"say", string.Join(' ', parts.Skip(1))));
                     break;
                 case @"delmsg": // deletes a message
@@ -643,15 +636,15 @@ namespace SharpChat
                         break;
                     }
 
-                    if (parts.Length < 2 || !parts[1].All(char.IsDigit) || !int.TryParse(parts[1], out int delMsgId))
+                    if (parts.Length < 2 || !parts[1].All(char.IsDigit) || !int.TryParse(parts[1], out int delSeqId))
                     {
                         user.Send(true, @"cmderr");
                         break;
                     }
 
-                    IChatMessage delMsg = Context.Events.FirstOrDefault(m => m.MessageId == delMsgId);
+                    IChatMessage delMsg = Context.Events.FirstOrDefault(m => m.SequenceId == delSeqId);
 
-                    if (delMsg == null || delMsg.User.Hierarchy > user.Hierarchy)
+                    if (delMsg == null || delMsg.Sender.Hierarchy > user.Hierarchy)
                     {
                         user.Send(true, @"delerr");
                         break;
@@ -857,9 +850,9 @@ namespace SharpChat
                     user.Send(true, @"nocmd", command);
                     break;
             }
-        }
 
-        public readonly object Lock = new object();
+            return null;
+        }
 
         ~SockChatServer()
             => Dispose(false);

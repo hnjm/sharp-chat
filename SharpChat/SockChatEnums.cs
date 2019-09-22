@@ -55,6 +55,7 @@ namespace SharpChat
     }
 
     [Flags]
+    [Obsolete]
     public enum SockChatMessageFlags
     {
         Bold = 1,

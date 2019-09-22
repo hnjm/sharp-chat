@@ -25,19 +25,6 @@ namespace SharpChat
             return sb.ToString();
         }
 
-        public static string Serialise(this SockChatMessageFlags flags)
-        {
-            StringBuilder sb = new StringBuilder();
-
-            sb.Append(flags.HasFlag(SockChatMessageFlags.Bold) ? '1' : '0');
-            sb.Append(flags.HasFlag(SockChatMessageFlags.Cursive) ? '1' : '0');
-            sb.Append(flags.HasFlag(SockChatMessageFlags.Underline) ? '1' : '0');
-            sb.Append(flags.HasFlag(SockChatMessageFlags.Colon) ? '1' : '0');
-            sb.Append(flags.HasFlag(SockChatMessageFlags.Private) ? '1' : '0');
-
-            return sb.ToString();
-        }
-
         public static long ToSockChatSeconds(this DateTimeOffset dto, int version)
         {
             long seconds = dto.ToUnixTimeSeconds();

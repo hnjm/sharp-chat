@@ -4,7 +4,7 @@ using System.Text;
 
 namespace SharpChat
 {
-    public class ChatChannel
+    public class ChatChannel : IPacketTarget
     {
         public string Name { get; set; }
         public string Password { get; set; } = string.Empty;
@@ -16,6 +16,8 @@ namespace SharpChat
 
         public bool HasPassword
             => !string.IsNullOrWhiteSpace(Password);
+
+        public string TargetName => Name;
 
         public ChatChannel()
         {

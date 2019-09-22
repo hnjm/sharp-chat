@@ -8,7 +8,7 @@ using System.Threading;
 
 namespace SharpChat
 {
-    public class ChatContext : IDisposable
+    public class ChatContext : IDisposable, IPacketTarget
     {
         public bool IsDisposed { get; private set; }
 
@@ -18,6 +18,8 @@ namespace SharpChat
         public readonly ChannelManager Channels;
         public readonly UserManager Users;
         public readonly ChatEventManager Events;
+
+        public string TargetName => @"@broadcast";
 
         public ChatContext(SockChatServer server)
         {
@@ -63,7 +65,7 @@ namespace SharpChat
 
         public IEnumerable<IChatMessage> GetChannelBacklog(ChatChannel chan, int count = 15)
         {
-            return Events.Where(x => x.Channel == chan || x.Channel == null).Reverse().Take(count).Reverse().ToArray();
+            return Events.Where(x => x.Target == chan || x.Target == null).Reverse().Take(count).Reverse().ToArray();
         }
 
         public void HandleJoin(ChatUser user, ChatChannel chan, ChatUserConnection conn)
@@ -185,7 +187,7 @@ namespace SharpChat
             }
         }
 
-        public void Broadcast(IServerPacket packet)
+        public void Send(IServerPacket packet)
         {
             lock (Users)
                 foreach (ChatUser user in Users)

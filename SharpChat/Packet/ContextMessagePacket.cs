@@ -26,25 +26,25 @@ namespace SharpChat.Packet
             sb.Append(Message.DateTime.ToSockChatSeconds(version));
             sb.Append('\t');
 
-            sb.Append(Message.User.UserId);
+            sb.Append(Message.Sender.UserId);
             sb.Append('\t');
-            sb.Append(Message.User.Username);
+            sb.Append(Message.Sender.Username);
             sb.Append('\t');
 
             if(version >= 2)
-                sb.Append(Message.User.Colour.Raw);
+                sb.Append(Message.Sender.Colour.Raw);
             else
-                sb.Append(Message.User.Colour);
+                sb.Append(Message.Sender.Colour);
 
             sb.Append('\t');
 
-            sb.Append(Message.User.Hierarchy);
+            sb.Append(Message.Sender.Hierarchy);
             sb.Append(' ');
-            sb.Append(Message.User.IsModerator ? '1' : '0');
+            sb.Append(Message.Sender.IsModerator ? '1' : '0');
             sb.Append(@" 0 ");
-            sb.Append(Message.User.CanChangeNick ? '1' : '0');
+            sb.Append(Message.Sender.CanChangeNick ? '1' : '0');
             sb.Append(' ');
-            sb.Append((int)Message.User.CanCreateChannels);
+            sb.Append((int)Message.Sender.CanCreateChannels);
 
             sb.Append('\t');
 
@@ -64,12 +64,25 @@ namespace SharpChat.Packet
             if(Message is EventChatMessage ecm && !string.IsNullOrEmpty(ecm.MessageIdStr))
                 sb.Append(ecm.MessageIdStr);
             else
-                sb.Append(SequenceId);
+                sb.Append(Message.SequenceId);
 
             sb.Append('\t');
             sb.Append(Notify ? '1' : '0');
-            sb.Append('\t');
-            sb.Append(Message.Flags.Serialise());
+
+            if (version >= 2)
+            {
+                sb.Append('\t');
+                sb.Append((int)Message.Flags);
+            }
+            else
+            {
+                sb.AppendFormat(
+                    "\t1{0}0{1}{2}",
+                    Message.Flags.HasFlag(ChatMessageFlags.Action) ? '1' : '0',
+                    Message.Flags.HasFlag(ChatMessageFlags.Action) ? '0' : '1',
+                    Message.Flags.HasFlag(ChatMessageFlags.Private) ? '1' : '0'
+                );
+            }
 
             return new[] { sb.ToString() };
         }

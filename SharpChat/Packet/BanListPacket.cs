@@ -49,8 +49,7 @@ namespace SharpChat.Packet
 
                 sb.Append('\t');
                 sb.Append(SequenceId);
-                sb.Append('\t');
-                sb.Append(SockChatMessageFlags.RegularUser.Serialise());
+                sb.Append("\t10010");
             }
 
             return new[] { sb.ToString() };

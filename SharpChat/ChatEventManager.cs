@@ -35,7 +35,7 @@ namespace SharpChat
             lock (Events)
                 Events.Remove(evt);
 
-            Context.Broadcast(new ChatMessageDeletePacket(evt.MessageId));
+            Context.Send(new ChatMessageDeletePacket(evt.SequenceId));
         }
 
         ~ChatEventManager()

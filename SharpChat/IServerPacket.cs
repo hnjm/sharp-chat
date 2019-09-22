@@ -15,9 +15,10 @@ namespace SharpChat
 
         public int SequenceId { get; }
 
-        public ServerPacket()
+        public ServerPacket(int sequenceId = 0)
         {
-            SequenceId = Interlocked.Increment(ref SequenceIdCounter);
+            // Allow sequence id to be manually set for potential message repeats
+            SequenceId = sequenceId > 0 ? sequenceId :  Interlocked.Increment(ref SequenceIdCounter);
         }
 
         [System.Obsolete(@"Provided for shit that hasn't been moved into its own packet class yet.")]

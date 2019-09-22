@@ -5,7 +5,7 @@ using System.Net;
 
 namespace SharpChat
 {
-    public class ChatUserConnection : IDisposable
+    public class ChatUserConnection : IDisposable, IPacketTarget
     {
         public readonly IWebSocketConnection Websocket;
         
@@ -13,6 +13,8 @@ namespace SharpChat
         public bool IsDisposed { get; private set; }
         public DateTimeOffset LastPing { get; set; } = DateTimeOffset.MinValue;
         public ChatUser User { get; set; }
+
+        public string TargetName => @"@log";
 
 
         private IPAddress _RemoteAddress = null;
