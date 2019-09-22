@@ -959,6 +959,16 @@ The parts are as follows:
     - `2`: User can create permanent channels.
 
 ## Message Flags
+Starting with Version 2, the old message flags have been replaced with a bitset describing message attributes rather than directly describing the appearance of the username.
+
+| Bit    | Name      | Description |
+| ------ | --------- | ----------- |
+| `0x01` | Action    | This message describes an action. (`/me`) |
+| `0x02` | Broadcast | This message is a broadcast sent to all users in all channels. **DRAFT NOTE**: Broadcasted messages are also sent to pseudo-channel `@broadcast` so this attribute might be pointless. |
+| `0x04` | Log       | This message is a log sent to only a single user. **DRAFT NOTE**: Log messages are also sent to the pseudo-channel `@log` so this attribute might be pointless as well. |
+| `0x08` | Private   | This message is privately sent directly from one use to another. |
+
+### Message Flags in Version 1
 The Message Flags alter how a message should be displayed to the client, these are all boolean values.
 I'm not entirely sure if these allowed for custom flags, but much like the custom flags in the User Permission String, these have gone unused and should thus, also, be avoided.
 The parts are as follows:
@@ -1006,7 +1016,7 @@ char* color_to_css(int raw) {
 }
 ```
 
-## Version 1 Bot Messages
+## Bot Messages in Version 1
 
 Formatting IDs sent by user -1 in Version 1 of the protocol.
 
@@ -1270,7 +1280,7 @@ Formatting IDs sent by user -1 in Version 1 of the protocol.
     </tr>
 </table>
 
-## Version 1 Commands
+## Commands in Version 1
 
 Actions sent through messages prefixed with `/` in Version 1 of the protocol. Arguments are described as `[name]`, optional arguments as `[name?]`.
 
