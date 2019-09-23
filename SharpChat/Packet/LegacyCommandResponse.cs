@@ -84,5 +84,11 @@ namespace SharpChat.Packet
         public const string WELCOME = @"welcome";
         public const string BROADCAST = @"say";
         public const string IP_ADDRESS = @"ipaddr";
+        public const string USER_NOT_FOUND = @"usernf";
+        public const string UNSILENCED = @"unsil";
+        public const string TARGET_UNSILENCED = @"usilok";
+        public const string TARGET_NOT_SILENCED = @"usilerr";
+        public const string TARGET_SILENCE_NOT_ALLOWED = @"usilperr";
+        public const string NAME_IN_USE = @"nameinuse";
     }
 }

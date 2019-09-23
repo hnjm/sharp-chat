@@ -378,7 +378,7 @@ namespace SharpChat
 
                     if (nickStr != null && Context.Users.Get(nickStr) != null)
                     {
-                        user.Send(true, @"nameinuse", nickStr);
+                        user.Send(new LegacyCommandResponse(LCR.NAME_IN_USE, true, nickStr));
                         break;
                     }
 
@@ -398,7 +398,7 @@ namespace SharpChat
 
                     if (whisperUser == null)
                     {
-                        user.Send(true, @"usernf", parts[1]);
+                        user.Send(new LegacyCommandResponse(LCR.USER_NOT_FOUND, true, parts[1]));
                         break;
                     }
 
@@ -630,7 +630,7 @@ namespace SharpChat
                         break;
                     }
 
-                    Context.Broadcast(Bot, ChatMessage.PackBotMessage(0, @"say", string.Join(' ', parts.Skip(1))));
+                    Context.Send(new LegacyCommandResponse(LCR.BROADCAST, false, string.Join(' ', parts.Skip(1))));
                     break;
                 case @"delmsg": // deletes a message
                     if (!user.IsModerator)
@@ -668,7 +668,7 @@ namespace SharpChat
                     ChatUser banUser;
                     if (parts.Length < 2 || (banUser = Context.Users.Get(parts[1])) == null)
                     {
-                        user.Send(true, @"usernf", parts[1] ?? @"User");
+                        user.Send(new LegacyCommandResponse(LCR.USER_NOT_FOUND, true, parts.Length < 2 ? @"User" : parts[1]));
                         break;
                     }
 
@@ -761,7 +761,7 @@ namespace SharpChat
                     ChatUser silUser;
                     if (parts.Length < 2 || (silUser = Context.Users.Get(parts[1])) == null)
                     {
-                        user.Send(true, @"usernf", parts[1] ?? @"User");
+                        user.Send(new LegacyCommandResponse(LCR.USER_NOT_FOUND, true, parts.Length < 2 ? @"User" : parts[1]));
                         break;
                     }
 
@@ -810,25 +810,25 @@ namespace SharpChat
                     ChatUser unsilUser;
                     if (parts.Length < 2 || (unsilUser = Context.Users.Get(parts[1])) == null)
                     {
-                        user.Send(true, @"usernf", parts[1] ?? @"User");
+                        user.Send(new LegacyCommandResponse(LCR.USER_NOT_FOUND, true, parts.Length < 2 ? @"User" : parts[1]));
                         break;
                     }
 
                     if (unsilUser.Hierarchy >= user.Hierarchy)
                     {
-                        user.Send(true, @"usilperr");
+                        user.Send(new LegacyCommandResponse(LCR.TARGET_SILENCE_NOT_ALLOWED));
                         break;
                     }
 
                     if (!unsilUser.IsSilenced)
                     {
-                        user.Send(true, @"usilerr");
+                        user.Send(new LegacyCommandResponse(LCR.TARGET_NOT_SILENCED));
                         break;
                     }
 
                     unsilUser.SilencedUntil = DateTimeOffset.MinValue;
-                    unsilUser.Send(false, @"unsil");
-                    user.Send(false, @"usilok", unsilUser.GetDisplayName(1));
+                    unsilUser.Send(new LegacyCommandResponse(LCR.UNSILENCED, false));
+                    user.Send(new LegacyCommandResponse(LCR.TARGET_UNSILENCED, false, unsilUser.GetDisplayName(1)));
                     break;
                 case @"ip": // gets a user's ip (from all connections in this case)
                 case @"whois":
@@ -841,7 +841,7 @@ namespace SharpChat
                     ChatUser ipUser;
                     if (parts.Length < 2 || (ipUser = Context.Users.Get(parts[1])) == null)
                     {
-                        user.Send(true, @"usernf", parts[1] ?? string.Empty);
+                        user.Send(new LegacyCommandResponse(LCR.USER_NOT_FOUND, true, parts.Length < 2 ? @"User" : parts[1]));
                         break;
                     }
 

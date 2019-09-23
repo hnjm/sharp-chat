@@ -49,7 +49,7 @@ namespace SharpChat
             username = username.ToLowerInvariant();
 
             lock (Users)
-                return Users.FirstOrDefault(x => x.Username.ToLowerInvariant() == username || (includeNickName && x.Nickname.ToLowerInvariant() == username) || (includeV1Name && x.GetDisplayName(1).ToLowerInvariant() == username));
+                return Users.FirstOrDefault(x => x.Username.ToLowerInvariant() == username || (includeNickName && x.Nickname?.ToLowerInvariant() == username) || (includeV1Name && x.GetDisplayName(1).ToLowerInvariant() == username));
         }
 
         ~UserManager()
