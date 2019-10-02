@@ -3,6 +3,7 @@ using SharpChat.Flashii;
 using SharpChat.Packet;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -228,9 +229,15 @@ namespace SharpChat
 
                     if(conn.Version < 2)
                     {
-                        // umi eats the first message for some reason so we'll send a blank padding msg
-                        conn.Send(new LegacyCommandResponse(LCR.WELCOME, false, Utils.InitialMessage));
                         conn.Send(new LegacyCommandResponse(LCR.WELCOME, false, $@"Welcome to Flashii Chat, {aUser.Username}!"));
+
+                        if(File.Exists(@"welcome.txt")) {
+                            IEnumerable<string> lines = File.ReadAllLines(@"welcome.txt").Where(x => !string.IsNullOrWhiteSpace(x));
+                            string line = lines.ElementAtOrDefault(RNG.Next(lines.Count()));
+
+                            if(!string.IsNullOrWhiteSpace(line))
+                                conn.Send(new LegacyCommandResponse(LCR.WELCOME, false, line));
+                        }
                     }
 
                     Context.HandleJoin(aUser, chan, conn);
