@@ -3,23 +3,19 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace SharpChat
-{
-    public class UserManager : IDisposable, IEnumerable<ChatUser>
-    {
+namespace SharpChat {
+    public class UserManager : IDisposable, IEnumerable<ChatUser> {
         private readonly List<ChatUser> Users = new List<ChatUser>();
 
         public readonly ChatContext Context;
 
         public bool IsDisposed { get; private set; }
 
-        public UserManager(ChatContext context)
-        {
+        public UserManager(ChatContext context) {
             Context = context;
         }
 
-        public void Add(ChatUser user)
-        {
+        public void Add(ChatUser user) {
             if (user == null)
                 throw new ArgumentNullException(nameof(user));
 
@@ -27,8 +23,7 @@ namespace SharpChat
                 Users.Add(user);
         }
 
-        public void Remove(ChatUser user)
-        {
+        public void Remove(ChatUser user) {
             if (user == null)
                 return;
 
@@ -36,14 +31,12 @@ namespace SharpChat
                 Users.Remove(user);
         }
 
-        public ChatUser Get(int userId)
-        {
+        public ChatUser Get(int userId) {
             lock (Users)
                 return Users.FirstOrDefault(x => x.UserId == userId);
         }
 
-        public ChatUser Get(string username, bool includeNickName = true, bool includeV1Name = true)
-        {
+        public ChatUser Get(string username, bool includeNickName = true, bool includeV1Name = true) {
             if (string.IsNullOrWhiteSpace(username))
                 return null;
             username = username.ToLowerInvariant();
@@ -58,8 +51,7 @@ namespace SharpChat
         public void Dispose()
             => Dispose(true);
 
-        private void Dispose(bool disposing)
-        {
+        private void Dispose(bool disposing) {
             if (IsDisposed)
                 return;
             IsDisposed = true;

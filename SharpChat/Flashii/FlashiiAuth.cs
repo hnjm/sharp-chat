@@ -6,8 +6,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace SharpChat.Flashii {
-    public class FlashiiAuth
-    {
+    public class FlashiiAuth {
         [JsonPropertyName(@"success")]
         public bool Success { get; set; }
 
@@ -44,12 +43,10 @@ namespace SharpChat.Flashii {
         [JsonPropertyName(@"is_silenced")]
         public DateTimeOffset SilencedUntil { get; set; }
 
-        public static FlashiiAuth Attempt(int userId, string token, IPAddress ip)
-        {
+        public static FlashiiAuth Attempt(int userId, string token, IPAddress ip) {
 #if DEBUG
             if (userId >= 10000)
-                return new FlashiiAuth
-                {
+                return new FlashiiAuth {
                     Success = true,
                     UserId = userId,
                     Username = @"Misaka-" + (userId - 10000),
@@ -64,8 +61,7 @@ namespace SharpChat.Flashii {
                 };
 #endif
 
-            try
-            {
+            try {
                 using FormUrlEncodedContent loginRequest = new FormUrlEncodedContent(new Dictionary<string, string> {
                     { @"user_id", userId.ToString() },
                     { @"token", token },
@@ -74,11 +70,9 @@ namespace SharpChat.Flashii {
                 });
 
                 using HttpResponseMessage loginResponse = HttpClientS.Instance.PostAsync(@"https://flashii.net/_sockchat.php", loginRequest).Result;
-                
+
                 return JsonSerializer.Deserialize<FlashiiAuth>(loginResponse.Content.ReadAsByteArrayAsync().Result);
-            }
-            catch(Exception ex)
-            {
+            } catch (Exception ex) {
                 Logger.Write(ex.ToString());
                 return new FlashiiAuth { Success = false };
             }

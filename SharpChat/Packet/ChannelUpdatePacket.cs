@@ -1,21 +1,17 @@
 ﻿using System.Collections.Generic;
 using System.Text;
 
-namespace SharpChat.Packet
-{
-    public class ChannelUpdatePacket : ServerPacket
-    {
+namespace SharpChat.Packet {
+    public class ChannelUpdatePacket : ServerPacket {
         public string PreviousName { get; private set; }
         public ChatChannel Channel { get; private set; }
 
-        public ChannelUpdatePacket(string previousName, ChatChannel channel)
-        {
+        public ChannelUpdatePacket(string previousName, ChatChannel channel) {
             PreviousName = previousName;
             Channel = channel;
         }
 
-        public override IEnumerable<string> Pack(int version)
-        {
+        public override IEnumerable<string> Pack(int version) {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)SockChatServerPacket.ChannelEvent);

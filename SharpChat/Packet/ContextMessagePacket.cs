@@ -2,21 +2,17 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace SharpChat.Packet
-{
-    public class ContextMessagePacket : ServerPacket
-    {
+namespace SharpChat.Packet {
+    public class ContextMessagePacket : ServerPacket {
         public IChatMessage Message { get; private set; }
         public bool Notify { get; private set; }
 
-        public ContextMessagePacket(IChatMessage message, bool notify = false)
-        {
+        public ContextMessagePacket(IChatMessage message, bool notify = false) {
             Message = message ?? throw new ArgumentNullException(nameof(message));
             Notify = notify;
         }
 
-        public override IEnumerable<string> Pack(int version)
-        {
+        public override IEnumerable<string> Pack(int version) {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)SockChatServerPacket.ContextPopulate);
@@ -44,13 +40,10 @@ namespace SharpChat.Packet
             sb.Append('\t');
             sb.Append(Notify ? '1' : '0');
 
-            if (version >= 2)
-            {
+            if (version >= 2) {
                 sb.Append('\t');
                 sb.Append((int)Message.Flags);
-            }
-            else
-            {
+            } else {
                 sb.AppendFormat(
                     "\t1{0}0{1}{2}",
                     Message.Flags.HasFlag(ChatMessageFlags.Action) ? '1' : '0',

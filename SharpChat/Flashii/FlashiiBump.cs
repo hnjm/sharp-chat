@@ -6,26 +6,22 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace SharpChat.Flashii {
-    public class FlashiiBump
-    {
+    public class FlashiiBump {
         [JsonPropertyName(@"id")]
         public int UserId { get; set; }
 
         [JsonPropertyName(@"ip")]
         public string UserIP { get; set; }
 
-        public static void Submit(IEnumerable<ChatUser> users)
-        {
+        public static void Submit(IEnumerable<ChatUser> users) {
             List<FlashiiBump> bups = users.Where(u => u.IsAlive).Select(x => new FlashiiBump { UserId = x.UserId, UserIP = x.RemoteAddresses.First().ToString() }).ToList();
 
             if (bups.Any())
                 Submit(bups);
         }
 
-        public static void Submit(IEnumerable<FlashiiBump> users)
-        {
-            try
-            {
+        public static void Submit(IEnumerable<FlashiiBump> users) {
+            try {
                 string bumpJson = JsonSerializer.Serialize(users);
 
                 FormUrlEncodedContent bumpData = new FormUrlEncodedContent(new Dictionary<string, string> {
@@ -34,9 +30,7 @@ namespace SharpChat.Flashii {
                 });
 
                 HttpClientS.Instance.PostAsync(@"https://flashii.net/_sockchat.php", bumpData).Wait();
-            }
-            catch(Exception ex)
-            {
+            } catch (Exception ex) {
                 Logger.Write(ex);
             }
         }

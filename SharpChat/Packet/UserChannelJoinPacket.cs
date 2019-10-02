@@ -2,19 +2,15 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace SharpChat.Packet
-{
-    public class UserChannelJoinPacket : ServerPacket
-    {
+namespace SharpChat.Packet {
+    public class UserChannelJoinPacket : ServerPacket {
         public ChatUser User { get; private set; }
 
-        public UserChannelJoinPacket(ChatUser user)
-        {
+        public UserChannelJoinPacket(ChatUser user) {
             User = user ?? throw new ArgumentNullException(nameof(user));
         }
 
-        public override IEnumerable<string> Pack(int version)
-        {
+        public override IEnumerable<string> Pack(int version) {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)SockChatServerPacket.UserSwitch);
@@ -23,8 +19,7 @@ namespace SharpChat.Packet
             sb.Append('\t');
             sb.Append(User.UserId);
 
-            if(version < 2)
-            {
+            if (version < 2) {
                 sb.Append('\t');
                 sb.Append(User.GetDisplayName(version));
                 sb.Append('\t');

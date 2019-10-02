@@ -1,21 +1,17 @@
 ﻿using System.Collections.Generic;
 using System.Text;
 
-namespace SharpChat.Packet
-{
-    public class UpgradeAckPacket : ServerPacket
-    {
+namespace SharpChat.Packet {
+    public class UpgradeAckPacket : ServerPacket {
         public bool Success { get; private set; }
         public int Version { get; private set; }
 
-        public UpgradeAckPacket(bool success, int version)
-        {
+        public UpgradeAckPacket(bool success, int version) {
             Success = success;
             Version = version;
         }
 
-        public override IEnumerable<string> Pack(int version)
-        {
+        public override IEnumerable<string> Pack(int version) {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)SockChatServerPacket.UpgradeAck);

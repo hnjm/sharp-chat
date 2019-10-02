@@ -2,30 +2,23 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace SharpChat
-{
-    public enum ChatRateLimitState
-    {
+namespace SharpChat {
+    public enum ChatRateLimitState {
         None,
         Warning,
         Kick,
     }
 
-    public class ChatRateLimiter
-    {
+    public class ChatRateLimiter {
         private const int FLOOD_PROTECTION_AMOUNT = 30;
         private const int FLOOD_PROTECTION_THRESHOLD = 10;
 
         private readonly Queue<DateTimeOffset> TimePoints = new Queue<DateTimeOffset>();
 
-        public ChatRateLimitState State
-        {
-            get
-            {
-                lock (TimePoints)
-                {
-                    if(TimePoints.Count == FLOOD_PROTECTION_AMOUNT)
-                    {
+        public ChatRateLimitState State {
+            get {
+                lock (TimePoints) {
+                    if (TimePoints.Count == FLOOD_PROTECTION_AMOUNT) {
                         if ((TimePoints.Last() - TimePoints.First()).TotalSeconds <= FLOOD_PROTECTION_THRESHOLD)
                             return ChatRateLimitState.Kick;
 
@@ -38,13 +31,11 @@ namespace SharpChat
             }
         }
 
-        public void AddTimePoint(DateTimeOffset? dto = null)
-        {
+        public void AddTimePoint(DateTimeOffset? dto = null) {
             if (!dto.HasValue)
                 dto = DateTimeOffset.Now;
 
-            lock (TimePoints)
-            {
+            lock (TimePoints) {
                 if (TimePoints.Count >= FLOOD_PROTECTION_AMOUNT)
                     TimePoints.Dequeue();
 

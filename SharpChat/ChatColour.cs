@@ -1,26 +1,20 @@
-﻿namespace SharpChat
-{
-    public class ChatColour
-    {
+﻿namespace SharpChat {
+    public class ChatColour {
         public const int INHERIT = 0x40000000;
 
         public int Raw { get; set; }
 
-        public ChatColour(bool inherit = true)
-        {
+        public ChatColour(bool inherit = true) {
             Inherit = inherit;
         }
 
-        public ChatColour(int colour)
-        {
+        public ChatColour(int colour) {
             Raw = colour;
         }
 
-        public bool Inherit
-        {
+        public bool Inherit {
             get => (Raw & INHERIT) > 0;
-            set
-            {
+            set {
                 if (value)
                     Raw |= INHERIT;
                 else
@@ -28,38 +22,31 @@
             }
         }
 
-        public int Red
-        {
+        public int Red {
             get => (Raw >> 16) & 0xFF;
-            set
-            {
+            set {
                 Raw &= ~0xFF0000;
                 Raw |= (value & 0xFF) << 16;
             }
         }
 
-        public int Green
-        {
+        public int Green {
             get => (Raw >> 8) & 0xFF;
-            set
-            {
+            set {
                 Raw &= ~0xFF00;
                 Raw |= (value & 0xFF) << 8;
             }
         }
 
-        public int Blue
-        {
+        public int Blue {
             get => Raw & 0xFF;
-            set
-            {
+            set {
                 Raw &= ~0xFF;
                 Raw |= value & 0xFF;
             }
         }
 
-        public override string ToString()
-        {
+        public override string ToString() {
             if (Inherit)
                 return @"inherit";
             return string.Format(@"#{0:X6}", Raw);

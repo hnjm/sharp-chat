@@ -2,19 +2,15 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace SharpChat.Packet
-{
-    public class UserChannelForceJoinPacket : ServerPacket
-    {
+namespace SharpChat.Packet {
+    public class UserChannelForceJoinPacket : ServerPacket {
         public ChatChannel Channel { get; private set; }
 
-        public UserChannelForceJoinPacket(ChatChannel channel)
-        {
+        public UserChannelForceJoinPacket(ChatChannel channel) {
             Channel = channel ?? throw new ArgumentNullException(nameof(channel));
         }
 
-        public override IEnumerable<string> Pack(int version)
-        {
+        public override IEnumerable<string> Pack(int version) {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)SockChatServerPacket.UserSwitch);

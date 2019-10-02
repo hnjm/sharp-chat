@@ -2,42 +2,35 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace SharpChat.Packet
-{
-    public enum AuthFailReason
-    {
+namespace SharpChat.Packet {
+    public enum AuthFailReason {
         AuthInvalid,
         MaxSessions,
         Banned,
     }
 
-    public class AuthFailPacket : ServerPacket
-    {
+    public class AuthFailPacket : ServerPacket {
         public AuthFailReason Reason { get; private set; }
         public DateTimeOffset Expires { get; private set; }
 
-        public AuthFailPacket(AuthFailReason reason, DateTimeOffset? expires = null)
-        {
+        public AuthFailPacket(AuthFailReason reason, DateTimeOffset? expires = null) {
             Reason = reason;
 
-            if (reason == AuthFailReason.Banned)
-            {
+            if (reason == AuthFailReason.Banned) {
                 if (!expires.HasValue)
                     throw new ArgumentNullException(nameof(expires));
                 Expires = expires.Value;
             }
         }
 
-        public override IEnumerable<string> Pack(int version)
-        {
+        public override IEnumerable<string> Pack(int version) {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)SockChatServerPacket.UserConnect);
             sb.Append("\tn\t");
 
             if (version >= 2) {
-                switch (Reason)
-                {
+                switch (Reason) {
                     case AuthFailReason.AuthInvalid:
                     default:
                         sb.Append(@"auth");
@@ -49,10 +42,8 @@ namespace SharpChat.Packet
                         sb.Append(@"baka");
                         break;
                 }
-            } else
-            {
-                switch (Reason)
-                {
+            } else {
+                switch (Reason) {
                     case AuthFailReason.AuthInvalid:
                     default:
                         sb.Append(@"authfail");
@@ -66,8 +57,7 @@ namespace SharpChat.Packet
                 }
             }
 
-            if(Reason == AuthFailReason.Banned)
-            {
+            if (Reason == AuthFailReason.Banned) {
                 sb.Append('\t');
 
                 if (Expires == DateTimeOffset.MaxValue)

@@ -4,38 +4,33 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace SharpChat
-{
-    public class ChannelException : Exception {}
+namespace SharpChat {
+    public class ChannelException : Exception { }
     public class ChannelExistException : ChannelException { }
     public class ChannelInvalidNameException : ChannelException { }
 
-    public class ChannelManager : IDisposable, IEnumerable<ChatChannel>
-    {
+    public class ChannelManager : IDisposable, IEnumerable<ChatChannel> {
         private readonly List<ChatChannel> Channels = new List<ChatChannel>();
 
         public readonly ChatContext Context;
 
         public bool IsDisposed { get; private set; }
 
-        public ChannelManager(ChatContext context)
-        {
+        public ChannelManager(ChatContext context) {
             Context = context;
         }
 
         private ChatChannel _DefaultChannel;
 
         public ChatChannel DefaultChannel {
-            get
-            {
+            get {
                 if (_DefaultChannel == null)
                     lock (Channels)
                         _DefaultChannel = Channels.First();
 
                 return _DefaultChannel;
             }
-            set
-            {
+            set {
                 if (value == null)
                     return;
 
@@ -44,10 +39,9 @@ namespace SharpChat
                         _DefaultChannel = value;
             }
         }
-            
 
-        public void Add(ChatChannel channel)
-        {
+
+        public void Add(ChatChannel channel) {
             if (channel == null)
                 throw new ArgumentNullException(nameof(channel));
             if (!channel.Name.All(c => char.IsLetter(c) || char.IsNumber(c) || c == '-'))
@@ -68,8 +62,7 @@ namespace SharpChat
                 user.Send(new ChannelCreatePacket(channel));
         }
 
-        public void Remove(ChatChannel channel)
-        {
+        public void Remove(ChatChannel channel) {
             if (channel == null || channel == DefaultChannel)
                 return;
 
@@ -80,8 +73,7 @@ namespace SharpChat
             // Move all users back to the main channel
             // TODO: Replace this with a kick. SCv2 supports being in 0 channels, SCv1 should force the user back to DefaultChannel.
             lock (channel.Users)
-                foreach (ChatUser user in channel.Users)
-                {
+                foreach (ChatUser user in channel.Users) {
                     Context.SwitchChannel(user, DefaultChannel, string.Empty);
                 }
 
@@ -90,8 +82,7 @@ namespace SharpChat
                 user.Send(new ChannelDeletePacket(channel));
         }
 
-        public void Update(ChatChannel channel, string name = null, bool? temporary = null, int? hierarchy = null, string password = null)
-        {
+        public void Update(ChatChannel channel, string name = null, bool? temporary = null, int? hierarchy = null, string password = null) {
             if (channel == null)
                 throw new ArgumentNullException(nameof(channel));
             if (!Channels.Contains(channel))
@@ -101,8 +92,7 @@ namespace SharpChat
             int prevHierarchy = channel.Hierarchy;
             bool nameUpdated = !string.IsNullOrWhiteSpace(name) && name != prevName;
 
-            if(nameUpdated)
-            {
+            if (nameUpdated) {
                 if (!name.All(c => char.IsLetter(c) || char.IsNumber(c) || c == '-'))
                     throw new ChannelInvalidNameException();
                 if (Get(name) != null)
@@ -121,8 +111,7 @@ namespace SharpChat
                 channel.Password = password;
 
             // Users that no longer have access to the channel/gained access to the channel by the hierarchy change should receive delete and create packets respectively
-            foreach (ChatUser user in Context.Users.Where(u => u.Hierarchy >= channel.Hierarchy).ToArray())
-            {
+            foreach (ChatUser user in Context.Users.Where(u => u.Hierarchy >= channel.Hierarchy).ToArray()) {
                 user.Send(new ChannelUpdatePacket(prevName, channel));
 
                 if (nameUpdated)
@@ -130,8 +119,7 @@ namespace SharpChat
             }
         }
 
-        public ChatChannel Get(string name)
-        {
+        public ChatChannel Get(string name) {
             if (string.IsNullOrWhiteSpace(name))
                 return null;
 
@@ -139,8 +127,7 @@ namespace SharpChat
                 return Channels.FirstOrDefault(x => x.Name.ToLowerInvariant() == name.ToLowerInvariant());
         }
 
-        public IEnumerable<ChatChannel> GetUser(ChatUser user)
-        {
+        public IEnumerable<ChatChannel> GetUser(ChatUser user) {
             if (user == null)
                 return null;
 
@@ -154,8 +141,7 @@ namespace SharpChat
         public void Dispose()
             => Dispose(true);
 
-        private void Dispose(bool disposing)
-        {
+        private void Dispose(bool disposing) {
             if (IsDisposed)
                 return;
             IsDisposed = true;

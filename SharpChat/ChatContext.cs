@@ -6,10 +6,8 @@ using System.Linq;
 using System.Net;
 using System.Threading;
 
-namespace SharpChat
-{
-    public class ChatContext : IDisposable, IPacketTarget
-    {
+namespace SharpChat {
+    public class ChatContext : IDisposable, IPacketTarget {
         public bool IsDisposed { get; private set; }
 
         public readonly SockChatServer Server;
@@ -21,8 +19,7 @@ namespace SharpChat
 
         public string TargetName => @"@broadcast";
 
-        public ChatContext(SockChatServer server)
-        {
+        public ChatContext(SockChatServer server) {
             Server = server;
             Bans = new BanManager(this);
             Users = new UserManager(this);
@@ -35,19 +32,16 @@ namespace SharpChat
             }, null, TimeSpan.Zero, TimeSpan.FromMinutes(1));
         }
 
-        public void Update()
-        {
+        public void Update() {
             Bans.RemoveExpired();
             CheckPings();
         }
 
-        public void BanUser(ChatUser user, DateTimeOffset? until = null, bool banIPs = false, UserDisconnectReason reason = UserDisconnectReason.Kicked)
-        {
+        public void BanUser(ChatUser user, DateTimeOffset? until = null, bool banIPs = false, UserDisconnectReason reason = UserDisconnectReason.Kicked) {
             if (until.HasValue && until.Value <= DateTimeOffset.UtcNow)
                 until = null;
 
-            if (until.HasValue)
-            {
+            if (until.HasValue) {
                 user.Send(new ForceDisconnectPacket(ForceDisconnectReason.Banned, until.Value));
                 Bans.Add(user, until.Value);
 
@@ -55,21 +49,18 @@ namespace SharpChat
                     lock (user.Connections)
                         foreach (IPAddress ip in user.RemoteAddresses)
                             Bans.Add(ip, until.Value);
-            }
-            else
+            } else
                 user.Send(new ForceDisconnectPacket(ForceDisconnectReason.Kicked));
 
             user.Close();
             UserLeave(user.Channel, user, reason);
         }
 
-        public IEnumerable<IChatMessage> GetChannelBacklog(ChatChannel chan, int count = 15)
-        {
+        public IEnumerable<IChatMessage> GetChannelBacklog(ChatChannel chan, int count = 20) {
             return Events.Where(x => x.Target == chan || x.Target == null).Reverse().Take(count).Reverse().ToArray();
         }
 
-        public void HandleJoin(ChatUser user, ChatChannel chan, ChatUserConnection conn)
-        {
+        public void HandleJoin(ChatUser user, ChatChannel chan, ChatUserConnection conn) {
             if (!chan.HasUser(user))
                 chan.Send(new UserConnectPacket(DateTimeOffset.Now, user));
 
@@ -91,10 +82,8 @@ namespace SharpChat
                 Users.Add(user);
         }
 
-        public void UserLeave(ChatChannel chan, ChatUser user, UserDisconnectReason reason = UserDisconnectReason.Leave)
-        {
-            if (chan == null)
-            {
+        public void UserLeave(ChatChannel chan, ChatUser user, UserDisconnectReason reason = UserDisconnectReason.Leave) {
+            if (chan == null) {
                 Channels.Where(x => x.Users.Contains(user)).ToList().ForEach(x => UserLeave(x, user, reason));
                 return;
             }
@@ -106,27 +95,22 @@ namespace SharpChat
             chan.Send(new UserDisconnectPacket(DateTimeOffset.Now, user, reason));
         }
 
-        public void SwitchChannel(ChatUser user, ChatChannel chan, string password)
-        {
-            if (user.Channel == chan)
-            {
+        public void SwitchChannel(ChatUser user, ChatChannel chan, string password) {
+            if (user.Channel == chan) {
                 //user.Send(true, @"samechan", chan.Name);
                 user.ForceChannel();
                 return;
             }
 
-            if (!user.IsModerator && chan.Owner != user)
-            {
-                if (chan.Hierarchy > user.Hierarchy)
-                {
-                    user.Send(true, @"ipchan", chan.Name);
+            if (!user.IsModerator && chan.Owner != user) {
+                if (chan.Hierarchy > user.Hierarchy) {
+                    user.Send(new LegacyCommandResponse(LCR.CHANNEL_INSUFFICIENT_HIERARCHY, true, chan.Name));
                     user.ForceChannel();
                     return;
                 }
 
-                if (chan.Password != password)
-                {
-                    user.Send(true, @"ipwchan", chan.Name);
+                if (chan.Password != password) {
+                    user.Send(new LegacyCommandResponse(LCR.CHANNEL_INVALID_PASSWORD, true, chan.Name));
                     user.ForceChannel();
                     return;
                 }
@@ -135,8 +119,7 @@ namespace SharpChat
             ForceChannelSwitch(user, chan);
         }
 
-        public void ForceChannelSwitch(ChatUser user, ChatChannel chan)
-        {
+        public void ForceChannelSwitch(ChatUser user, ChatChannel chan) {
             if (!Channels.Contains(chan))
                 return;
 
@@ -157,25 +140,21 @@ namespace SharpChat
             oldChan.UserLeave(user);
             chan.UserJoin(user);
 
-            if(oldChan.IsTemporary && oldChan.Owner == user)
+            if (oldChan.IsTemporary && oldChan.Owner == user)
                 Channels.Remove(oldChan);
         }
 
-        public void CheckPings()
-        {
+        public void CheckPings() {
             List<ChatUser> users;
 
-            lock(Users)
+            lock (Users)
                 users = new List<ChatUser>(Users);
 
-            foreach (ChatUser user in users)
-            {
+            foreach (ChatUser user in users) {
                 List<ChatUserConnection> conns = new List<ChatUserConnection>(user.Connections);
 
-                foreach (ChatUserConnection conn in conns)
-                {
-                    if (conn.HasTimedOut)
-                    {
+                foreach (ChatUserConnection conn in conns) {
+                    if (conn.HasTimedOut) {
                         user.Connections.Remove(conn);
                         conn.Dispose();
                         Logger.Write($@"Nuked a connection from {user.Username} {conn.HasTimedOut} {conn.Websocket.IsAvailable}");
@@ -187,8 +166,7 @@ namespace SharpChat
             }
         }
 
-        public void Send(IServerPacket packet)
-        {
+        public void Send(IServerPacket packet) {
             lock (Users)
                 foreach (ChatUser user in Users)
                     user.Send(packet);
@@ -200,8 +178,7 @@ namespace SharpChat
         public void Dispose()
             => Dispose(true);
 
-        private void Dispose(bool disposing)
-        {
+        private void Dispose(bool disposing) {
             if (IsDisposed)
                 return;
             IsDisposed = true;

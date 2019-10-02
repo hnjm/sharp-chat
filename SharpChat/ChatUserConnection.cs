@@ -3,12 +3,10 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 
-namespace SharpChat
-{
-    public class ChatUserConnection : IDisposable, IPacketTarget
-    {
+namespace SharpChat {
+    public class ChatUserConnection : IDisposable, IPacketTarget {
         public readonly IWebSocketConnection Websocket;
-        
+
         public int Version { get; set; } = 1;
         public bool IsDisposed { get; private set; }
         public DateTimeOffset LastPing { get; set; } = DateTimeOffset.MinValue;
@@ -19,12 +17,9 @@ namespace SharpChat
 
         private IPAddress _RemoteAddress = null;
 
-        public IPAddress RemoteAddress
-        {
-            get
-            {
-                if(_RemoteAddress == null)
-                {
+        public IPAddress RemoteAddress {
+            get {
+                if (_RemoteAddress == null) {
                     if ((Websocket.ConnectionInfo.ClientIpAddress == @"127.0.0.1" || Websocket.ConnectionInfo.ClientIpAddress == @"::1")
                         && Websocket.ConnectionInfo.Headers.ContainsKey(@"X-Real-IP"))
                         _RemoteAddress = IPAddress.Parse(Websocket.ConnectionInfo.Headers[@"X-Real-IP"]);
@@ -37,29 +32,19 @@ namespace SharpChat
             }
         }
 
-        public ChatUserConnection(IWebSocketConnection ws)
-        {
+        public ChatUserConnection(IWebSocketConnection ws) {
             Websocket = ws;
         }
 
-        [Obsolete(@"Use Send(IServerPacket)")]
-        public void Send(string data)
-        {
-            if (!Websocket.IsAvailable)
-                return;
-            Websocket.Send(data);
-        }
-
-        public void Send(IServerPacket packet)
-        {
+        public void Send(IServerPacket packet) {
             if (!Websocket.IsAvailable)
                 return;
 
             IEnumerable<string> data = packet.Pack(Version);
 
-            if(data != null)
-                foreach(string line in data)
-                    if(!string.IsNullOrWhiteSpace(line))
+            if (data != null)
+                foreach (string line in data)
+                    if (!string.IsNullOrWhiteSpace(line))
                         Websocket.Send(line);
         }
 
@@ -75,8 +60,7 @@ namespace SharpChat
         ~ChatUserConnection()
             => Dispose(false);
 
-        private void Dispose(bool disposing)
-        {
+        private void Dispose(bool disposing) {
             if (IsDisposed)
                 return;
 

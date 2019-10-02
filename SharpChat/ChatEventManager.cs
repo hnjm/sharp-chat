@@ -3,23 +3,19 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 
-namespace SharpChat
-{
-    public class ChatEventManager : IDisposable, IEnumerable<IChatMessage>
-    {
+namespace SharpChat {
+    public class ChatEventManager : IDisposable, IEnumerable<IChatMessage> {
         private readonly List<IChatMessage> Events = new List<IChatMessage>();
 
         public readonly ChatContext Context;
 
         public bool IsDisposed { get; private set; }
 
-        public ChatEventManager(ChatContext context)
-        {
+        public ChatEventManager(ChatContext context) {
             Context = context;
         }
 
-        public void Add(IChatMessage evt)
-        {
+        public void Add(IChatMessage evt) {
             if (evt == null)
                 throw new ArgumentNullException(nameof(evt));
 
@@ -27,8 +23,7 @@ namespace SharpChat
                 Events.Add(evt);
         }
 
-        public void Remove(IChatMessage evt)
-        {
+        public void Remove(IChatMessage evt) {
             if (evt == null)
                 return;
 
@@ -44,8 +39,7 @@ namespace SharpChat
         public void Dispose()
             => Dispose(true);
 
-        private void Dispose(bool disposing)
-        {
+        private void Dispose(bool disposing) {
             if (IsDisposed)
                 return;
             IsDisposed = true;

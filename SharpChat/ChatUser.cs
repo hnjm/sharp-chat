@@ -6,17 +6,14 @@ using System.Linq;
 using System.Net;
 using System.Text;
 
-namespace SharpChat
-{
-    public enum ChatUserChannelCreation
-    {
+namespace SharpChat {
+    public enum ChatUserChannelCreation {
         No = 0,
         OnlyTemporary = 1,
         Yes = 2,
     }
 
-    public class ChatUser : IPacketTarget
-    {
+    public class ChatUser : IPacketTarget {
         public int UserId { get; set; }
         public string Username { get; set; }
         public ChatColour Colour { get; set; }
@@ -37,8 +34,7 @@ namespace SharpChat
         public string TargetName => @"@log";
 
         public ChatChannel Channel {
-            get
-            {
+            get {
                 lock (Channels)
                     return Channels.FirstOrDefault();
             }
@@ -57,27 +53,23 @@ namespace SharpChat
         public IEnumerable<IPAddress> RemoteAddresses
             => Connections.Select(c => c.RemoteAddress);
 
-        public ChatUser()
-        {
+        public ChatUser() {
         }
 
-        public ChatUser(FlashiiAuth auth)
-        {
+        public ChatUser(FlashiiAuth auth) {
             UserId = auth.UserId;
             ApplyAuth(auth, true);
         }
 
-        public string GetDisplayName(int version, bool forceOriginal = false)
-        {
+        public string GetDisplayName(int version, bool forceOriginal = false) {
             StringBuilder sb = new StringBuilder();
 
-            if(version < 2 && IsAway)
+            if (version < 2 && IsAway)
                 sb.AppendFormat(@"&lt;{0}&gt;_", AwayMessage.Substring(0, Math.Min(AwayMessage.Length, 5)).ToUpperInvariant());
 
             if (forceOriginal || string.IsNullOrWhiteSpace(Nickname))
                 sb.Append(Username);
-            else
-            {
+            else {
                 if (version < 2)
                     sb.Append('~');
 
@@ -87,12 +79,10 @@ namespace SharpChat
             return sb.ToString();
         }
 
-        public void ApplyAuth(FlashiiAuth auth, bool invalidateRestrictions = false)
-        {
+        public void ApplyAuth(FlashiiAuth auth, bool invalidateRestrictions = false) {
             Username = auth.Username;
 
-            if (IsAway)
-            {
+            if (IsAway) {
                 Nickname = null;
                 AwayMessage = null;
             }
@@ -103,54 +93,17 @@ namespace SharpChat
             CanChangeNick = auth.CanChangeNick;
             CanCreateChannels = auth.CanCreateChannels;
 
-            if(invalidateRestrictions || !IsSilenced)
+            if (invalidateRestrictions || !IsSilenced)
                 SilencedUntil = auth.SilencedUntil;
         }
 
-        public void Send(IServerPacket packet)
-        {
-            lock(Connections)
-                Connections.ForEach(c => c.Send(packet));
-        }
-
-        [Obsolete(@"Use Send(IServerPacket)")]
-        public void Send(ChatUser user, string message, SockChatMessageFlags flags = SockChatMessageFlags.RegularUser)
-        {
-            user = user ?? SockChatServer.Bot;
-
-            StringBuilder sb = new StringBuilder();
-            sb.Append((int)SockChatServerPacket.MessageAdd);
-            sb.Append('\t');
-            sb.Append(DateTimeOffset.Now.ToSockChatSeconds(1));
-            sb.Append('\t');
-            sb.Append(user.UserId);
-            sb.Append('\t');
-            sb.Append(message);
-            sb.Append('\t');
-            sb.Append(ServerPacket.NextSequenceId());
-            sb.Append('\t');
-            sb.Append(flags.HasFlag(SockChatMessageFlags.Bold) ? '1' : '0');
-            sb.Append(flags.HasFlag(SockChatMessageFlags.Cursive) ? '1' : '0');
-            sb.Append(flags.HasFlag(SockChatMessageFlags.Underline) ? '1' : '0');
-            sb.Append(flags.HasFlag(SockChatMessageFlags.Colon) ? '1' : '0');
-            sb.Append(flags.HasFlag(SockChatMessageFlags.Private) ? '1' : '0');
-
-            string packet = sb.ToString();
-
-            lock(Connections)
-                Connections.ForEach(c => c.Send(packet));
-        }
-
-        [Obsolete(@"Use Send(IServerPacket)")]
-        public void Send(bool error, string id, params string[] args)
-        {
-            Send(SockChatServer.Bot, ChatMessage.PackBotMessage(error ? 1 : 0, id, args));
-        }
-
-        public void Close()
-        {
+        public void Send(IServerPacket packet) {
             lock (Connections)
-            {
+                Connections.ForEach(c => c.Send(packet));
+        }
+
+        public void Close() {
+            lock (Connections) {
                 Connections.ForEach(c => c.Dispose());
                 Connections.Clear();
             }
@@ -159,24 +112,21 @@ namespace SharpChat
         public void ForceChannel(ChatChannel chan = null)
             => Send(new UserChannelForceJoinPacket(chan ?? Channel));
 
-        public void AddConnection(ChatUserConnection conn)
-        {
+        public void AddConnection(ChatUserConnection conn) {
             lock (Connections)
                 Connections.Add(conn);
 
             conn.User = this;
         }
 
-        public void RemoveConnection(ChatUserConnection conn)
-        {
+        public void RemoveConnection(ChatUserConnection conn) {
             conn.User = null;
 
-            lock(Connections)
+            lock (Connections)
                 Connections.Remove(conn);
         }
 
-        public string Pack(int targetVersion)
-        {
+        public string Pack(int targetVersion) {
             StringBuilder sb = new StringBuilder();
 
             sb.Append(UserId);

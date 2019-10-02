@@ -3,10 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace SharpChat.Packet
-{
-    public class LegacyCommandResponse : ServerPacket
-    {
+namespace SharpChat.Packet {
+    public class LegacyCommandResponse : ServerPacket {
         public bool IsError { get; private set; }
         public string StringId { get; private set; }
         public IEnumerable<object> Arguments { get; private set; }
@@ -21,23 +19,20 @@ namespace SharpChat.Packet
             Arguments = args;
         }
 
-        public override IEnumerable<string> Pack(int version)
-        {
+        public override IEnumerable<string> Pack(int version) {
             if (version > 1)
                 return null;
 
             StringBuilder sb = new StringBuilder();
 
-            if(StringId == LCR.WELCOME)
-            {
+            if (StringId == LCR.WELCOME) {
                 sb.Append((int)SockChatServerPacket.ContextPopulate);
                 sb.Append('\t');
                 sb.Append((int)SockChatServerContextPacket.Message);
                 sb.Append('\t');
                 sb.Append(DateTimeOffset.Now.ToSockChatSeconds(version));
                 sb.Append("\t-1\tChatBot\tinherit\t\t");
-            } else
-            {
+            } else {
                 sb.Append((int)SockChatServerPacket.MessageAdd);
                 sb.Append('\t');
                 sb.Append(DateTimeOffset.Now.ToSockChatSeconds(version));
@@ -48,16 +43,16 @@ namespace SharpChat.Packet
             sb.Append('\f');
             sb.Append(StringId == LCR.WELCOME ? LCR.BROADCAST : StringId);
 
-            if(Arguments?.Any() == true)
-                lock(Arguments)
-                    foreach(object arg in Arguments) {
+            if (Arguments?.Any() == true)
+                lock (Arguments)
+                    foreach (object arg in Arguments) {
                         sb.Append('\f');
                         sb.Append(arg);
                     }
 
             sb.Append('\t');
 
-            if(StringId == LCR.WELCOME) {
+            if (StringId == LCR.WELCOME) {
                 sb.Append(StringId);
                 sb.Append("\t0");
             } else
@@ -76,8 +71,7 @@ namespace SharpChat.Packet
     }
 
     // Abbreviated class name because otherwise shit gets wide
-    public static class LCR
-    {
+    public static class LCR {
         public const string COMMAND_NOT_FOUND = @"nocmd";
         public const string COMMAND_NOT_ALLOWED = @"cmdna";
         public const string COMMAND_FORMAT_ERROR = @"cmderr";
@@ -85,10 +79,33 @@ namespace SharpChat.Packet
         public const string BROADCAST = @"say";
         public const string IP_ADDRESS = @"ipaddr";
         public const string USER_NOT_FOUND = @"usernf";
+        public const string SILENCE_SELF = @"silself";
+        public const string SILENCE_HIERARCHY = @"silperr";
+        public const string SILENCE_ALREADY = @"silerr";
+        public const string TARGET_SILENCED = @"silok";
+        public const string SILENCED = @"silence";
         public const string UNSILENCED = @"unsil";
         public const string TARGET_UNSILENCED = @"usilok";
-        public const string TARGET_NOT_SILENCED = @"usilerr";
-        public const string TARGET_SILENCE_NOT_ALLOWED = @"usilperr";
+        public const string NOT_SILENCED = @"usilerr";
+        public const string UNSILENCE_HIERARCHY = @"usilperr";
         public const string NAME_IN_USE = @"nameinuse";
+        public const string CHANNEL_INSUFFICIENT_HIERARCHY = @"ipchan";
+        public const string CHANNEL_INVALID_PASSWORD = @"ipwchan";
+        public const string CHANNEL_NOT_FOUND = @"nochan";
+        public const string CHANNEL_ALREADY_EXISTS = @"nischan";
+        public const string CHANNEL_NAME_INVALID = "inchan";
+        public const string CHANNEL_CREATED = @"crchan";
+        public const string CHANNEL_DELETE_FAILED = @"ndchan";
+        public const string CHANNEL_DELETED = @"delchan";
+        public const string CHANNEL_PASSWORD_CHANGED = @"cpwdchan";
+        public const string CHANNEL_HIERARCHY_CHANGED = @"cprivchan";
+        public const string USERS_LISTING_ERROR = @"whoerr";
+        public const string USERS_LISTING_CHANNEL = @"whochan";
+        public const string USERS_LISTING_SERVER = @"who";
+        public const string INSUFFICIENT_HIERARCHY = @"rankerr";
+        public const string MESSAGE_DELETE_ERROR = @"delerr";
+        public const string KICK_NOT_ALLOWED = @"kickna";
+        public const string USER_NOT_BANNED = @"notban";
+        public const string USER_UNBANNED = @"unban";
     }
 }

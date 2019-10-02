@@ -2,18 +2,14 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace SharpChat.Packet
-{
-    public class FloodWarningPacket : ServerPacket
-    {
-        public override IEnumerable<string> Pack(int version)
-        {
+namespace SharpChat.Packet {
+    public class FloodWarningPacket : ServerPacket {
+        public override IEnumerable<string> Pack(int version) {
             StringBuilder sb = new StringBuilder();
 
-            if(version >= 2)
+            if (version >= 2)
                 sb.Append((int)SockChatServerPacket.FloodWarning);
-            else
-            {
+            else {
                 sb.Append((int)SockChatServerPacket.MessageAdd);
                 sb.Append('\t');
                 sb.Append(DateTimeOffset.Now.ToSockChatSeconds(version));

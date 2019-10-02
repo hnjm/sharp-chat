@@ -1,10 +1,8 @@
 ﻿using System;
 
-namespace SharpChat
-{
+namespace SharpChat {
     [Flags]
-    public enum ChatMessageFlags
-    {
+    public enum ChatMessageFlags {
         None = 0,
         Action = 1,
         Broadcast = 1 << 1,
@@ -12,12 +10,11 @@ namespace SharpChat
         Private = 1 << 3,
     }
 
-    public interface IChatMessage
-    {
+    public interface IChatMessage {
         string Text { get; }
         DateTimeOffset DateTime { get; }
         ChatUser Sender { get; }
-        IPacketTarget Target { get;  }
+        IPacketTarget Target { get; }
         ChatMessageFlags Flags { get; }
         int SequenceId { get; set; }
     }

@@ -3,19 +3,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace SharpChat.Packet
-{
-    public class ContextUsersPacket : ServerPacket
-    {
+namespace SharpChat.Packet {
+    public class ContextUsersPacket : ServerPacket {
         public IEnumerable<ChatUser> Users { get; private set; }
 
-        public ContextUsersPacket(IEnumerable<ChatUser> users)
-        {
+        public ContextUsersPacket(IEnumerable<ChatUser> users) {
             Users = users?.Where(u => u != null) ?? throw new ArgumentNullException(nameof(users));
         }
 
-        public override IEnumerable<string> Pack(int version)
-        {
+        public override IEnumerable<string> Pack(int version) {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)SockChatServerPacket.ContextPopulate);
@@ -24,8 +20,7 @@ namespace SharpChat.Packet
             sb.Append('\t');
             sb.Append(Users.Count());
 
-            foreach(ChatUser user in Users)
-            {
+            foreach (ChatUser user in Users) {
                 sb.Append('\t');
                 sb.Append(user.Pack(version));
                 sb.Append('\t');

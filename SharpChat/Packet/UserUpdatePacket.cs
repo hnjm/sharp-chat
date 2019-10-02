@@ -2,29 +2,24 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace SharpChat.Packet
-{
-    public class UserUpdatePacket : ServerPacket
-    {
+namespace SharpChat.Packet {
+    public class UserUpdatePacket : ServerPacket {
         public ChatUser User { get; private set; }
         public string PreviousName { get; private set; }
 
-        public UserUpdatePacket(ChatUser user, string previousName = null)
-        {
+        public UserUpdatePacket(ChatUser user, string previousName = null) {
             User = user ?? throw new ArgumentNullException(nameof(user));
             PreviousName = previousName;
         }
 
-        public override IEnumerable<string> Pack(int version)
-        {
+        public override IEnumerable<string> Pack(int version) {
             string[] lines = new string[2];
 
             StringBuilder sb = new StringBuilder();
 
             bool isSilent = string.IsNullOrEmpty(PreviousName);
 
-            if (version < 2 && !isSilent)
-            {
+            if (version < 2 && !isSilent) {
                 sb.Append((int)SockChatServerPacket.MessageAdd);
                 sb.Append('\t');
                 sb.Append(DateTimeOffset.Now.ToSockChatSeconds(version));
@@ -43,8 +38,7 @@ namespace SharpChat.Packet
             sb.Append('\t');
             sb.Append(User.Pack(version));
 
-            if(version >= 2)
-            {
+            if (version >= 2) {
                 sb.Append('\t');
                 sb.Append(isSilent ? '1' : '0');
             }
