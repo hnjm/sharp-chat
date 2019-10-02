@@ -1,18 +1,17 @@
-﻿using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Linq;
-using System.Net;
+using System.Net.Http;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
-namespace SharpChat.Flashii
-{
+namespace SharpChat.Flashii {
     public class FlashiiBump
     {
-        [JsonProperty(@"id")]
+        [JsonPropertyName(@"id")]
         public int UserId { get; set; }
 
-        [JsonProperty(@"ip")]
+        [JsonPropertyName(@"ip")]
         public string UserIP { get; set; }
 
         public static void Submit(IEnumerable<ChatUser> users)
@@ -27,15 +26,15 @@ namespace SharpChat.Flashii
         {
             try
             {
-                using (WebClient wc = new WebClient())
-                {
-                    string submitBump = JsonConvert.SerializeObject(users);
+                string bumpEndpoint = Utils.ReadFileOrDefault(@"bump_endpoint.txt", @"https://flashii.net/_sockchat.php");
+                string bumpJson = JsonSerializer.Serialize(users);
 
-                    wc.UploadValues(Utils.ReadFileOrDefault(@"bump_endpoint.txt", @"https://flashii.net/_sockchat.php"), new NameValueCollection {
-                        { @"bump", submitBump },
-                        { @"hash", submitBump.GetSignedHash() },
-                    });
-                }
+                FormUrlEncodedContent bumpData = new FormUrlEncodedContent(new Dictionary<string, string> {
+                    { @"bump", bumpJson },
+                    { @"hash", bumpJson.GetSignedHash() },
+                });
+
+                HttpClientS.Instance.PostAsync(bumpEndpoint, bumpData).Wait();
             }
             catch(Exception ex)
             {

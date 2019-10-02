@@ -1,34 +1,32 @@
-﻿using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Net;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
-namespace SharpChat.Flashii
-{
+namespace SharpChat.Flashii {
     public class FlashiiBan
     {
-        [JsonProperty(@"id")]
+        [JsonPropertyName(@"id")]
         public int UserId { get; set; }
 
-        [JsonProperty(@"ip")]
+        [JsonPropertyName(@"ip")]
         public string UserIP { get; set; }
 
-        [JsonProperty(@"expires")]
+        [JsonPropertyName(@"expires")]
         public DateTimeOffset Expires { get; set; }
 
         public static IEnumerable<FlashiiBan> GetList()
         {
             try
             {
-                using (WebClient wc = new WebClient())
-                {
-                    string banListUrl = string.Format(
-                        Utils.ReadFileOrDefault(@"bans_endpoint.txt", @"https://flashii.net/_sockchat.php?bans={0}"),
-                        @"givemethebeans".GetSignedHash()
-                    );
+                string bansEndpoint = string.Format(
+                    Utils.ReadFileOrDefault(@"bans_endpoint.txt", @"https://flashii.net/_sockchat.php?bans={0}"),
+                    @"givemethebeans".GetSignedHash()
+                );
 
-                    return JsonConvert.DeserializeObject<IEnumerable<FlashiiBan>>(wc.DownloadString(banListUrl));
-                }
+                return JsonSerializer.Deserialize<IEnumerable<FlashiiBan>>(
+                    HttpClientS.Instance.GetByteArrayAsync(bansEndpoint).Result
+                );
             }
             catch (Exception ex)
             {

@@ -1,47 +1,47 @@
-﻿using Newtonsoft.Json;
-using System;
-using System.Collections.Specialized;
+﻿using System;
+using System.Collections.Generic;
 using System.Net;
-using System.Text;
+using System.Net.Http;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
-namespace SharpChat.Flashii
-{
+namespace SharpChat.Flashii {
     public class FlashiiAuth
     {
-        [JsonProperty(@"success")]
+        [JsonPropertyName(@"success")]
         public bool Success { get; set; }
 
-        [JsonProperty(@"user_id")]
+        [JsonPropertyName(@"user_id")]
         public int UserId { get; set; }
 
-        [JsonProperty(@"username")]
+        [JsonPropertyName(@"username")]
         public string Username { get; set; }
 
-        [JsonProperty(@"colour")]
+        [JsonPropertyName(@"colour")]
         public string Colour { get; set; }
 
-        [JsonProperty(@"colour_raw")]
+        [JsonPropertyName(@"colour_raw")]
         public int ColourRaw { get; set; }
 
-        [JsonProperty(@"default_channel")]
+        [JsonPropertyName(@"default_channel")]
         public string DefaultChannel { get; set; }
 
-        [JsonProperty(@"hierarchy")]
+        [JsonPropertyName(@"hierarchy")]
         public int Hierarchy { get; set; }
 
-        [JsonProperty(@"is_mod")]
+        [JsonPropertyName(@"is_mod")]
         public bool IsModerator { get; set; }
 
-        [JsonProperty(@"can_change_nick")]
+        [JsonPropertyName(@"can_change_nick")]
         public bool CanChangeNick { get; set; }
 
-        [JsonProperty(@"can_create_chan")]
+        [JsonPropertyName(@"can_create_chan")]
         public ChatUserChannelCreation CanCreateChannels { get; set; }
 
-        [JsonProperty(@"is_banned")]
+        [JsonPropertyName(@"is_banned")]
         public DateTimeOffset BannedUntil { get; set; }
 
-        [JsonProperty(@"is_silenced")]
+        [JsonPropertyName(@"is_silenced")]
         public DateTimeOffset SilencedUntil { get; set; }
 
         public static FlashiiAuth Attempt(int userId, string token, IPAddress ip)
@@ -66,18 +66,18 @@ namespace SharpChat.Flashii
 
             try
             {
-                using (WebClient wc = new WebClient())
-                {
-                    string authJson = Encoding.UTF8.GetString(wc.UploadValues(Utils.ReadFileOrDefault(@"login_endpoint.txt", @"https://flashii.net/_sockchat.php"), new NameValueCollection
-                    {
-                        { @"user_id", userId.ToString() },
-                        { @"token", token },
-                        { @"ip", ip.ToString() },
-                        { @"hash", $@"{userId}#{token}#{ip}".GetSignedHash() },
-                    }));
+                string loginEndpoint = Utils.ReadFileOrDefault(@"login_endpoint.txt", @"https://flashii.net/_sockchat.php");
 
-                    return JsonConvert.DeserializeObject<FlashiiAuth>(authJson);
-                }
+                using FormUrlEncodedContent loginRequest = new FormUrlEncodedContent(new Dictionary<string, string> {
+                    { @"user_id", userId.ToString() },
+                    { @"token", token },
+                    { @"ip", ip.ToString() },
+                    { @"hash", $@"{userId}#{token}#{ip}".GetSignedHash() },
+                });
+
+                using HttpResponseMessage loginResponse = HttpClientS.Instance.PostAsync(loginEndpoint, loginRequest).Result;
+                
+                return JsonSerializer.Deserialize<FlashiiAuth>(loginResponse.Content.ReadAsByteArrayAsync().Result);
             }
             catch(Exception ex)
             {

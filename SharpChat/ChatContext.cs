@@ -194,14 +194,6 @@ namespace SharpChat
                     user.Send(packet);
         }
 
-        [Obsolete(@"Use Broadcast(IServerPacket)")]
-        public void Broadcast(ChatUser user, string message, SockChatMessageFlags flags = SockChatMessageFlags.RegularUser)
-        {
-            lock (Users)
-                foreach (ChatUser target in Users)
-                    target.Send(user, message, flags);
-        }
-
         ~ChatContext()
             => Dispose(false);
 
