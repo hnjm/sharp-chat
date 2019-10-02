@@ -66,8 +66,6 @@ namespace SharpChat.Flashii {
 
             try
             {
-                string loginEndpoint = Utils.ReadFileOrDefault(@"login_endpoint.txt", @"https://flashii.net/_sockchat.php");
-
                 using FormUrlEncodedContent loginRequest = new FormUrlEncodedContent(new Dictionary<string, string> {
                     { @"user_id", userId.ToString() },
                     { @"token", token },
@@ -75,7 +73,7 @@ namespace SharpChat.Flashii {
                     { @"hash", $@"{userId}#{token}#{ip}".GetSignedHash() },
                 });
 
-                using HttpResponseMessage loginResponse = HttpClientS.Instance.PostAsync(loginEndpoint, loginRequest).Result;
+                using HttpResponseMessage loginResponse = HttpClientS.Instance.PostAsync(@"https://flashii.net/_sockchat.php", loginRequest).Result;
                 
                 return JsonSerializer.Deserialize<FlashiiAuth>(loginResponse.Content.ReadAsByteArrayAsync().Result);
             }

@@ -26,7 +26,6 @@ namespace SharpChat.Flashii {
         {
             try
             {
-                string bumpEndpoint = Utils.ReadFileOrDefault(@"bump_endpoint.txt", @"https://flashii.net/_sockchat.php");
                 string bumpJson = JsonSerializer.Serialize(users);
 
                 FormUrlEncodedContent bumpData = new FormUrlEncodedContent(new Dictionary<string, string> {
@@ -34,7 +33,7 @@ namespace SharpChat.Flashii {
                     { @"hash", bumpJson.GetSignedHash() },
                 });
 
-                HttpClientS.Instance.PostAsync(bumpEndpoint, bumpData).Wait();
+                HttpClientS.Instance.PostAsync(@"https://flashii.net/_sockchat.php", bumpData).Wait();
             }
             catch(Exception ex)
             {

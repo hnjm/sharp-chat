@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -9,7 +10,7 @@ namespace SharpChat {
 
         public static string GetSignedHash(this byte[] bytes, string key = null) {
             if (key == null)
-                key = Utils.ReadFileOrDefault(@"login_key.txt", @"woomy");
+                key = File.Exists(@"login_key.txt") ? File.ReadAllText(@"login_key.txt") : @"woomy";
 
             StringBuilder sb = new StringBuilder();
 

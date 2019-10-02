@@ -19,10 +19,7 @@ namespace SharpChat.Flashii {
         {
             try
             {
-                string bansEndpoint = string.Format(
-                    Utils.ReadFileOrDefault(@"bans_endpoint.txt", @"https://flashii.net/_sockchat.php?bans={0}"),
-                    @"givemethebeans".GetSignedHash()
-                );
+                string bansEndpoint = string.Format(@"https://flashii.net/_sockchat.php?bans={0}", @"givemethebeans".GetSignedHash());
 
                 return JsonSerializer.Deserialize<IEnumerable<FlashiiBan>>(
                     HttpClientS.Instance.GetByteArrayAsync(bansEndpoint).Result
