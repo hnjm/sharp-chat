@@ -171,7 +171,7 @@ namespace SharpChat {
                     if (conn.HasTimedOut) {
                         user.Connections.Remove(conn);
                         conn.Dispose();
-                        Logger.Write($@"Nuked a connection from {user.Username} {conn.HasTimedOut} {conn.Websocket.IsAvailable}");
+                        Logger.Write($@"Nuked a connection from {user.Username}");
                     }
 
                     if (user.Connections.Count < 1)
