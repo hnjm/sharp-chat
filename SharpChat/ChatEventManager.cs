@@ -21,6 +21,8 @@ namespace SharpChat {
 
             lock (Events)
                 Events.Add(evt);
+
+            DB.LogEvent(evt);
         }
 
         public void Remove(IChatMessage evt) {

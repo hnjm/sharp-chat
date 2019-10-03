@@ -118,7 +118,6 @@ namespace SharpChat {
             ChatUserConnection conn = GetConnection(ws);
 
             if (conn == null) {
-                Logger.Write(@"Somehow got to OnMessage without a valid ChatUserConnection.");
                 ws.Close();
                 return;
             }
