@@ -17,7 +17,7 @@ namespace SharpChat {
             bool unixSock = false;
             if(server[0..5] == @"unix:") {
                 unixSock = true;
-                server = server[4..];
+                server = server[5..];
             }
 
             Connection = new MySqlConnection(new MySqlConnectionStringBuilder {
