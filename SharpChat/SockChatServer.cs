@@ -204,8 +204,6 @@ namespace SharpChat {
 
                     aUser.AddConnection(conn);
 
-                    ChatChannel chan = Context.Channels.Get(auth.DefaultChannel) ?? Context.Channels.FirstOrDefault();
-
                     if (conn.Version < 2) {
                         conn.Send(new LegacyCommandResponse(LCR.WELCOME, false, $@"Welcome to Flashii Chat, {aUser.Username}!"));
 
@@ -218,7 +216,7 @@ namespace SharpChat {
                         }
                     }
 
-                    Context.HandleJoin(aUser, chan, conn);
+                    Context.HandleJoin(aUser, Context.Channels.DefaultChannel, conn);
                     break;
 
                 case SockChatClientPacket.MessageSend:
@@ -229,7 +227,7 @@ namespace SharpChat {
                         ChatUser mUser = conn.User;
                         ChatChannel mChannel;
 
-                        if (mUser == null || string.IsNullOrWhiteSpace(args[2]))
+                        if (mUser == null || !mUser.Can(ChatUserPermissions.SendMessage) || string.IsNullOrWhiteSpace(args[2]))
                             break;
 
                         if (conn.Version < 2) {
@@ -242,11 +240,13 @@ namespace SharpChat {
                         } else
                             mChannel = Context.Channels.Get(args[1]);
 
-                        if (mChannel == null || !mUser.Channels.Contains(mChannel) || (mUser.IsSilenced && !mUser.IsModerator))
+                        if (mChannel == null
+                            || !mUser.Channels.Contains(mChannel)
+                            || (mUser.IsSilenced && !mUser.Can(ChatUserPermissions.SilenceUser)))
                             break;
 
-                        if (mUser.IsAway) {
-                            mUser.AwayMessage = null;
+                        if (mUser.Status != ChatUserStatus.Online) {
+                            mUser.Status = ChatUserStatus.Online;
                             mChannel.Send(new UserUpdatePacket(mUser));
                         }
 
@@ -326,17 +326,36 @@ namespace SharpChat {
                         : string.Join(' ', parts.Skip(1));
 
                     if (!string.IsNullOrEmpty(afkStr)) {
-                        user.AwayMessage = afkStr.Substring(0, Math.Min(afkStr.Length, 100)).Trim();
+                        user.Status = ChatUserStatus.Away;
+                        user.StatusMessage = afkStr.Substring(0, Math.Min(afkStr.Length, 100)).Trim();
                         channel.Send(new UserUpdatePacket(user));
                     }
                     break;
                 case @"nick": // sets a temporary nickname
-                    if (!user.CanChangeNick) {
+                    bool setOthersNick = user.Can(ChatUserPermissions.SetOthersNickname);
+
+                    if (!setOthersNick && !user.Can(ChatUserPermissions.SetOwnNickname)) {
                         user.Send(new LegacyCommandResponse(LCR.COMMAND_NOT_ALLOWED, true, $@"/{command}"));
                         break;
                     }
 
-                    string nickStr = string.Join('_', parts.Skip(1))
+                    ChatUser targetUser = null;
+                    int offset = 1;
+
+                    if (setOthersNick && int.TryParse(parts[1], out int targetUserId) && targetUserId > 0) {
+                        targetUser = Context.Users.Get(targetUserId);
+                        offset = 2;
+                    }
+
+                    if (targetUser == null)
+                        targetUser = user;
+
+                    if(parts.Length < offset) {
+                        user.Send(new LegacyCommandResponse(LCR.COMMAND_FORMAT_ERROR));
+                        break;
+                    }
+
+                    string nickStr = string.Join('_', parts.Skip(offset))
                         .Replace(' ', '_')
                         .Replace("\n", string.Empty)
                         .Replace("\r", string.Empty)
@@ -344,7 +363,7 @@ namespace SharpChat {
                         .Replace("\t", string.Empty)
                         .Trim();
 
-                    if (nickStr == user.Username)
+                    if (nickStr == targetUser.Username)
                         nickStr = null;
                     else if (nickStr.Length > 15)
                         nickStr = nickStr.Substring(0, 15);
@@ -356,9 +375,9 @@ namespace SharpChat {
                         break;
                     }
 
-                    string previousName = user.Nickname ?? user.Username;
-                    user.Nickname = nickStr;
-                    channel.Send(new UserUpdatePacket(user, previousName));
+                    string previousName = targetUser == user ? (targetUser.Nickname ?? targetUser.Username) : null;
+                    targetUser.Nickname = nickStr;
+                    channel.Send(new UserUpdatePacket(targetUser, previousName));
                     break;
                 case @"whisper": // sends a pm to another user
                 case @"msg":
@@ -420,7 +439,7 @@ namespace SharpChat {
                             break;
                         }
 
-                        if (whoChan.Hierarchy > user.Hierarchy || (whoChan.HasPassword && !user.IsModerator)) {
+                        if (whoChan.Hierarchy > user.Hierarchy || (whoChan.HasPassword && !user.Can(ChatUserPermissions.JoinAnyChannel))) {
                             user.Send(new LegacyCommandResponse(LCR.USERS_LISTING_ERROR, true, whoChanStr));
                             break;
                         }
@@ -490,7 +509,7 @@ namespace SharpChat {
                     Context.SwitchChannel(user, joinChan, string.Join(' ', parts.Skip(2)));
                     break;
                 case @"create": // create a new channel
-                    if (user.CanCreateChannels == ChatUserChannelCreation.No) {
+                    if (user.Can(ChatUserPermissions.CreateChannel)) {
                         user.Send(new LegacyCommandResponse(LCR.COMMAND_NOT_ALLOWED, true, $@"/{command}"));
                         break;
                     }
@@ -513,7 +532,7 @@ namespace SharpChat {
                     string createChanName = string.Join('_', parts.Skip(createChanHasHierarchy ? 2 : 1));
                     ChatChannel createChan = new ChatChannel {
                         Name = createChanName,
-                        IsTemporary = user.CanCreateChannels == ChatUserChannelCreation.OnlyTemporary,
+                        IsTemporary = !user.Can(ChatUserPermissions.SetChannelPermanent),
                         Hierarchy = createChanHierarchy,
                         Owner = user,
                     };
@@ -545,7 +564,7 @@ namespace SharpChat {
                         break;
                     }
 
-                    if (!user.IsModerator && delChan.Owner != user) {
+                    if (!user.Can(ChatUserPermissions.DeleteChannel) && delChan.Owner != user) {
                         user.Send(new LegacyCommandResponse(LCR.CHANNEL_DELETE_FAILED, true, delChan.Name));
                         break;
                     }
@@ -555,7 +574,7 @@ namespace SharpChat {
                     break;
                 case @"password": // set a password on the channel
                 case @"pwd":
-                    if (!user.IsModerator || channel.Owner != user) {
+                    if (!user.Can(ChatUserPermissions.SetChannelPassword) || channel.Owner != user) {
                         user.Send(new LegacyCommandResponse(LCR.COMMAND_NOT_ALLOWED, true, $@"/{command}"));
                         break;
                     }
@@ -571,7 +590,7 @@ namespace SharpChat {
                 case @"privilege": // sets a minimum hierarchy requirement on the channel
                 case @"rank":
                 case @"priv":
-                    if (!user.IsModerator || channel.Owner != user) {
+                    if (!user.Can(ChatUserPermissions.SetChannelHierarchy) || channel.Owner != user) {
                         user.Send(new LegacyCommandResponse(LCR.COMMAND_NOT_ALLOWED, true, $@"/{command}"));
                         break;
                     }
@@ -586,7 +605,7 @@ namespace SharpChat {
                     break;
 
                 case @"say": // pretend to be the bot
-                    if (!user.IsModerator) {
+                    if (!user.Can(ChatUserPermissions.Broadcast)) {
                         user.Send(new LegacyCommandResponse(LCR.COMMAND_NOT_ALLOWED, true, $@"/{command}"));
                         break;
                     }
@@ -594,7 +613,9 @@ namespace SharpChat {
                     Context.Send(new LegacyCommandResponse(LCR.BROADCAST, false, string.Join(' ', parts.Skip(1))));
                     break;
                 case @"delmsg": // deletes a message
-                    if (!user.IsModerator) {
+                    bool deleteAnyMessage = user.Can(ChatUserPermissions.DeleteAnyMessage);
+
+                    if (!deleteAnyMessage || user.Can(ChatUserPermissions.DeleteOwnMessage)) {
                         user.Send(new LegacyCommandResponse(LCR.COMMAND_NOT_ALLOWED, true, $@"/{command}"));
                         break;
                     }
@@ -606,7 +627,7 @@ namespace SharpChat {
 
                     IChatEvent delMsg = Context.Events.FirstOrDefault(m => m.SequenceId == delSeqId);
 
-                    if (delMsg == null || delMsg.Sender.Hierarchy > user.Hierarchy) {
+                    if (delMsg == null || delMsg.Sender.Hierarchy > user.Hierarchy || (!deleteAnyMessage && delMsg.Sender.UserId != user.UserId)) {
                         user.Send(new LegacyCommandResponse(LCR.MESSAGE_DELETE_ERROR));
                         break;
                     }
@@ -615,12 +636,12 @@ namespace SharpChat {
                     break;
                 case @"kick": // kick a user from the server
                 case @"ban": // ban a user from the server, this differs from /kick in that it adds all remote address to the ip banlist
-                    if (!user.IsModerator) {
+                    bool isBanning = command == @"ban";
+
+                    if (!user.Can(isBanning ? ChatUserPermissions.BanUser : ChatUserPermissions.KickUser)) {
                         user.Send(new LegacyCommandResponse(LCR.COMMAND_NOT_ALLOWED, true, $@"/{command}"));
                         break;
                     }
-
-                    bool isBanning = command == @"ban";
 
                     ChatUser banUser;
                     if (parts.Length < 2 || (banUser = Context.Users.Get(parts[1])) == null) {
@@ -648,7 +669,7 @@ namespace SharpChat {
                     break;
                 case @"pardon": // unban a user
                 case @"unban":
-                    if (!user.IsModerator) {
+                    if (!user.Can(ChatUserPermissions.BanUser | ChatUserPermissions.KickUser)) {
                         user.Send(new LegacyCommandResponse(LCR.COMMAND_NOT_ALLOWED, true, $@"/{command}"));
                         break;
                     }
@@ -670,7 +691,7 @@ namespace SharpChat {
                     break;
                 case @"pardonip": // unban an ip
                 case @"unbanip":
-                    if (!user.IsModerator) {
+                    if (!user.Can(ChatUserPermissions.BanUser | ChatUserPermissions.KickUser)) {
                         user.Send(new LegacyCommandResponse(LCR.COMMAND_NOT_ALLOWED, true, $@"/{command}"));
                         break;
                     }
@@ -690,7 +711,7 @@ namespace SharpChat {
                     break;
                 case @"bans": // gets a list of bans
                 case @"banned":
-                    if (!user.IsModerator) {
+                    if (!user.Can(ChatUserPermissions.BanUser | ChatUserPermissions.KickUser)) {
                         user.Send(new LegacyCommandResponse(LCR.COMMAND_NOT_ALLOWED, true, $@"/{command}"));
                         break;
                     }
@@ -698,7 +719,7 @@ namespace SharpChat {
                     user.Send(new BanListPacket(Context.Bans, Context.Users));
                     break;
                 case @"silence": // silence a user
-                    if (!user.IsModerator) {
+                    if (!user.Can(ChatUserPermissions.SilenceUser)) {
                         user.Send(new LegacyCommandResponse(LCR.COMMAND_NOT_ALLOWED, true, $@"/{command}"));
                         break;
                     }
@@ -740,7 +761,7 @@ namespace SharpChat {
                     user.Send(new LegacyCommandResponse(LCR.TARGET_SILENCED, false, silUser.GetDisplayName(1)));
                     break;
                 case @"unsilence": // unsilence a user
-                    if (!user.IsModerator) {
+                    if (!user.Can(ChatUserPermissions.SilenceUser)) {
                         user.Send(new LegacyCommandResponse(LCR.COMMAND_NOT_ALLOWED, true, $@"/{command}"));
                         break;
                     }
@@ -767,7 +788,7 @@ namespace SharpChat {
                     break;
                 case @"ip": // gets a user's ip (from all connections in this case)
                 case @"whois":
-                    if (!user.IsModerator) {
+                    if (!user.Can(ChatUserPermissions.SeeIPAddress)) {
                         user.Send(new LegacyCommandResponse(LCR.COMMAND_NOT_ALLOWED, true, @"/ip"));
                         break;
                     }

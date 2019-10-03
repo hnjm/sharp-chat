@@ -7,27 +7,18 @@ using System.Net;
 using System.Text;
 
 namespace SharpChat {
-    public enum ChatUserChannelCreation {
-        No = 0,
-        OnlyTemporary = 1,
-        Yes = 2,
-    }
-
     public class ChatUser : IPacketTarget {
         public int UserId { get; set; }
         public string Username { get; set; }
         public ChatColour Colour { get; set; }
         public int Hierarchy { get; set; }
         public string Nickname { get; set; }
+        public ChatUserPermissions Permissions { get; set; }
 
-        public bool IsAway => !string.IsNullOrWhiteSpace(AwayMessage);
-        public string AwayMessage { get; set; }
+        public ChatUserStatus Status { get; set; } = ChatUserStatus.Online;
+        public string StatusMessage { get; set; }
 
         public DateTimeOffset SilencedUntil { get; set; }
-
-        public bool IsModerator { get; private set; } = false;
-        public bool CanChangeNick { get; private set; } = false;
-        public ChatUserChannelCreation CanCreateChannels { get; private set; } = ChatUserChannelCreation.No;
 
         public readonly List<ChatUserConnection> Connections = new List<ChatUserConnection>();
 
@@ -64,8 +55,8 @@ namespace SharpChat {
         public string GetDisplayName(int version, bool forceOriginal = false) {
             StringBuilder sb = new StringBuilder();
 
-            if (version < 2 && IsAway)
-                sb.AppendFormat(@"&lt;{0}&gt;_", AwayMessage.Substring(0, Math.Min(AwayMessage.Length, 5)).ToUpperInvariant());
+            if (version < 2 && Status == ChatUserStatus.Away)
+                sb.AppendFormat(@"&lt;{0}&gt;_", StatusMessage.Substring(0, Math.Min(StatusMessage.Length, 5)).ToUpperInvariant());
 
             if (forceOriginal || string.IsNullOrWhiteSpace(Nickname))
                 sb.Append(Username);
@@ -79,19 +70,20 @@ namespace SharpChat {
             return sb.ToString();
         }
 
+        public bool Can(ChatUserPermissions perm, bool strict = false) {
+            ChatUserPermissions perms = Permissions & perm;
+            return strict ? perms == perm : perms > 0;
+        }
+
         public void ApplyAuth(FlashiiAuth auth, bool invalidateRestrictions = false) {
             Username = auth.Username;
 
-            if (IsAway) {
-                Nickname = null;
-                AwayMessage = null;
-            }
-
+            if (Status == ChatUserStatus.Offline)
+                Status = ChatUserStatus.Online;
+            
             Colour = new ChatColour(auth.ColourRaw);
             Hierarchy = auth.Hierarchy;
-            IsModerator = auth.IsModerator;
-            CanChangeNick = auth.CanChangeNick;
-            CanCreateChannels = auth.CanCreateChannels;
+            Permissions = auth.Permissions;
 
             if (invalidateRestrictions || !IsSilenced)
                 SilencedUntil = auth.SilencedUntil;
@@ -140,11 +132,13 @@ namespace SharpChat {
             sb.Append('\t');
             sb.Append(Hierarchy);
             sb.Append(' ');
-            sb.Append(IsModerator ? '1' : '0');
+            sb.Append(Can(ChatUserPermissions.KickUser) ? '1' : '0');
             sb.Append(@" 0 ");
-            sb.Append(CanChangeNick ? '1' : '0');
+            sb.Append(Can(ChatUserPermissions.SetOwnNickname) ? '1' : '0');
             sb.Append(' ');
-            sb.Append((int)CanCreateChannels);
+            sb.Append(Can(ChatUserPermissions.CreateChannel | ChatUserPermissions.SetChannelPermanent, true) ? 2 : (
+                Can(ChatUserPermissions.CreateChannel) ? 1 : 0
+            ));
 
             return sb.ToString();
         }

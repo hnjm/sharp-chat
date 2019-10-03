@@ -87,6 +87,8 @@ namespace SharpChat {
         }
 
         public void UserLeave(ChatChannel chan, ChatUser user, UserDisconnectReason reason = UserDisconnectReason.Leave) {
+            user.Status = ChatUserStatus.Offline;
+
             if (chan == null) {
                 Channels.Where(x => x.Users.Contains(user)).ToList().ForEach(x => UserLeave(x, user, reason));
                 return;
@@ -110,7 +112,7 @@ namespace SharpChat {
                 return;
             }
 
-            if (!user.IsModerator && chan.Owner != user) {
+            if (!user.Can(ChatUserPermissions.JoinAnyChannel) && chan.Owner != user) {
                 if (chan.Hierarchy > user.Hierarchy) {
                     user.Send(new LegacyCommandResponse(LCR.CHANNEL_INSUFFICIENT_HIERARCHY, true, chan.Name));
                     user.ForceChannel();
