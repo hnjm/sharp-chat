@@ -38,7 +38,7 @@ namespace SharpChat.Flashii {
                     ColourRaw = (RNG.Next(0, 255) << 16) | (RNG.Next(0, 255) << 8) | RNG.Next(0, 255),
                     Hierarchy = 0,
                     SilencedUntil = DateTimeOffset.MinValue,
-                    Permissions = 0,
+                    Permissions = ChatUserPermissions.SendMessage | ChatUserPermissions.EditOwnMessage | ChatUserPermissions.DeleteOwnMessage,
                 };
 #endif
 
