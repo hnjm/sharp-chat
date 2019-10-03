@@ -1,4 +1,5 @@
 ﻿using Fleck;
+using SharpChat.Events;
 using SharpChat.Flashii;
 using SharpChat.Packet;
 using System;
@@ -603,7 +604,7 @@ namespace SharpChat {
                         break;
                     }
 
-                    IChatMessage delMsg = Context.Events.FirstOrDefault(m => m.SequenceId == delSeqId);
+                    IChatEvent delMsg = Context.Events.FirstOrDefault(m => m.SequenceId == delSeqId);
 
                     if (delMsg == null || delMsg.Sender.Hierarchy > user.Hierarchy) {
                         user.Send(new LegacyCommandResponse(LCR.MESSAGE_DELETE_ERROR));

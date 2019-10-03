@@ -1,4 +1,5 @@
-﻿using SharpChat.Flashii;
+﻿using SharpChat.Events;
+using SharpChat.Flashii;
 using SharpChat.Packet;
 using System;
 using System.Collections.Generic;
@@ -56,20 +57,23 @@ namespace SharpChat {
             UserLeave(user.Channel, user, reason);
         }
 
-        public IEnumerable<IChatMessage> GetChannelBacklog(ChatChannel chan, int count = 20) {
+        public IEnumerable<IChatEvent> GetChannelBacklog(ChatChannel chan, int count = 20) {
             return Events.Where(x => x.Target == chan || x.Target == null).Reverse().Take(count).Reverse().ToArray();
         }
 
         public void HandleJoin(ChatUser user, ChatChannel chan, ChatUserConnection conn) {
             if (!chan.HasUser(user))
-                chan.Send(new UserConnectPacket(DateTimeOffset.Now, user));
+                lock (Events) {
+                    chan.Send(new UserConnectPacket(DateTimeOffset.Now, user));
+                    Events.Add(new UserConnectEvent(DateTimeOffset.Now, user, chan));
+                }
 
             conn.Send(new AuthSuccessPacket(user, chan));
             conn.Send(new ContextUsersPacket(chan.GetUsers(new[] { user })));
 
-            IEnumerable<IChatMessage> msgs = GetChannelBacklog(chan);
+            IEnumerable<IChatEvent> msgs = GetChannelBacklog(chan);
 
-            foreach (IChatMessage msg in msgs)
+            foreach (IChatEvent msg in msgs)
                 conn.Send(new ContextMessagePacket(msg));
 
             lock (Channels)
@@ -92,7 +96,11 @@ namespace SharpChat {
                 Channels.Remove(chan);
 
             chan.UserLeave(user);
-            chan.Send(new UserDisconnectPacket(DateTimeOffset.Now, user, reason));
+
+            lock (Events) {
+                chan.Send(new UserDisconnectPacket(DateTimeOffset.Now, user, reason));
+                Events.Add(new UserDisconnectEvent(DateTimeOffset.Now, user, chan, reason));
+            }
         }
 
         public void SwitchChannel(ChatUser user, ChatChannel chan, string password) {
@@ -125,15 +133,19 @@ namespace SharpChat {
 
             ChatChannel oldChan = user.Channel;
 
-            oldChan.Send(new UserChannelLeavePacket(user));
-            chan.Send(new UserChannelJoinPacket(user));
+            lock (Events) {
+                oldChan.Send(new UserChannelLeavePacket(user));
+                Events.Add(new UserChannelLeaveEvent(DateTimeOffset.Now, user, oldChan));
+                chan.Send(new UserChannelJoinPacket(user));
+                Events.Add(new UserChannelJoinEvent(DateTimeOffset.Now, user, chan));
+            }
 
             user.Send(new ContextClearPacket(ContextClearMode.MessagesUsers));
             user.Send(new ContextUsersPacket(chan.GetUsers(new[] { user })));
 
-            IEnumerable<IChatMessage> msgs = GetChannelBacklog(chan);
+            IEnumerable<IChatEvent> msgs = GetChannelBacklog(chan);
 
-            foreach (IChatMessage msg in msgs)
+            foreach (IChatEvent msg in msgs)
                 user.Send(new ContextMessagePacket(msg));
 
             user.ForceChannel(chan);

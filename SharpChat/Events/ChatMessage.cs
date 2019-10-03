@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace SharpChat {
+namespace SharpChat.Events {
     public class ChatMessage : IChatMessage {
         public ChatUser Sender { get; set; }
         public IPacketTarget Target { get; set; }

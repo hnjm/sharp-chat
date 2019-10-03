@@ -1,11 +1,12 @@
-﻿using SharpChat.Packet;
+﻿using SharpChat.Events;
+using SharpChat.Packet;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 
 namespace SharpChat {
-    public class ChatEventManager : IDisposable, IEnumerable<IChatMessage> {
-        private readonly List<IChatMessage> Events = new List<IChatMessage>();
+    public class ChatEventManager : IDisposable, IEnumerable<IChatEvent> {
+        private readonly List<IChatEvent> Events = new List<IChatEvent>();
 
         public readonly ChatContext Context;
 
@@ -15,7 +16,7 @@ namespace SharpChat {
             Context = context;
         }
 
-        public void Add(IChatMessage evt) {
+        public void Add(IChatEvent evt) {
             if (evt == null)
                 throw new ArgumentNullException(nameof(evt));
 
@@ -25,7 +26,7 @@ namespace SharpChat {
             DB.LogEvent(evt);
         }
 
-        public void Remove(IChatMessage evt) {
+        public void Remove(IChatEvent evt) {
             if (evt == null)
                 return;
 
@@ -52,7 +53,7 @@ namespace SharpChat {
                 GC.SuppressFinalize(this);
         }
 
-        public IEnumerator<IChatMessage> GetEnumerator() => Events.GetEnumerator();
+        public IEnumerator<IChatEvent> GetEnumerator() => Events.GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() => Events.GetEnumerator();
     }
 }
