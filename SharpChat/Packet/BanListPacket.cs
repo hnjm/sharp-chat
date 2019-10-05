@@ -24,18 +24,16 @@ namespace SharpChat.Packet {
                 sb.Append(DateTimeOffset.Now.ToSockChatSeconds(version));
                 sb.Append("\t-1\t0\fbanlist\f");
 
-                lock (Bans)
-                    foreach (IBan ban in Bans) {
-                        string text = string.Empty;
+                foreach (IBan ban in Bans) {
+                    string text = string.Empty;
 
-                        if (ban is BannedUser banUser)
-                            lock (Users)
-                                text = Users.FirstOrDefault(x => x.UserId == banUser.UserId)?.Username ?? string.Format(@"@{0}", banUser.UserId);
-                        else if (ban is BannedIPAddress banIp)
-                            text = banIp.Address.ToString();
+                    if (ban is BannedUser banUser)
+                        text = Users.FirstOrDefault(x => x.UserId == banUser.UserId)?.Username ?? string.Format(@"@{0}", banUser.UserId);
+                    else if (ban is BannedIPAddress banIp)
+                        text = banIp.Address.ToString();
 
-                        sb.AppendFormat(@"<a href=""javascript:void(0);"" onclick=""Chat.SendMessageWrapper('/unban '+ this.innerHTML);"">{0}</a>, ", text);
-                    }
+                    sb.AppendFormat(@"<a href=""javascript:void(0);"" onclick=""Chat.SendMessageWrapper('/unban '+ this.innerHTML);"">{0}</a>, ", text);
+                }
 
                 if (Bans.Any())
                     sb.Length -= 2;

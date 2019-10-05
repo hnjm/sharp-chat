@@ -3,7 +3,6 @@ using SharpChat.Flashii;
 using SharpChat.Packet;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Threading;
 
@@ -27,10 +26,7 @@ namespace SharpChat {
             Channels = new ChannelManager(this);
             Events = new ChatEventManager(this);
 
-            BumpTimer = new Timer(e => {
-                lock (Users)
-                    FlashiiBump.Submit(Users);
-            }, null, TimeSpan.Zero, TimeSpan.FromMinutes(1));
+            BumpTimer = new Timer(e => FlashiiBump.Submit(Users.WithActiveConnections()), null, TimeSpan.Zero, TimeSpan.FromMinutes(1));
         }
 
         public void Update() {
@@ -46,10 +42,10 @@ namespace SharpChat {
                 user.Send(new ForceDisconnectPacket(ForceDisconnectReason.Banned, until.Value));
                 Bans.Add(user, until.Value);
 
-                if (banIPs)
-                    lock (user.Connections)
-                        foreach (IPAddress ip in user.RemoteAddresses)
-                            Bans.Add(ip, until.Value);
+                if (banIPs) {
+                    foreach (IPAddress ip in user.RemoteAddresses)
+                        Bans.Add(ip, until.Value);
+                }
             } else
                 user.Send(new ForceDisconnectPacket(ForceDisconnectReason.Kicked));
 
@@ -57,27 +53,21 @@ namespace SharpChat {
             UserLeave(user.Channel, user, reason);
         }
 
-        public IEnumerable<IChatEvent> GetChannelBacklog(ChatChannel chan, int count = 20) {
-            return Events.Where(x => x.Target == chan || x.Target == null).Reverse().Take(count).Reverse().ToArray();
-        }
-
         public void HandleJoin(ChatUser user, ChatChannel chan, ChatUserConnection conn) {
-            if (!chan.HasUser(user))
-                lock (Events) {
-                    chan.Send(new UserConnectPacket(DateTimeOffset.Now, user));
-                    Events.Add(new UserConnectEvent(DateTimeOffset.Now, user, chan));
-                }
+            if (!chan.HasUser(user)) {
+                chan.Send(new UserConnectPacket(DateTimeOffset.Now, user));
+                Events.Add(new UserConnectEvent(DateTimeOffset.Now, user, chan));
+            }
 
             conn.Send(new AuthSuccessPacket(user, chan));
             conn.Send(new ContextUsersPacket(chan.GetUsers(new[] { user })));
 
-            IEnumerable<IChatEvent> msgs = GetChannelBacklog(chan);
+            IEnumerable<IChatEvent> msgs = Events.GetTargetLog(chan);
 
             foreach (IChatEvent msg in msgs)
                 conn.Send(new ContextMessagePacket(msg));
 
-            lock (Channels)
-                conn.Send(new ContextChannelsPacket(Channels.Where(x => user.Hierarchy >= x.Hierarchy)));
+            conn.Send(new ContextChannelsPacket(Channels.OfHierarchy(user.Hierarchy)));
 
             if (!chan.HasUser(user))
                 chan.UserJoin(user);
@@ -90,7 +80,9 @@ namespace SharpChat {
             user.Status = ChatUserStatus.Offline;
 
             if (chan == null) {
-                Channels.Where(x => x.Users.Contains(user)).ToList().ForEach(x => UserLeave(x, user, reason));
+                foreach(ChatChannel channel in user.GetChannels()) {
+                    UserLeave(channel, user, reason);
+                }
                 return;
             }
 
@@ -98,11 +90,8 @@ namespace SharpChat {
                 Channels.Remove(chan);
 
             chan.UserLeave(user);
-
-            lock (Events) {
-                chan.Send(new UserDisconnectPacket(DateTimeOffset.Now, user, reason));
-                Events.Add(new UserDisconnectEvent(DateTimeOffset.Now, user, chan, reason));
-            }
+            chan.Send(new UserDisconnectPacket(DateTimeOffset.Now, user, reason));
+            Events.Add(new UserDisconnectEvent(DateTimeOffset.Now, user, chan, reason));
         }
 
         public void SwitchChannel(ChatUser user, ChatChannel chan, string password) {
@@ -135,17 +124,15 @@ namespace SharpChat {
 
             ChatChannel oldChan = user.Channel;
 
-            lock (Events) {
-                oldChan.Send(new UserChannelLeavePacket(user));
-                Events.Add(new UserChannelLeaveEvent(DateTimeOffset.Now, user, oldChan));
-                chan.Send(new UserChannelJoinPacket(user));
-                Events.Add(new UserChannelJoinEvent(DateTimeOffset.Now, user, chan));
-            }
+            oldChan.Send(new UserChannelLeavePacket(user));
+            Events.Add(new UserChannelLeaveEvent(DateTimeOffset.Now, user, oldChan));
+            chan.Send(new UserChannelJoinPacket(user));
+            Events.Add(new UserChannelJoinEvent(DateTimeOffset.Now, user, chan));
 
             user.Send(new ContextClearPacket(ContextClearMode.MessagesUsers));
             user.Send(new ContextUsersPacket(chan.GetUsers(new[] { user })));
 
-            IEnumerable<IChatEvent> msgs = GetChannelBacklog(chan);
+            IEnumerable<IChatEvent> msgs = Events.GetTargetLog(chan);
 
             foreach (IChatEvent msg in msgs)
                 user.Send(new ContextMessagePacket(msg));
@@ -159,31 +146,24 @@ namespace SharpChat {
         }
 
         public void CheckPings() {
-            List<ChatUser> users;
+            lock(Users)
+                foreach (ChatUser user in Users.All()) {
+                    IEnumerable<ChatUserConnection> timedOut = user.GetDeadConnections();
 
-            lock (Users)
-                users = new List<ChatUser>(Users);
-
-            foreach (ChatUser user in users) {
-                List<ChatUserConnection> conns = new List<ChatUserConnection>(user.Connections);
-
-                foreach (ChatUserConnection conn in conns) {
-                    if (conn.HasTimedOut) {
-                        user.Connections.Remove(conn);
+                    foreach(ChatUserConnection conn in timedOut) {
+                        user.RemoveConnection(conn);
                         conn.Dispose();
-                        Logger.Write($@"Nuked a connection from {user.Username}");
+                        Logger.Write($@"Nuked a connection from {user.Username} (timeout)");
                     }
 
-                    if (user.Connections.Count < 1)
+                    if(!user.HasConnections)
                         UserLeave(null, user, UserDisconnectReason.TimeOut);
                 }
-            }
         }
 
         public void Send(IServerPacket packet) {
-            lock (Users)
-                foreach (ChatUser user in Users)
-                    user.Send(packet);
+            foreach (ChatUser user in Users.All())
+                user.Send(packet);
         }
 
         ~ChatContext()

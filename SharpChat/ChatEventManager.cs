@@ -3,9 +3,10 @@ using SharpChat.Packet;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace SharpChat {
-    public class ChatEventManager : IDisposable, IEnumerable<IChatEvent> {
+    public class ChatEventManager : IDisposable {
         private readonly List<IChatEvent> Events = new List<IChatEvent>();
 
         public readonly ChatContext Context;
@@ -20,7 +21,7 @@ namespace SharpChat {
             if (evt == null)
                 throw new ArgumentNullException(nameof(evt));
 
-            lock (Events)
+            lock(Events)
                 Events.Add(evt);
 
             DB.LogEvent(evt);
@@ -34,6 +35,29 @@ namespace SharpChat {
                 Events.Remove(evt);
 
             Context.Send(new ChatMessageDeletePacket(evt.SequenceId));
+        }
+
+        public IChatEvent Get(int seqId) {
+            if (seqId < 1)
+                return null;
+
+            lock (Events)
+                return Events.FirstOrDefault(e => e.SequenceId == seqId);
+        }
+
+        public IEnumerable<IChatEvent> GetTargetLog(IPacketTarget target, int amount = 20, int offset = 0) {
+            lock (Events) {
+                IEnumerable<IChatEvent> subset = Events.Where(e => e.Target == target || e.Target == null);
+
+                int start = subset.Count() - offset - amount;
+
+                if(start < 0) {
+                    amount += start;
+                    start = 0;
+                }
+
+                return subset.Skip(start).Take(amount).ToList();
+            }
         }
 
         ~ChatEventManager()
@@ -52,8 +76,5 @@ namespace SharpChat {
             if (disposing)
                 GC.SuppressFinalize(this);
         }
-
-        public IEnumerator<IChatEvent> GetEnumerator() => Events.GetEnumerator();
-        IEnumerator IEnumerable.GetEnumerator() => Events.GetEnumerator();
     }
 }

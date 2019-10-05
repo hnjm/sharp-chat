@@ -17,32 +17,45 @@ namespace SharpChat {
 
         public ChatUserStatus Status { get; set; } = ChatUserStatus.Online;
         public string StatusMessage { get; set; }
-
         public DateTimeOffset SilencedUntil { get; set; }
 
-        public readonly List<ChatUserConnection> Connections = new List<ChatUserConnection>();
+        private readonly List<ChatUserConnection> Connections = new List<ChatUserConnection>();
+        private readonly List<ChatChannel> Channels = new List<ChatChannel>();
+
+        public readonly ChatRateLimiter RateLimiter = new ChatRateLimiter();
 
         public string TargetName => @"@log";
 
         public ChatChannel Channel {
             get {
-                lock (Channels)
+                lock(Channels)
                     return Channels.FirstOrDefault();
             }
         }
 
-        public readonly ChatRateLimiter RateLimiter = new ChatRateLimiter();
-
-        public readonly List<ChatChannel> Channels = new List<ChatChannel>();
-
         public bool IsSilenced
             => SilencedUntil != null && DateTimeOffset.UtcNow - SilencedUntil <= TimeSpan.Zero;
 
-        public bool IsAlive
-            => Connections.Where(c => !c.HasTimedOut).Any();
+        public bool HasConnections {
+            get {
+                lock(Connections)
+                    return Connections.Where(c => !c.HasTimedOut && !c.IsDisposed).Any();
+            }
+        }
 
-        public IEnumerable<IPAddress> RemoteAddresses
-            => Connections.Select(c => c.RemoteAddress);
+        public int ConnectionCount {
+            get {
+                lock (Connections)
+                    return Connections.Where(c => !c.HasTimedOut && !c.IsDisposed).Count();
+            }
+        }
+
+        public IEnumerable<IPAddress> RemoteAddresses {
+            get {
+                lock(Connections)
+                    return Connections.Select(c => c.RemoteAddress);
+            }
+        }
 
         public ChatUser() {
         }
@@ -90,13 +103,15 @@ namespace SharpChat {
         }
 
         public void Send(IServerPacket packet) {
-            lock (Connections)
-                Connections.ForEach(c => c.Send(packet));
+            lock(Connections)
+                foreach (ChatUserConnection conn in Connections)
+                    conn.Send(packet);
         }
 
         public void Close() {
             lock (Connections) {
-                Connections.ForEach(c => c.Dispose());
+                foreach (ChatUserConnection conn in Connections)
+                    conn.Dispose();
                 Connections.Clear();
             }
         }
@@ -104,18 +119,50 @@ namespace SharpChat {
         public void ForceChannel(ChatChannel chan = null)
             => Send(new UserChannelForceJoinPacket(chan ?? Channel));
 
+        public bool InChannel(ChatChannel chan) {
+            lock (Channels)
+                return Channels.Contains(chan);
+        }
+
+        public void JoinChannel(ChatChannel chan) {
+            lock (Channels) {
+                if (!InChannel(chan))
+                    Channels.Add(chan);
+            }
+        }
+
+        public void LeaveChannel(ChatChannel chan) {
+            lock (Channels)
+                Channels.Remove(chan);
+        }
+
+        public IEnumerable<ChatChannel> GetChannels() {
+            lock (Channels)
+                return Channels.ToList();
+        }
+
         public void AddConnection(ChatUserConnection conn) {
+            if (conn == null)
+                return;
+            conn.User = this;
+
             lock (Connections)
                 Connections.Add(conn);
-
-            conn.User = this;
         }
 
         public void RemoveConnection(ChatUserConnection conn) {
-            conn.User = null;
+            if (conn == null)
+                return;
+            if(!conn.IsDisposed) // this could be possible
+                conn.User = null;
 
-            lock (Connections)
+            lock(Connections)
                 Connections.Remove(conn);
+        }
+
+        public IEnumerable<ChatUserConnection> GetDeadConnections() {
+            lock (Connections)
+                return Connections.Where(x => x.HasTimedOut || x.IsDisposed).ToList();
         }
 
         public string Pack(int targetVersion) {

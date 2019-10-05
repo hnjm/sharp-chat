@@ -10,7 +10,7 @@ namespace SharpChat {
         public int Hierarchy { get; set; } = 0;
         public ChatUser Owner { get; set; } = null;
 
-        public readonly List<ChatUser> Users = new List<ChatUser>();
+        private readonly List<ChatUser> Users = new List<ChatUser>();
 
         public bool HasPassword
             => !string.IsNullOrWhiteSpace(Password);
@@ -24,36 +24,37 @@ namespace SharpChat {
             Name = name;
         }
 
-        public bool HasUser(ChatUser user)
-            => Users.Contains(user);
+        public bool HasUser(ChatUser user) {
+            lock (Users)
+                return Users.Contains(user);
+        }
 
         public void UserJoin(ChatUser user) {
-            lock (Users) {
-                lock (user.Channels)
-                    if (!user.Channels.Contains(this)) {
-                        user.Channel?.UserLeave(user);
-                        user.Channels.Add(this);
-                    }
+            if (!user.InChannel(this)) {
+                // Remove this, a different means for this should be established for V1 compat.
+                user.Channel?.UserLeave(user);
+                user.JoinChannel(this);
+            }
 
-                if (!Users.Contains(user))
+            lock (Users) {
+                if (!HasUser(user))
                     Users.Add(user);
             }
         }
 
         public void UserLeave(ChatUser user) {
-            lock (Users) {
-                lock (user.Channels)
-                    if (user.Channels.Contains(this))
-                        user.Channels.Remove(this);
+            lock (Users)
+                Users.Remove(user);
 
-                if (Users.Contains(user))
-                    Users.Remove(user);
-            }
+            if (user.InChannel(this))
+                user.LeaveChannel(this);
         }
 
         public void Send(IServerPacket packet) {
-            lock (Users)
-                Users.ForEach(u => u.Send(packet));
+            lock (Users) {
+                foreach (ChatUser user in Users)
+                    user.Send(packet);
+            }
         }
 
         public IEnumerable<ChatUser> GetUsers(IEnumerable<ChatUser> exclude = null) {

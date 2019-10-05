@@ -1,10 +1,9 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace SharpChat {
-    public class UserManager : IDisposable, IEnumerable<ChatUser> {
+    public class UserManager : IDisposable {
         private readonly List<ChatUser> Users = new List<ChatUser>();
 
         public readonly ChatContext Context;
@@ -19,21 +18,29 @@ namespace SharpChat {
             if (user == null)
                 throw new ArgumentNullException(nameof(user));
 
-            lock (Users)
-                Users.Add(user);
+            lock(Users)
+                if(!Contains(user))
+                    Users.Add(user);
         }
 
         public void Remove(ChatUser user) {
             if (user == null)
                 return;
 
-            lock (Users)
+            lock(Users)
                 Users.Remove(user);
         }
 
-        public ChatUser Get(int userId) {
+        public bool Contains(ChatUser user) {
+            if (user == null)
+                return false;
+
             lock (Users)
-                return Users.FirstOrDefault(x => x.UserId == userId);
+                return Users.Contains(user) || Users.Any(x => x.UserId == user.UserId || x.Username.ToLowerInvariant() == user.Username.ToLowerInvariant());
+        }
+
+        public ChatUser Get(int userId) {
+            return Users.FirstOrDefault(x => x.UserId == userId);
         }
 
         public ChatUser Get(string username, bool includeNickName = true, bool includeV1Name = true) {
@@ -41,10 +48,24 @@ namespace SharpChat {
                 return null;
             username = username.ToLowerInvariant();
 
-            lock (Users)
-                return Users.FirstOrDefault(x => x.Username.ToLowerInvariant() == username || (includeNickName && x.Nickname?.ToLowerInvariant() == username) || (includeV1Name && x.GetDisplayName(1).ToLowerInvariant() == username));
+            return Users.FirstOrDefault(x => x.Username.ToLowerInvariant() == username || (includeNickName && x.Nickname?.ToLowerInvariant() == username) || (includeV1Name && x.GetDisplayName(1).ToLowerInvariant() == username));
         }
 
+        public IEnumerable<ChatUser> OfHierarchy(int hierarchy) {
+            lock (Users)
+                return Users.Where(u => u.Hierarchy >= hierarchy).ToList();
+        }
+
+        public IEnumerable<ChatUser> WithActiveConnections() {
+            lock (Users)
+                return Users.Where(u => u.HasConnections).ToList();
+        }
+
+        public IEnumerable<ChatUser> All() {
+            lock (Users)
+                return Users.ToList();
+        }
+        
         ~UserManager()
             => Dispose(false);
 
@@ -61,8 +82,5 @@ namespace SharpChat {
             if (disposing)
                 GC.SuppressFinalize(this);
         }
-
-        public IEnumerator<ChatUser> GetEnumerator() => Users.GetEnumerator();
-        IEnumerator IEnumerable.GetEnumerator() => Users.GetEnumerator();
     }
 }

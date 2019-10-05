@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Sockets;
 using System.Text;
 
 namespace SharpChat {
@@ -47,9 +48,10 @@ namespace SharpChat {
         public readonly ChatContext Context;
 
         public readonly List<ChatUserConnection> Connections = new List<ChatUserConnection>();
+        private readonly object ConnectionsLock = new object();
 
         public ChatUserConnection GetConnection(IWebSocketConnection conn) {
-            lock (Connections)
+            lock(ConnectionsLock)
                 return Connections.FirstOrDefault(x => x.Websocket == conn);
         }
 
@@ -68,6 +70,7 @@ namespace SharpChat {
             Context.Channels.Add(new ChatChannel(@"Staff") { Hierarchy = 5 });
 
             Server = new WebSocketServer($@"ws://0.0.0.0:{port}");
+
             Server.Start(sock => {
                 sock.OnOpen = () => OnOpen(sock);
                 sock.OnClose = () => OnClose(sock);
@@ -77,9 +80,10 @@ namespace SharpChat {
         }
 
         private void OnOpen(IWebSocketConnection ws) {
-            lock (Connections)
+            lock (ConnectionsLock) {
                 if (!Connections.Any(x => x.Websocket == ws))
                     Connections.Add(new ChatUserConnection(ws));
+            }
 
             Context.Update();
         }
@@ -88,13 +92,13 @@ namespace SharpChat {
             ChatUserConnection conn = GetConnection(ws);
 
             // Remove connection from user
-            if (conn.User != null) {
+            if (conn?.User != null) {
                 // RemoveConnection sets conn.User to null so we must grab a local copy.
                 ChatUser user = conn.User;
 
                 user.RemoveConnection(conn);
 
-                if (!user.Connections.Any())
+                if (!user.HasConnections)
                     Context.UserLeave(null, user);
             }
 
@@ -102,10 +106,10 @@ namespace SharpChat {
             Context.Update();
 
             // Remove connection from server
-            lock (Connections) {
+            lock(ConnectionsLock)
                 Connections.Remove(conn);
-                conn?.Dispose();
-            }
+
+            conn?.Dispose();
         }
 
         private void OnError(IWebSocketConnection conn, Exception ex) {
@@ -151,10 +155,10 @@ namespace SharpChat {
                     if (conn.User != null)
                         break;
 
-                    DateTimeOffset authBan = Context.Bans.Check(conn.RemoteAddress);
+                    DateTimeOffset aBanned = Context.Bans.Check(conn.RemoteAddress);
 
-                    if (authBan > DateTimeOffset.UtcNow) {
-                        conn.Send(new AuthFailPacket(AuthFailReason.Banned, authBan));
+                    if (aBanned > DateTimeOffset.UtcNow) {
+                        conn.Send(new AuthFailPacket(AuthFailReason.Banned, aBanned));
                         conn.Dispose();
                         break;
                     }
@@ -184,7 +188,7 @@ namespace SharpChat {
                         aUser.Channel?.Send(new UserUpdatePacket(aUser));
                     }
 
-                    DateTimeOffset aBanned = Context.Bans.Check(aUser);
+                    aBanned = Context.Bans.Check(aUser);
 
                     if (aBanned > DateTimeOffset.Now) {
                         conn.Send(new AuthFailPacket(AuthFailReason.Banned, aBanned));
@@ -193,7 +197,7 @@ namespace SharpChat {
                     }
 
                     // Enforce a maximum amount of connections per user
-                    if (aUser.Connections.Count >= MAX_CONNECTIONS) {
+                    if (aUser.ConnectionCount >= MAX_CONNECTIONS) {
                         conn.Send(new AuthFailPacket(AuthFailReason.MaxSessions));
                         conn.Dispose();
                         break;
@@ -223,65 +227,63 @@ namespace SharpChat {
                     if (args.Length < 3)
                         break;
 
-                    lock (Context) {
-                        ChatUser mUser = conn.User;
-                        ChatChannel mChannel;
+                    ChatUser mUser = conn.User;
+                    ChatChannel mChannel;
 
-                        if (mUser == null || !mUser.Can(ChatUserPermissions.SendMessage) || string.IsNullOrWhiteSpace(args[2]))
-                            break;
+                    if (mUser == null || !mUser.Can(ChatUserPermissions.SendMessage) || string.IsNullOrWhiteSpace(args[2]))
+                        break;
 
-                        if (conn.Version < 2) {
+                    if (conn.Version < 2) {
 #if !DEBUG
-                            // Extra validation step, not necessary at all but enforces proper formatting in SCv1.
-                            if (!int.TryParse(args[1], out int mUserId) || mUser.UserId != mUserId)
-                                break;
+                    // Extra validation step, not necessary at all but enforces proper formatting in SCv1.
+                    if (!int.TryParse(args[1], out int mUserId) || mUser.UserId != mUserId)
+                        break;
 #endif
-                            mChannel = Context.Channels.GetUser(mUser).FirstOrDefault();
-                        } else
-                            mChannel = Context.Channels.Get(args[1]);
+                        mChannel = Context.Channels.GetUser(mUser).FirstOrDefault();
+                    } else
+                        mChannel = Context.Channels.Get(args[1]);
 
-                        if (mChannel == null
-                            || !mUser.Channels.Contains(mChannel)
-                            || (mUser.IsSilenced && !mUser.Can(ChatUserPermissions.SilenceUser)))
-                            break;
+                    if (mChannel == null
+                        || !mUser.InChannel(mChannel)
+                        || (mUser.IsSilenced && !mUser.Can(ChatUserPermissions.SilenceUser)))
+                        break;
 
-                        if (mUser.Status != ChatUserStatus.Online) {
-                            mUser.Status = ChatUserStatus.Online;
-                            mChannel.Send(new UserUpdatePacket(mUser));
-                        }
+                    if (mUser.Status != ChatUserStatus.Online) {
+                        mUser.Status = ChatUserStatus.Online;
+                        mChannel.Send(new UserUpdatePacket(mUser));
+                    }
 
-                        string messageText = string.Join('\t', args.Skip(2));
+                    string messageText = string.Join('\t', args.Skip(2));
 
-                        if (messageText.Length > MSG_LENGTH_MAX)
-                            messageText = messageText.Substring(0, MSG_LENGTH_MAX);
+                    if (messageText.Length > MSG_LENGTH_MAX)
+                        messageText = messageText.Substring(0, MSG_LENGTH_MAX);
 
-                        messageText = messageText.Trim();
+                    messageText = messageText.Trim();
 
 #if DEBUG
-                        Logger.Write($@"<{mUser.Username}> {messageText}");
+                    Logger.Write($@"<{mUser.Username}> {messageText}");
 #endif
 
-                        ChatMessage message = null;
+                    ChatMessage message = null;
 
-                        // These commands are only available in V1, all server side commands are to be replaced with packets and client side commands.
-                        if (conn.Version < 2 && messageText[0] == '/') {
-                            message = HandleV1Command(messageText, mUser, mChannel);
-
-                            if (message == null)
-                                break;
-                        }
+                    // These commands are only available in V1, all server side commands are to be replaced with packets and client side commands.
+                    if (conn.Version < 2 && messageText[0] == '/') {
+                        message = HandleV1Command(messageText, mUser, mChannel);
 
                         if (message == null)
-                            message = new ChatMessage {
-                                Target = mChannel,
-                                DateTime = DateTimeOffset.UtcNow,
-                                Sender = mUser,
-                                Text = messageText,
-                            };
-
-                        Context.Events.Add(message);
-                        mChannel.Send(new ChatMessageAddPacket(message));
+                            break;
                     }
+
+                    if (message == null)
+                        message = new ChatMessage {
+                            Target = mChannel,
+                            DateTime = DateTimeOffset.UtcNow,
+                            Sender = mUser,
+                            Text = messageText,
+                        };
+
+                    Context.Events.Add(message);
+                    mChannel.Send(new ChatMessageAddPacket(message));
                     break;
 
                 case SockChatClientPacket.Upgrade:
@@ -444,34 +446,32 @@ namespace SharpChat {
                             break;
                         }
 
-                        lock (whoChan.Users)
-                            foreach (ChatUser whoUser in whoChan.GetUsers()) {
-                                whoChanSB.Append(@"<a href=""javascript:void(0);"" onclick=""UI.InsertChatText(this.innerHTML);""");
+                        foreach (ChatUser whoUser in whoChan.GetUsers()) {
+                            whoChanSB.Append(@"<a href=""javascript:void(0);"" onclick=""UI.InsertChatText(this.innerHTML);""");
 
-                                if (whoUser == user)
-                                    whoChanSB.Append(@" style=""font-weight: bold;""");
+                            if (whoUser == user)
+                                whoChanSB.Append(@" style=""font-weight: bold;""");
 
-                                whoChanSB.Append(@">");
-                                whoChanSB.Append(whoUser.GetDisplayName(1));
-                                whoChanSB.Append(@"</a>, ");
-                            }
+                            whoChanSB.Append(@">");
+                            whoChanSB.Append(whoUser.GetDisplayName(1));
+                            whoChanSB.Append(@"</a>, ");
+                        }
 
                         if (whoChanSB.Length > 2)
                             whoChanSB.Length -= 2;
 
                         user.Send(new LegacyCommandResponse(LCR.USERS_LISTING_CHANNEL, false, whoChanSB));
                     } else {
-                        lock (Context.Users)
-                            foreach (ChatUser whoUser in Context.Users) {
-                                whoChanSB.Append(@"<a href=""javascript:void(0);"" onclick=""UI.InsertChatText(this.innerHTML);""");
+                        foreach (ChatUser whoUser in Context.Users.All()) {
+                            whoChanSB.Append(@"<a href=""javascript:void(0);"" onclick=""UI.InsertChatText(this.innerHTML);""");
 
-                                if (whoUser == user)
-                                    whoChanSB.Append(@" style=""font-weight: bold;""");
+                            if (whoUser == user)
+                                whoChanSB.Append(@" style=""font-weight: bold;""");
 
-                                whoChanSB.Append(@">");
-                                whoChanSB.Append(whoUser.GetDisplayName(1));
-                                whoChanSB.Append(@"</a>, ");
-                            }
+                            whoChanSB.Append(@">");
+                            whoChanSB.Append(whoUser.GetDisplayName(1));
+                            whoChanSB.Append(@"</a>, ");
+                        }
 
                         if (whoChanSB.Length > 2)
                             whoChanSB.Length -= 2;
@@ -615,7 +615,7 @@ namespace SharpChat {
                 case @"delmsg": // deletes a message
                     bool deleteAnyMessage = user.Can(ChatUserPermissions.DeleteAnyMessage);
 
-                    if (!deleteAnyMessage || user.Can(ChatUserPermissions.DeleteOwnMessage)) {
+                    if (!deleteAnyMessage && !user.Can(ChatUserPermissions.DeleteOwnMessage)) {
                         user.Send(new LegacyCommandResponse(LCR.COMMAND_NOT_ALLOWED, true, $@"/{command}"));
                         break;
                     }
@@ -625,7 +625,7 @@ namespace SharpChat {
                         break;
                     }
 
-                    IChatEvent delMsg = Context.Events.FirstOrDefault(m => m.SequenceId == delSeqId);
+                    IChatEvent delMsg = Context.Events.Get(delSeqId);
 
                     if (delMsg == null || delMsg.Sender.Hierarchy > user.Hierarchy || (!deleteAnyMessage && delMsg.Sender.UserId != user.UserId)) {
                         user.Send(new LegacyCommandResponse(LCR.MESSAGE_DELETE_ERROR));
@@ -644,6 +644,7 @@ namespace SharpChat {
                     }
 
                     ChatUser banUser;
+
                     if (parts.Length < 2 || (banUser = Context.Users.Get(parts[1])) == null) {
                         user.Send(new LegacyCommandResponse(LCR.USER_NOT_FOUND, true, parts.Length < 2 ? @"User" : parts[1]));
                         break;
@@ -687,6 +688,7 @@ namespace SharpChat {
                     }
 
                     Context.Bans.Remove(unbanUser);
+
                     user.Send(new LegacyCommandResponse(LCR.USER_UNBANNED, false, unbanUser.UserId));
                     break;
                 case @"pardonip": // unban an ip
@@ -707,6 +709,7 @@ namespace SharpChat {
                     }
 
                     Context.Bans.Remove(unbanIP);
+
                     user.Send(new LegacyCommandResponse(LCR.USER_UNBANNED, false, unbanIP));
                     break;
                 case @"bans": // gets a list of bans
@@ -716,7 +719,7 @@ namespace SharpChat {
                         break;
                     }
 
-                    user.Send(new BanListPacket(Context.Bans, Context.Users));
+                    user.Send(new BanListPacket(Context.Bans.All(), Context.Users.All()));
                     break;
                 case @"silence": // silence a user
                     if (!user.Can(ChatUserPermissions.SilenceUser)) {
@@ -725,6 +728,7 @@ namespace SharpChat {
                     }
 
                     ChatUser silUser;
+
                     if (parts.Length < 2 || (silUser = Context.Users.Get(parts[1])) == null) {
                         user.Send(new LegacyCommandResponse(LCR.USER_NOT_FOUND, true, parts.Length < 2 ? @"User" : parts[1]));
                         break;
@@ -767,6 +771,7 @@ namespace SharpChat {
                     }
 
                     ChatUser unsilUser;
+
                     if (parts.Length < 2 || (unsilUser = Context.Users.Get(parts[1])) == null) {
                         user.Send(new LegacyCommandResponse(LCR.USER_NOT_FOUND, true, parts.Length < 2 ? @"User" : parts[1]));
                         break;

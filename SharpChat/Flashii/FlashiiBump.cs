@@ -14,7 +14,7 @@ namespace SharpChat.Flashii {
         public string UserIP { get; set; }
 
         public static void Submit(IEnumerable<ChatUser> users) {
-            List<FlashiiBump> bups = users.Where(u => u.IsAlive).Select(x => new FlashiiBump { UserId = x.UserId, UserIP = x.RemoteAddresses.First().ToString() }).ToList();
+            List<FlashiiBump> bups = users.Where(u => u.HasConnections).Select(x => new FlashiiBump { UserId = x.UserId, UserIP = x.RemoteAddresses.First().ToString() }).ToList();
 
             if (bups.Any())
                 Submit(bups);

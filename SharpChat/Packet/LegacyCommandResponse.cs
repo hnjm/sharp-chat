@@ -44,11 +44,10 @@ namespace SharpChat.Packet {
             sb.Append(StringId == LCR.WELCOME ? LCR.BROADCAST : StringId);
 
             if (Arguments?.Any() == true)
-                lock (Arguments)
-                    foreach (object arg in Arguments) {
-                        sb.Append('\f');
-                        sb.Append(arg);
-                    }
+                foreach (object arg in Arguments) {
+                    sb.Append('\f');
+                    sb.Append(arg);
+                }
 
             sb.Append('\t');
 
