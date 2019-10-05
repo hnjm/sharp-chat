@@ -14,6 +14,9 @@ namespace SharpChat.Flashii {
         [JsonPropertyName(@"expires")]
         public DateTimeOffset Expires { get; set; }
 
+        [JsonPropertyName(@"username")]
+        public string Username { get; set; }
+
         public static IEnumerable<FlashiiBan> GetList() {
             try {
                 string bansEndpoint = string.Format(@"https://flashii.net/_sockchat.php?bans={0}", @"givemethebeans".GetSignedHash());

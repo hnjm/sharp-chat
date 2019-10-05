@@ -6,11 +6,9 @@ using System.Text;
 namespace SharpChat.Packet {
     public class BanListPacket : ServerPacket {
         public IEnumerable<IBan> Bans { get; private set; }
-        public IEnumerable<ChatUser> Users { get; private set; }
 
-        public BanListPacket(IEnumerable<IBan> bans, IEnumerable<ChatUser> users) {
+        public BanListPacket(IEnumerable<IBan> bans) {
             Bans = bans ?? throw new ArgumentNullException(nameof(bans));
-            Users = users ?? throw new ArgumentNullException(nameof(users));
         }
 
         public override IEnumerable<string> Pack(int version) {
@@ -24,16 +22,8 @@ namespace SharpChat.Packet {
                 sb.Append(DateTimeOffset.Now.ToSockChatSeconds(version));
                 sb.Append("\t-1\t0\fbanlist\f");
 
-                foreach (IBan ban in Bans) {
-                    string text = string.Empty;
-
-                    if (ban is BannedUser banUser)
-                        text = Users.FirstOrDefault(x => x.UserId == banUser.UserId)?.Username ?? string.Format(@"@{0}", banUser.UserId);
-                    else if (ban is BannedIPAddress banIp)
-                        text = banIp.Address.ToString();
-
-                    sb.AppendFormat(@"<a href=""javascript:void(0);"" onclick=""Chat.SendMessageWrapper('/unban '+ this.innerHTML);"">{0}</a>, ", text);
-                }
+                foreach (IBan ban in Bans)
+                    sb.AppendFormat(@"<a href=""javascript:void(0);"" onclick=""Chat.SendMessageWrapper('/unban '+ this.innerHTML);"">{0}</a>, ", ban);
 
                 if (Bans.Any())
                     sb.Length -= 2;

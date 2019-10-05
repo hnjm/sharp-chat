@@ -10,6 +10,6 @@ namespace SharpChat {
             => Write(Encoding.UTF8.GetString(bytes));
 
         public static void Write(object obj)
-            => Write(obj.ToString());
+            => Write(obj?.ToString() ?? string.Empty);
     }
 }

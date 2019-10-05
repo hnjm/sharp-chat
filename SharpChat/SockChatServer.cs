@@ -70,7 +70,7 @@ namespace SharpChat {
             Context.Channels.Add(new ChatChannel(@"Staff") { Hierarchy = 5 });
 
             Server = new WebSocketServer($@"ws://0.0.0.0:{port}");
-
+            
             Server.Start(sock => {
                 sock.OnOpen = () => OnOpen(sock);
                 sock.OnClose = () => OnClose(sock);
@@ -668,7 +668,7 @@ namespace SharpChat {
 
                     Context.BanUser(banUser, banUntil, isBanning);
                     break;
-                case @"pardon": // unban a user
+                case @"pardon":
                 case @"unban":
                     if (!user.Can(ChatUserPermissions.BanUser | ChatUserPermissions.KickUser)) {
                         user.Send(new LegacyCommandResponse(LCR.COMMAND_NOT_ALLOWED, true, $@"/{command}"));
@@ -676,22 +676,22 @@ namespace SharpChat {
                     }
 
                     if (parts.Length < 2) {
-                        user.Send(new LegacyCommandResponse(LCR.USER_NOT_BANNED, true, @"User"));
+                        user.Send(new LegacyCommandResponse(LCR.USER_NOT_BANNED, true, string.Empty));
                         break;
                     }
 
-                    ChatUser unbanUser = Context.Users.Get(parts[1]);
+                    BannedUser unbanUser = Context.Bans.GetUser(parts[1]);
 
-                    if (Context.Bans.Check(unbanUser) <= DateTimeOffset.Now) {
-                        user.Send(new LegacyCommandResponse(LCR.USER_NOT_BANNED, true, unbanUser?.GetDisplayName(1) ?? parts[1]));
+                    if (unbanUser == null || unbanUser.Expires <= DateTimeOffset.Now) {
+                        user.Send(new LegacyCommandResponse(LCR.USER_NOT_BANNED, true, unbanUser?.Username ?? parts[1]));
                         break;
                     }
 
                     Context.Bans.Remove(unbanUser);
 
-                    user.Send(new LegacyCommandResponse(LCR.USER_UNBANNED, false, unbanUser.UserId));
+                    user.Send(new LegacyCommandResponse(LCR.USER_UNBANNED, false, unbanUser));
                     break;
-                case @"pardonip": // unban an ip
+                case @"pardonip":
                 case @"unbanip":
                     if (!user.Can(ChatUserPermissions.BanUser | ChatUserPermissions.KickUser)) {
                         user.Send(new LegacyCommandResponse(LCR.COMMAND_NOT_ALLOWED, true, $@"/{command}"));
@@ -699,7 +699,7 @@ namespace SharpChat {
                     }
 
                     if (parts.Length < 2 || !IPAddress.TryParse(parts[1], out IPAddress unbanIP)) {
-                        user.Send(new LegacyCommandResponse(LCR.USER_NOT_BANNED, true, @"0.0.0.0"));
+                        user.Send(new LegacyCommandResponse(LCR.USER_NOT_BANNED, true, string.Empty));
                         break;
                     }
 
@@ -719,7 +719,7 @@ namespace SharpChat {
                         break;
                     }
 
-                    user.Send(new BanListPacket(Context.Bans.All(), Context.Users.All()));
+                    user.Send(new BanListPacket(Context.Bans.All()));
                     break;
                 case @"silence": // silence a user
                     if (!user.Can(ChatUserPermissions.SilenceUser)) {

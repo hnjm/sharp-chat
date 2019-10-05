@@ -8,11 +8,13 @@ using System.Net;
 namespace SharpChat {
     public interface IBan {
         DateTimeOffset Expires { get; }
+        string ToString();
     }
 
     public class BannedUser : IBan {
         public int UserId { get; set; }
         public DateTimeOffset Expires { get; set; }
+        public string Username { get; set; }
 
         public BannedUser() {
         }
@@ -20,7 +22,10 @@ namespace SharpChat {
         public BannedUser(FlashiiBan fb) {
             UserId = fb.UserId;
             Expires = fb.Expires;
+            Username = fb.Username;
         }
+
+        public override string ToString() => Username;
     }
 
     public class BannedIPAddress : IBan {
@@ -34,6 +39,8 @@ namespace SharpChat {
             Address = IPAddress.Parse(fb.UserIP);
             Expires = fb.Expires;
         }
+
+        public override string ToString() => Address.ToString();
     }
 
     public class BanManager : IDisposable {
@@ -52,26 +59,37 @@ namespace SharpChat {
             if (expires <= DateTimeOffset.Now)
                 return;
 
-            BannedUser ban = BanList.OfType<BannedUser>().FirstOrDefault(x => x.UserId == user.UserId);
+            lock (BanList) {
+                BannedUser ban = BanList.OfType<BannedUser>().FirstOrDefault(x => x.UserId == user.UserId);
 
-            if (ban == null) {
-                lock(BanList)
-                    BanList.Add(new BannedUser { UserId = user.UserId, Expires = expires });
-            } else
-                ban.Expires = expires;
+                if (ban == null)
+                    Add(new BannedUser { UserId = user.UserId, Expires = expires, Username = user.Username });
+                else
+                    ban.Expires = expires;
+            }
         }
 
         public void Add(IPAddress addr, DateTimeOffset expires) {
             if (expires <= DateTimeOffset.Now)
                 return;
 
-            BannedIPAddress ban = BanList.OfType<BannedIPAddress>().FirstOrDefault(x => x.Address == addr);
+            lock (BanList) {
+                BannedIPAddress ban = BanList.OfType<BannedIPAddress>().FirstOrDefault(x => x.Address.Equals(addr));
 
-            if (ban == null) {
-                lock(BanList)
-                    BanList.Add(new BannedIPAddress { Address = addr, Expires = expires });
-            } else
-                ban.Expires = expires;
+                if (ban == null)
+                    Add(new BannedIPAddress { Address = addr, Expires = expires });
+                else
+                    ban.Expires = expires;
+            }
+        }
+
+        private void Add(IBan ban) {
+            if (ban == null)
+                return;
+
+            lock (BanList)
+                if (!BanList.Contains(ban))
+                    BanList.Add(ban);
         }
 
         public void Remove(ChatUser user) {
@@ -81,7 +99,12 @@ namespace SharpChat {
 
         public void Remove(IPAddress addr) {
             lock(BanList)
-                BanList.RemoveAll(x => x is BannedIPAddress ib && ib.Address == addr);
+                BanList.RemoveAll(x => x is BannedIPAddress ib && ib.Address.Equals(addr));
+        }
+
+        public void Remove(IBan ban) {
+            lock (BanList)
+                BanList.Remove(ban);
         }
 
         public DateTimeOffset Check(ChatUser user) {
@@ -96,8 +119,24 @@ namespace SharpChat {
             if (addr == null)
                 return DateTimeOffset.MinValue;
 
-            lock(BanList)
-                return BanList.OfType<BannedIPAddress>().Where(x => x.Address == addr).FirstOrDefault()?.Expires ?? DateTimeOffset.MinValue;
+            lock (BanList)
+                return BanList.OfType<BannedIPAddress>().Where(x => x.Address.Equals(addr)).FirstOrDefault()?.Expires ?? DateTimeOffset.MinValue;
+        }
+
+        public BannedUser GetUser(string username) {
+            if (username == null)
+                return null;
+
+            if (!int.TryParse(username, out int userId))
+                userId = 0;
+
+            lock (BanList)
+                return BanList.OfType<BannedUser>().FirstOrDefault(x => x.Username.ToLowerInvariant() == username.ToLowerInvariant() || (userId > 0 && x.UserId == userId));
+        }
+
+        public BannedIPAddress GetIPAddress(IPAddress addr) {
+            lock (BanList)
+                return BanList.OfType<BannedIPAddress>().FirstOrDefault(x => x.Address.Equals(addr));
         }
 
         public void RemoveExpired() {
@@ -114,9 +153,9 @@ namespace SharpChat {
             lock (BanList) {
                 foreach (FlashiiBan fb in bans) {
                     if (!BanList.OfType<BannedUser>().Any(x => x.UserId == fb.UserId))
-                        BanList.Add(new BannedUser(fb));
+                        Add(new BannedUser(fb));
                     if (!BanList.OfType<BannedIPAddress>().Any(x => x.Address.ToString() == fb.UserIP))
-                        BanList.Add(new BannedIPAddress(fb));
+                        Add(new BannedIPAddress(fb));
                 }
             }
         }
