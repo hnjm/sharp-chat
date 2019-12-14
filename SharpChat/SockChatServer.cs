@@ -171,9 +171,14 @@ namespace SharpChat {
                     if (aUser != null || args.Length < 3 || !int.TryParse(args[1], out int aUserId))
                         break;
 
-                    auth = FlashiiAuth.Attempt(aUserId, args[2], conn.RemoteAddress);
+                    auth = FlashiiAuth.Attempt(new FlashiiAuthRequest {
+                        UserId = aUserId,
+                        Token = args[2],
+                        IPAddress = conn.RemoteAddress.ToString(),
+                    });
 
                     if (!auth.Success) {
+                        //conn.Websocket.Send($"100\t{auth.Reason}");
                         conn.Send(new AuthFailPacket(AuthFailReason.AuthInvalid));
                         conn.Dispose();
                         break;
