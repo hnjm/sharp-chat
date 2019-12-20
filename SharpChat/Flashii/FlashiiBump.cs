@@ -7,13 +7,6 @@ using System.Text.Json.Serialization;
 
 namespace SharpChat.Flashii {
     public class FlashiiBump {
-        public const string ENDPOINT =
-#if DEBUG
-            @"http://msz.lh/_sockchat/bump";
-#else
-            @"https://flashii.net/_sockchat/bump";
-#endif
-
         [JsonPropertyName(@"id")]
         public int UserId { get; set; }
 
@@ -30,7 +23,7 @@ namespace SharpChat.Flashii {
         public static void Submit(IEnumerable<FlashiiBump> users) {
             try {
                 byte[] bumpJson = JsonSerializer.SerializeToUtf8Bytes(users);
-                using HttpRequestMessage bumpRequest = new HttpRequestMessage(HttpMethod.Post, ENDPOINT);
+                using HttpRequestMessage bumpRequest = new HttpRequestMessage(HttpMethod.Post, FlashiiUrls.BUMP);
                 bumpRequest.Headers.Add(@"X-SharpChat-Signature", bumpJson.GetSignedHash());
                 bumpRequest.Headers.Add(@"User-Agent", @"SharpChat");
                 bumpRequest.Content = new ByteArrayContent(bumpJson);

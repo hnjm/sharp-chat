@@ -23,13 +23,6 @@ namespace SharpChat.Flashii {
     }
 
     public class FlashiiAuth {
-        public const string ENDPOINT =
-#if DEBUG
-            @"http://msz.lh/_sockchat/verify";
-#else
-            @"https://flashii.net/_sockchat/verify";
-#endif
-
         [JsonPropertyName(@"success")]
         public bool Success { get; set; }
 
@@ -73,7 +66,7 @@ namespace SharpChat.Flashii {
 
             try {
                 using ByteArrayContent loginContent = new ByteArrayContent(request.GetJSON());
-                using HttpRequestMessage loginRequest = new HttpRequestMessage(HttpMethod.Post, ENDPOINT) {
+                using HttpRequestMessage loginRequest = new HttpRequestMessage(HttpMethod.Post, FlashiiUrls.AUTH) {
                     Content = loginContent,
                 };
                 loginRequest.Headers.Add(@"X-SharpChat-Signature", request.Hash);

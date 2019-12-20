@@ -6,12 +6,7 @@ using System.Text.Json.Serialization;
 
 namespace SharpChat.Flashii {
     public class FlashiiBan {
-        public const string ENDPOINT =
-#if DEBUG
-            @"http://msz.lh/_sockchat/bans";
-#else
-            @"https://flashii.net/_sockchat/bans";
-#endif
+        private const string STRING = @"givemethebeans";
 
         [JsonPropertyName(@"id")]
         public int UserId { get; set; }
@@ -27,8 +22,8 @@ namespace SharpChat.Flashii {
 
         public static IEnumerable<FlashiiBan> GetList() {
             try {
-                using HttpRequestMessage bansRequest = new HttpRequestMessage(HttpMethod.Get, ENDPOINT);
-                bansRequest.Headers.Add(@"X-SharpChat-Signature", @"givemethebeans".GetSignedHash());
+                using HttpRequestMessage bansRequest = new HttpRequestMessage(HttpMethod.Get, FlashiiUrls.BANS);
+                bansRequest.Headers.Add(@"X-SharpChat-Signature", STRING.GetSignedHash());
                 bansRequest.Headers.Add(@"User-Agent", @"SharpChat");
                 using HttpResponseMessage bansResponse = HttpClientS.Instance.SendAsync(bansRequest).Result;
                 return JsonSerializer.Deserialize<IEnumerable<FlashiiBan>>(bansResponse.Content.ReadAsByteArrayAsync().Result);
