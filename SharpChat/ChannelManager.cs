@@ -138,7 +138,7 @@ namespace SharpChat {
 
         public IEnumerable<ChatChannel> OfHierarchy(int hierarchy) {
             lock (Channels)
-                return Channels.Where(c => c.Hierarchy >= hierarchy).ToList();
+                return Channels.Where(c => c.Hierarchy <= hierarchy).ToList();
         }
 
         ~ChannelManager()
