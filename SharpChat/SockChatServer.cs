@@ -44,7 +44,7 @@ namespace SharpChat {
             Colour = new ChatColour(),
         };
 
-        public readonly WebSocketServer Server;
+        public readonly IWebSocketServer Server;
         public readonly ChatContext Context;
 
         public readonly List<ChatUserConnection> Connections = new List<ChatUserConnection>();
@@ -69,7 +69,7 @@ namespace SharpChat {
 #endif
             Context.Channels.Add(new ChatChannel(@"Staff") { Hierarchy = 5 });
 
-            Server = new WebSocketServer($@"ws://0.0.0.0:{port}");
+            Server = new SharpChatWebSocketServer($@"ws://0.0.0.0:{port}");
             
             Server.Start(sock => {
                 sock.OnOpen = () => OnOpen(sock);
