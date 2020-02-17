@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Text;
 
 namespace SharpChat {
@@ -53,6 +54,22 @@ namespace SharpChat {
         public ChatUserConnection GetConnection(IWebSocketConnection conn) {
             lock(ConnectionsLock)
                 return Connections.FirstOrDefault(x => x.Websocket == conn);
+        }
+
+        private static readonly string[] Kaomoji;
+
+        static SockChatServer() {
+            List<string> kao = new List<string>();
+
+            using (Stream s = Assembly.GetExecutingAssembly().GetManifestResourceStream(@"SharpChat.kaomoji.txt"))
+            using (StreamReader sr = new StreamReader(s)) {
+                string str;
+
+                while ((str = sr.ReadLine()) != null)
+                    kao.Add(str.Trim());
+            }
+
+            Kaomoji = kao.ToArray();
         }
 
         public SockChatServer(ushort port) {
@@ -278,6 +295,18 @@ namespace SharpChat {
                         if (message == null)
                             break;
                     }
+
+                    StringBuilder sbm = new StringBuilder();
+                    sbm.Append(messageText.TrimEnd());
+                    sbm.Append(' ');
+                    sbm.Append(mUser.TextSuffix);
+
+                    if(RNG.Next(0, 10000) > 9000) {
+                        sbm.Append(' ');
+                        sbm.Append(Kaomoji[RNG.Next() % Kaomoji.Length]);
+                    }
+
+                    messageText = sbm.ToString();
 
                     if (message == null)
                         message = new ChatMessage {

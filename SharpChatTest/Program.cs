@@ -8,7 +8,7 @@ namespace SharpChatTest {
         static int UserId = 10000;
 
         static void Main() {
-            PureWebSocket[] socks = new PureWebSocket[100];
+            PureWebSocket[] socks = new PureWebSocket[152];
 
             for (int i = 0; i < socks.Length; i++) {
                 socks[i] = new PureWebSocket(@"ws://127.0.0.1:6770/", new PureWebSocketOptions { });

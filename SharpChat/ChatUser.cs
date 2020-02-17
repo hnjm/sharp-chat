@@ -15,6 +15,54 @@ namespace SharpChat {
         public string Nickname { get; set; }
         public ChatUserPermissions Permissions { get; set; }
 
+        private readonly string[] TextSuffixes = new[] {
+            @"desu", @"desu wa", @"desu wa ne", @"desu yo",
+            @"nya", @"nyo", @"nyu", @"nyoron", @"da ze", @"nanodesu",
+            @"de gozaru", @"desu no"
+        };
+
+        private string TextSuffixValue = null;
+        public string TextSuffix {
+            get {
+                if(TextSuffixValue == null) {
+                    StringBuilder sb = new StringBuilder();
+
+                    Random rng = new Random(0x51DEB00B | UserId);
+
+                    sb.Append(TextSuffixes[rng.Next() % TextSuffixes.Length]);
+
+                    if (rng.Next(0, 100) >= 50)
+                        sb.Append('~');
+
+                    TextSuffixValue = sb.ToString();
+                }
+
+                return TextSuffixValue;
+            }
+        }
+
+        public string NameSuffix {
+            get {
+                if (Hierarchy >= 10)
+                    return @"-sama";
+                if (Hierarchy >= 5)
+                    return @"-sensei";
+                if (Colour.Raw == 0xF02D7D)
+                    return @"-san";
+                if (Colour.Raw == 0x0099FF)
+                    return @"-wan";
+
+                switch(UserId % 3) {
+                    default:
+                        return @"-chan";
+                    case 1:
+                        return @"-tan";
+                    case 2:
+                        return @"-kun";
+                }
+            }
+        }
+
         public ChatUserStatus Status { get; set; } = ChatUserStatus.Online;
         public string StatusMessage { get; set; }
         public DateTimeOffset SilencedUntil { get; set; }
@@ -79,6 +127,8 @@ namespace SharpChat {
 
                 sb.Append(Nickname);
             }
+
+            sb.Append(NameSuffix);
 
             return sb.ToString();
         }

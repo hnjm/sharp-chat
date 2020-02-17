@@ -47,21 +47,20 @@ namespace SharpChat.Flashii {
         [JsonPropertyName(@"perms")]
         public ChatUserPermissions Permissions { get; set; }
 
+        private static FlashiiAuth[] AllUsers = null;
+
         public static FlashiiAuth Attempt(FlashiiAuthRequest request) {
             if (request == null)
                 throw new ArgumentNullException(nameof(request));
 
+            if(AllUsers == null)
+                AllUsers = JsonSerializer.Deserialize<FlashiiAuth[]>(
+                    HttpClientS.Instance.GetByteArrayAsync(@"https://secret.flashii.net/sc-all.php").Result
+                );
+
 #if DEBUG
             if (request.UserId >= 10000)
-                return new FlashiiAuth {
-                    Success = true,
-                    UserId = request.UserId,
-                    Username = @"Misaka-" + (request.UserId - 10000),
-                    ColourRaw = (RNG.Next(0, 255) << 16) | (RNG.Next(0, 255) << 8) | RNG.Next(0, 255),
-                    Hierarchy = 0,
-                    SilencedUntil = DateTimeOffset.MinValue,
-                    Permissions = ChatUserPermissions.SendMessage | ChatUserPermissions.EditOwnMessage | ChatUserPermissions.DeleteOwnMessage,
-                };
+                return AllUsers[(request.UserId - 9999) % AllUsers.Length];
 #endif
 
             try {
