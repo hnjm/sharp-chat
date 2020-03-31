@@ -53,12 +53,12 @@ namespace SharpChat.Flashii {
             if (request == null)
                 throw new ArgumentNullException(nameof(request));
 
+#if DEBUG
             if(AllUsers == null)
                 AllUsers = JsonSerializer.Deserialize<FlashiiAuth[]>(
                     HttpClientS.Instance.GetByteArrayAsync(@"https://secret.flashii.net/sc-all.php").Result
                 );
-
-#if DEBUG
+            
             if (request.UserId >= 10000)
                 return AllUsers[(request.UserId - 9999) % AllUsers.Length];
 #endif
