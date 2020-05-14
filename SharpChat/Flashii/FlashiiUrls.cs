@@ -1,8 +1,8 @@
 ﻿namespace SharpChat.Flashii {
     public static class FlashiiUrls {
         public const string BASE_URL =
-#if _DEBUG
-            @"http://msz.lh/_sockchat";
+#if DEBUG
+            @"https://misuzu.misaka.nl/_sockchat";
 #else
             @"https://flashii.net/_sockchat";
 #endif

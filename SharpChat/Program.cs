@@ -1,9 +1,10 @@
 ﻿using System;
-using System.IO;
 using System.Threading;
 
 namespace SharpChat {
     public class Program {
+        public const ushort PORT = 6770;
+
         public static void Main(string[] args) {
             Console.WriteLine(@"   _____ __                     ________          __ ");
             Console.WriteLine(@"  / ___// /_  ____ __________  / ____/ /_  ____ _/ /_");
@@ -16,7 +17,7 @@ namespace SharpChat {
 #endif
 
             using ManualResetEvent mre = new ManualResetEvent(false);
-            using SockChatServer scs = new SockChatServer(6770);
+            using SockChatServer scs = new SockChatServer(PORT);
             Console.CancelKeyPress += (s, e) => { e.Cancel = true; mre.Set(); };
             mre.WaitOne();
         }

@@ -65,14 +65,18 @@ namespace SharpChat.Flashii {
 #endif
 
             try {
-                using ByteArrayContent loginContent = new ByteArrayContent(request.GetJSON());
+                byte[] requestData = request.GetJSON();
+                Logger.Debug(requestData);
+                using ByteArrayContent loginContent = new ByteArrayContent(requestData);
                 using HttpRequestMessage loginRequest = new HttpRequestMessage(HttpMethod.Post, FlashiiUrls.AUTH) {
                     Content = loginContent,
                 };
                 loginRequest.Headers.Add(@"X-SharpChat-Signature", request.Hash);
                 loginRequest.Headers.Add(@"User-Agent", @"SharpChat");
                 using HttpResponseMessage loginResponse = HttpClientS.Instance.SendAsync(loginRequest).Result;
-                return JsonSerializer.Deserialize<FlashiiAuth>(loginResponse.Content.ReadAsByteArrayAsync().Result);
+                byte[] responseData = loginResponse.Content.ReadAsByteArrayAsync().Result;
+                Logger.Debug(responseData);
+                return JsonSerializer.Deserialize<FlashiiAuth>(responseData);
             } catch (Exception ex) {
                 Logger.Write(ex.ToString());
                 return new FlashiiAuth { Success = false };

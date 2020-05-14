@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Text;
 
 namespace SharpChat {
@@ -11,5 +12,17 @@ namespace SharpChat {
 
         public static void Write(object obj)
             => Write(obj?.ToString() ?? string.Empty);
+
+        [Conditional(@"DEBUG")]
+        public static void Debug(string str)
+            => Write(str);
+
+        [Conditional(@"DEBUG")]
+        public static void Debug(byte[] bytes)
+            => Write(bytes);
+
+        [Conditional(@"DEBUG")]
+        public static void Debug(object obj)
+            => Write(obj);
     }
 }
