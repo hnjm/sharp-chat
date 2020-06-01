@@ -39,7 +39,7 @@ namespace SharpChat {
 #if DEBUG
         private static void TestMisuzuAuth() {
             Console.WriteLine($@"Enter token found on {FlashiiUrls.BASE_URL}/login:");
-            string[] token = Console.ReadLine().Split('_');
+            string[] token = Console.ReadLine().Split(new[] { '_' }, 2);
 
             FlashiiAuth authRes = FlashiiAuth.Attempt(new FlashiiAuthRequest {
                 UserId = int.Parse(token[0]), Token = token[1], IPAddress = @"1.2.4.8"
