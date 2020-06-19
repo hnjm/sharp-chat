@@ -170,7 +170,7 @@ namespace SharpChat {
 
                     aUser = conn.User;
 
-                    if (aUser != null || args.Length < 3 || !int.TryParse(args[1], out int aUserId))
+                    if (aUser != null || args.Length < 3 || !long.TryParse(args[1], out long aUserId))
                         break;
 
                     auth = FlashiiAuth.Attempt(new FlashiiAuthRequest {
@@ -243,7 +243,7 @@ namespace SharpChat {
                     if (conn.Version < 2) {
 #if !DEBUG
                     // Extra validation step, not necessary at all but enforces proper formatting in SCv1.
-                    if (!int.TryParse(args[1], out int mUserId) || mUser.UserId != mUserId)
+                    if (!long.TryParse(args[1], out long mUserId) || mUser.UserId != mUserId)
                         break;
 #endif
                         mChannel = Context.Channels.GetUser(mUser).FirstOrDefault();
@@ -284,6 +284,7 @@ namespace SharpChat {
                     if (message == null)
                         message = new ChatMessage {
                             Target = mChannel,
+                            TargetName = mChannel.TargetName,
                             DateTime = DateTimeOffset.UtcNow,
                             Sender = mUser,
                             Text = messageText,
@@ -351,7 +352,7 @@ namespace SharpChat {
                     ChatUser targetUser = null;
                     int offset = 1;
 
-                    if (setOthersNick && int.TryParse(parts[1], out int targetUserId) && targetUserId > 0) {
+                    if (setOthersNick && parts.Length > 1 && long.TryParse(parts[1], out long targetUserId) && targetUserId > 0) {
                         targetUser = Context.Users.Get(targetUserId);
                         offset = 2;
                     }
@@ -410,6 +411,7 @@ namespace SharpChat {
                     whisperUser.Send(new ChatMessageAddPacket(new ChatMessage {
                         DateTime = DateTimeOffset.Now,
                         Target = whisperUser,
+                        TargetName = whisperUser.TargetName,
                         Sender = user,
                         Text = whisperStr,
                         Flags = ChatMessageFlags.Private,
@@ -417,6 +419,7 @@ namespace SharpChat {
                     user.Send(new ChatMessageAddPacket(new ChatMessage {
                         DateTime = DateTimeOffset.Now,
                         Target = whisperUser,
+                        TargetName = whisperUser.TargetName,
                         Sender = user,
                         Text = $@"{whisperUser.GetDisplayName(1)} {whisperStr}",
                         Flags = ChatMessageFlags.Private,
@@ -431,6 +434,7 @@ namespace SharpChat {
 
                     return new ChatMessage {
                         Target = channel,
+                        TargetName = channel.TargetName,
                         DateTime = DateTimeOffset.UtcNow,
                         Sender = user,
                         Text = actionMsg,
@@ -627,12 +631,18 @@ namespace SharpChat {
                         break;
                     }
 
-                    if (parts.Length < 2 || !parts[1].All(char.IsDigit) || !int.TryParse(parts[1], out int delSeqId)) {
+                    if (parts.Length < 2 || !parts[1].All(char.IsDigit) || !long.TryParse(parts[1], out long delSeqId)) {
                         user.Send(new LegacyCommandResponse(LCR.COMMAND_FORMAT_ERROR));
                         break;
                     }
 
                     IChatEvent delMsg = Context.Events.Get(delSeqId);
+
+                    Logger.Write(delMsg);
+                    Logger.Write(delMsg?.SequenceId);
+                    Logger.Write(delMsg?.Sender);
+                    Logger.Write(delMsg?.Sender?.UserId);
+                    Logger.Write(delMsg?.Sender?.UserId);
 
                     if (delMsg == null || delMsg.Sender.Hierarchy > user.Hierarchy || (!deleteAnyMessage && delMsg.Sender.UserId != user.UserId)) {
                         user.Send(new LegacyCommandResponse(LCR.MESSAGE_DELETE_ERROR));

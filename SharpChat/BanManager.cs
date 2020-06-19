@@ -1,6 +1,5 @@
 ﻿using SharpChat.Flashii;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -12,7 +11,7 @@ namespace SharpChat {
     }
 
     public class BannedUser : IBan {
-        public int UserId { get; set; }
+        public long UserId { get; set; }
         public DateTimeOffset Expires { get; set; }
         public string Username { get; set; }
 
@@ -127,7 +126,7 @@ namespace SharpChat {
             if (username == null)
                 return null;
 
-            if (!int.TryParse(username, out int userId))
+            if (!long.TryParse(username, out long userId))
                 userId = 0;
 
             lock (BanList)

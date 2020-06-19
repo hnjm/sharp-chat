@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 namespace SharpChat.Flashii {
     public class FlashiiAuthRequest {
         [JsonPropertyName(@"user_id")]
-        public int UserId { get; set; }
+        public long UserId { get; set; }
 
         [JsonPropertyName(@"token")]
         public string Token { get; set; }
@@ -30,7 +30,7 @@ namespace SharpChat.Flashii {
         public string Reason { get; set; } = @"none";
 
         [JsonPropertyName(@"user_id")]
-        public int UserId { get; set; }
+        public long UserId { get; set; }
 
         [JsonPropertyName(@"username")]
         public string Username { get; set; }

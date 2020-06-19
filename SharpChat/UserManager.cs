@@ -39,8 +39,9 @@ namespace SharpChat {
                 return Users.Contains(user) || Users.Any(x => x.UserId == user.UserId || x.Username.ToLowerInvariant() == user.Username.ToLowerInvariant());
         }
 
-        public ChatUser Get(int userId) {
-            return Users.FirstOrDefault(x => x.UserId == userId);
+        public ChatUser Get(long userId) {
+            lock(Users)
+                return Users.FirstOrDefault(x => x.UserId == userId);
         }
 
         public ChatUser Get(string username, bool includeNickName = true, bool includeV1Name = true) {
@@ -48,7 +49,8 @@ namespace SharpChat {
                 return null;
             username = username.ToLowerInvariant();
 
-            return Users.FirstOrDefault(x => x.Username.ToLowerInvariant() == username || (includeNickName && x.Nickname?.ToLowerInvariant() == username) || (includeV1Name && x.GetDisplayName(1).ToLowerInvariant() == username));
+            lock(Users)
+                return Users.FirstOrDefault(x => x.Username.ToLowerInvariant() == username || (includeNickName && x.Nickname?.ToLowerInvariant() == username) || (includeV1Name && x.GetDisplayName(1).ToLowerInvariant() == username));
         }
 
         public IEnumerable<ChatUser> OfHierarchy(int hierarchy) {

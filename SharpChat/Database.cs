@@ -3,11 +3,10 @@ using SharpChat.Events;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
-using System.Threading;
+using System.Text.Json;
 
 namespace SharpChat {
-    public static class Database {
+    public static partial class Database {
         private static string ConnectionString = null;
 
         public static bool HasDatabase
@@ -32,6 +31,7 @@ namespace SharpChat {
                 CharacterSet = @"utf8mb4",
                 TreatBlobsAsUTF8 = false
             }.ToString();
+            RunMigrations();
         }
 
         public static void Deinit() {
@@ -63,8 +63,8 @@ namespace SharpChat {
         public static MySqlDataReader RunQuery(string command, params MySqlParameter[] parameters) {
             if (!HasDatabase)
                 return null;
-            using MySqlConnection conn = GetConnection();
-            using MySqlCommand cmd = conn.CreateCommand();
+            MySqlConnection conn = GetConnection();
+            MySqlCommand cmd = conn.CreateCommand();
             if (parameters?.Length > 0)
                 cmd.Parameters.AddRange(parameters);
             cmd.CommandText = command;
@@ -72,7 +72,7 @@ namespace SharpChat {
             return cmd.ExecuteReader(System.Data.CommandBehavior.CloseConnection);
         }
 
-        public static object RunQueryOne(string command, params MySqlParameter[] parameters) {
+        public static object RunQueryValue(string command, params MySqlParameter[] parameters) {
             if (!HasDatabase)
                 return null;
             using MySqlConnection conn = GetConnection();
@@ -99,46 +99,97 @@ namespace SharpChat {
         }
 
         public static void LogEvent(IChatEvent evt) {
-            evt.SequenceId = GenerateId();
+            if(evt.SequenceId < 1)
+                evt.SequenceId = GenerateId();
 
-            List<MySqlParameter> extraParams = new List<MySqlParameter>();
-
-            if (evt is IChatMessage msg)
-                extraParams.Add(new MySqlParameter(@"text", msg.Text));
-            if (evt is UserDisconnectEvent disconEvt)
-                extraParams.Add(new MySqlParameter(@"leave", (int)disconEvt.Reason));
-
-            StringBuilder sb = new StringBuilder();
-            sb.Append(@"INSERT INTO `chat_events` (`event_id`, `event_sender`, `event_created`, `event_type`, `event_target`, `event_flags`");
-            if (extraParams.Count > 0)
-                sb.Append(@", `event_data`");
-            sb.Append(@") VALUES (@id, @sender, FROM_UNIXTIME(@created), @type, @target, @flags");
-            if (extraParams.Count > 0) {
-                sb.Append(@", COLUMN_CREATE(");
-                foreach (MySqlParameter param in extraParams)
-                    sb.AppendFormat(@"'{0}', @{0}", param.ParameterName);
-                sb.Append(@")");
-            }
-            sb.Append(@")");
-
-            List<MySqlParameter> parameters = new List<MySqlParameter> {
+            RunCommand(
+                @"INSERT INTO `sqc_events` (`event_id`, `event_created`, `event_type`, `event_target`, `event_flags`, `event_data`"
+                + @", `event_sender`, `event_sender_name`, `event_sender_colour`, `event_sender_rank`, `event_sender_nick`, `event_sender_perms`)"
+                + @" VALUES (@id, FROM_UNIXTIME(@created), @type, @target, @flags, @data"
+                + @", @sender, @sender_name, @sender_colour, @sender_rank, @sender_nick, @sender_perms)",
                 new MySqlParameter(@"id", evt.SequenceId),
-                new MySqlParameter(@"sender", evt.Sender?.UserId < 1 ? null : (int?)evt.Sender.UserId),
                 new MySqlParameter(@"created", evt.DateTime.ToUnixTimeSeconds()),
                 new MySqlParameter(@"type", evt.GetType().FullName),
                 new MySqlParameter(@"target", evt.Target.TargetName),
-                new MySqlParameter(@"flags", (byte)evt.Flags)
-            };
-            parameters.AddRange(extraParams);
-
-            RunCommand(sb.ToString(), parameters.ToArray());
+                new MySqlParameter(@"flags", (byte)evt.Flags),
+                new MySqlParameter(@"data", JsonSerializer.SerializeToUtf8Bytes(evt, evt.GetType())),
+                new MySqlParameter(@"sender", evt.Sender?.UserId < 1 ? null : (long?)evt.Sender.UserId),
+                new MySqlParameter(@"sender_name", evt.Sender?.Username),
+                new MySqlParameter(@"sender_colour", evt.Sender?.Colour.Raw),
+                new MySqlParameter(@"sender_rank", evt.Sender?.Hierarchy),
+                new MySqlParameter(@"sender_nick", evt.Sender?.Nickname),
+                new MySqlParameter(@"sender_perms", evt.Sender?.Permissions)
+            );
         }
 
         public static void DeleteEvent(IChatEvent evt) {
             RunCommand(
-                @"UPDATE IGNORE `chat_events` SET `event_deleted` = NOW() WHERE `event_id` = @id AND `event_deleted` IS NULL",
+                @"UPDATE IGNORE `sqc_events` SET `event_deleted` = NOW() WHERE `event_id` = @id AND `event_deleted` IS NULL",
                 new MySqlParameter(@"id", evt.SequenceId)
             );
+        }
+
+        private static IChatEvent ReadEvent(MySqlDataReader reader, IPacketTarget target = null) {
+            Type evtType = Type.GetType(reader.GetString(@"event_type"));
+            IChatEvent evt = JsonSerializer.Deserialize(reader.GetString(@"event_data"), evtType) as IChatEvent;
+            evt.SequenceId = reader.GetInt64(@"event_id");
+            evt.Target = target;
+            evt.TargetName = target?.TargetName ?? reader.GetString(@"event_target");
+            evt.Flags = (ChatMessageFlags)reader.GetByte(@"event_flags");
+            evt.DateTime = DateTimeOffset.FromUnixTimeSeconds(reader.GetInt32(@"event_created"));
+
+            if (!reader.IsDBNull(reader.GetOrdinal(@"event_sender"))) {
+                evt.Sender = new BasicUser {
+                    UserId = reader.GetInt64(@"event_sender"),
+                    Username = reader.GetString(@"event_sender_name"),
+                    Colour = new ChatColour(reader.GetInt32(@"event_sender_colour")),
+                    Hierarchy = reader.GetInt32(@"event_sender_rank"),
+                    Nickname = reader.IsDBNull(reader.GetOrdinal(@"event_sender_nick")) ? null : reader.GetString(@"event_sender_nick"),
+                    Permissions = (ChatUserPermissions)reader.GetInt32(@"event_sender_perms")
+                };
+            }
+
+            return evt;
+        }
+
+        public static IEnumerable<IChatEvent> GetEvents(IPacketTarget target, int amount, int offset) {
+            using MySqlDataReader reader = RunQuery(
+                @"SELECT `event_id`, `event_type`, `event_flags`, `event_data`"
+                + @", `event_sender`, `event_sender_name`, `event_sender_colour`, `event_sender_rank`, `event_sender_nick`, `event_sender_perms`"
+                + @", UNIX_TIMESTAMP(`event_created`) AS `event_created`"
+                + @" FROM `sqc_events`"
+                + @" WHERE `event_deleted` IS NULL AND `event_target` = @target"
+                + @" ORDER BY `event_created` DESC"
+                + @" LIMIT @amount OFFSET @offset",
+                new MySqlParameter(@"target", target.TargetName),
+                new MySqlParameter(@"amount", amount),
+                new MySqlParameter(@"offset", offset)
+            );
+
+            while (reader.Read()) {
+                IChatEvent evt = ReadEvent(reader, target);
+                if (evt != null)
+                    yield return evt;
+            }
+        }
+
+        public static IChatEvent GetEvent(long seqId) {
+            using MySqlDataReader reader = RunQuery(
+                @"SELECT `event_id`, `event_type`, `event_flags`, `event_data`"
+                + @", `event_sender`, `event_sender_name`, `event_sender_colour`, `event_sender_rank`, `event_sender_nick`, `event_sender_perms`"
+                + @", UNIX_TIMESTAMP(`event_created`) AS `event_created`"
+                + @" FROM `sqc_events`"
+                + @" WHERE `event_id` = @id",
+                new MySqlParameter(@"id", seqId)
+            );
+
+            while (reader.Read()) {
+                IChatEvent evt = ReadEvent(reader);
+                if (evt != null)
+                    return evt;
+            }
+
+            return null;
         }
     }
 }

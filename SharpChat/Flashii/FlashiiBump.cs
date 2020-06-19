@@ -8,7 +8,7 @@ using System.Text.Json.Serialization;
 namespace SharpChat.Flashii {
     public class FlashiiBump {
         [JsonPropertyName(@"id")]
-        public int UserId { get; set; }
+        public long UserId { get; set; }
 
         [JsonPropertyName(@"ip")]
         public string UserIP { get; set; }

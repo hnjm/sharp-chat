@@ -11,10 +11,11 @@ namespace SharpChat.Events {
     }
 
     public interface IChatEvent {
-        DateTimeOffset DateTime { get; }
-        ChatUser Sender { get; }
-        IPacketTarget Target { get; }
-        ChatMessageFlags Flags { get; }
+        DateTimeOffset DateTime { get; set; }
+        BasicUser Sender { get; set; }
+        IPacketTarget Target { get; set; }
+        string TargetName { get; set; }
+        ChatMessageFlags Flags { get; set; }
         long SequenceId { get; set; }
     }
 

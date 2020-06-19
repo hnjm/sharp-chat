@@ -1,23 +1,32 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
+using System.Text.Json.Serialization;
 
 namespace SharpChat.Events {
     public class UserChannelJoinEvent : IChatEvent {
-        public DateTimeOffset DateTime { get; private set; }
+        [JsonIgnore]
+        public DateTimeOffset DateTime { get; set; }
 
-        public ChatUser Sender { get; private set; }
+        [JsonIgnore]
+        public BasicUser Sender { get; set; }
 
-        public IPacketTarget Target { get; private set; }
+        [JsonIgnore]
+        public IPacketTarget Target { get; set; }
 
-        public ChatMessageFlags Flags { get; private set; } = ChatMessageFlags.Log;
+        [JsonIgnore]
+        public string TargetName { get; set; }
 
+        [JsonIgnore]
+        public ChatMessageFlags Flags { get; set; } = ChatMessageFlags.Log;
+
+        [JsonIgnore]
         public long SequenceId { get; set; }
 
-        public UserChannelJoinEvent(DateTimeOffset joined, ChatUser user, IPacketTarget target) {
+        public UserChannelJoinEvent() { }
+        public UserChannelJoinEvent(DateTimeOffset joined, BasicUser user, IPacketTarget target) {
             DateTime = joined;
             Sender = user;
             Target = target;
+            TargetName = target?.TargetName;
         }
     }
 }
