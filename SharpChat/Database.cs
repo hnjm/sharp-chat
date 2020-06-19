@@ -51,38 +51,52 @@ namespace SharpChat {
             if (!HasDatabase)
                 return 0;
 
-            using MySqlConnection conn = GetConnection();
-            using MySqlCommand cmd = conn.CreateCommand();
-            if (parameters?.Length > 0)
-                cmd.Parameters.AddRange(parameters);
-            cmd.CommandText = command;
-            cmd.CommandTimeout = 5;
-            return cmd.ExecuteNonQuery();
+            try {
+                using MySqlConnection conn = GetConnection();
+                using MySqlCommand cmd = conn.CreateCommand();
+                if (parameters?.Length > 0)
+                    cmd.Parameters.AddRange(parameters);
+                cmd.CommandText = command;
+                cmd.CommandTimeout = 5;
+                return cmd.ExecuteNonQuery();
+            } catch (MySqlException) { }
+
+            return 0;
         }
 
         public static MySqlDataReader RunQuery(string command, params MySqlParameter[] parameters) {
             if (!HasDatabase)
                 return null;
-            MySqlConnection conn = GetConnection();
-            MySqlCommand cmd = conn.CreateCommand();
-            if (parameters?.Length > 0)
-                cmd.Parameters.AddRange(parameters);
-            cmd.CommandText = command;
-            cmd.CommandTimeout = 5;
-            return cmd.ExecuteReader(System.Data.CommandBehavior.CloseConnection);
+
+            try {
+                MySqlConnection conn = GetConnection();
+                MySqlCommand cmd = conn.CreateCommand();
+                if (parameters?.Length > 0)
+                    cmd.Parameters.AddRange(parameters);
+                cmd.CommandText = command;
+                cmd.CommandTimeout = 5;
+                return cmd.ExecuteReader(System.Data.CommandBehavior.CloseConnection);
+            } catch (MySqlException) { }
+
+            return null;
         }
 
         public static object RunQueryValue(string command, params MySqlParameter[] parameters) {
             if (!HasDatabase)
                 return null;
-            using MySqlConnection conn = GetConnection();
-            using MySqlCommand cmd = conn.CreateCommand();
-            if (parameters?.Length > 0)
-                cmd.Parameters.AddRange(parameters);
-            cmd.CommandText = command;
-            cmd.CommandTimeout = 5;
-            cmd.Prepare();
-            return cmd.ExecuteScalar();
+
+            try {
+                using MySqlConnection conn = GetConnection();
+                using MySqlCommand cmd = conn.CreateCommand();
+                if (parameters?.Length > 0)
+                    cmd.Parameters.AddRange(parameters);
+                cmd.CommandText = command;
+                cmd.CommandTimeout = 5;
+                cmd.Prepare();
+                return cmd.ExecuteScalar();
+            } catch (MySqlException) { }
+
+            return null;
         }
 
         private const long ID_EPOCH = 1588377600000;
@@ -153,41 +167,49 @@ namespace SharpChat {
         }
 
         public static IEnumerable<IChatEvent> GetEvents(IPacketTarget target, int amount, int offset) {
-            using MySqlDataReader reader = RunQuery(
-                @"SELECT `event_id`, `event_type`, `event_flags`, `event_data`"
-                + @", `event_sender`, `event_sender_name`, `event_sender_colour`, `event_sender_rank`, `event_sender_nick`, `event_sender_perms`"
-                + @", UNIX_TIMESTAMP(`event_created`) AS `event_created`"
-                + @" FROM `sqc_events`"
-                + @" WHERE `event_deleted` IS NULL AND `event_target` = @target"
-                + @" ORDER BY `event_created` DESC"
-                + @" LIMIT @amount OFFSET @offset",
-                new MySqlParameter(@"target", target.TargetName),
-                new MySqlParameter(@"amount", amount),
-                new MySqlParameter(@"offset", offset)
-            );
+            List<IChatEvent> events = new List<IChatEvent>();
 
-            while (reader.Read()) {
-                IChatEvent evt = ReadEvent(reader, target);
-                if (evt != null)
-                    yield return evt;
-            }
+            try {
+                using MySqlDataReader reader = RunQuery(
+                    @"SELECT `event_id`, `event_type`, `event_flags`, `event_data`"
+                    + @", `event_sender`, `event_sender_name`, `event_sender_colour`, `event_sender_rank`, `event_sender_nick`, `event_sender_perms`"
+                    + @", UNIX_TIMESTAMP(`event_created`) AS `event_created`"
+                    + @" FROM `sqc_events`"
+                    + @" WHERE `event_deleted` IS NULL AND `event_target` = @target"
+                    + @" ORDER BY `event_created` DESC"
+                    + @" LIMIT @amount OFFSET @offset",
+                    new MySqlParameter(@"target", target.TargetName),
+                    new MySqlParameter(@"amount", amount),
+                    new MySqlParameter(@"offset", offset)
+                );
+
+                while (reader.Read()) {
+                    IChatEvent evt = ReadEvent(reader, target);
+                    if (evt != null)
+                        events.Add(evt);
+                }
+            } catch (MySqlException) {}
+
+            return events;
         }
 
         public static IChatEvent GetEvent(long seqId) {
-            using MySqlDataReader reader = RunQuery(
-                @"SELECT `event_id`, `event_type`, `event_flags`, `event_data`"
-                + @", `event_sender`, `event_sender_name`, `event_sender_colour`, `event_sender_rank`, `event_sender_nick`, `event_sender_perms`"
-                + @", UNIX_TIMESTAMP(`event_created`) AS `event_created`"
-                + @" FROM `sqc_events`"
-                + @" WHERE `event_id` = @id",
-                new MySqlParameter(@"id", seqId)
-            );
+            try {
+                using MySqlDataReader reader = RunQuery(
+                    @"SELECT `event_id`, `event_type`, `event_flags`, `event_data`"
+                    + @", `event_sender`, `event_sender_name`, `event_sender_colour`, `event_sender_rank`, `event_sender_nick`, `event_sender_perms`"
+                    + @", UNIX_TIMESTAMP(`event_created`) AS `event_created`"
+                    + @" FROM `sqc_events`"
+                    + @" WHERE `event_id` = @id",
+                    new MySqlParameter(@"id", seqId)
+                );
 
-            while (reader.Read()) {
-                IChatEvent evt = ReadEvent(reader);
-                if (evt != null)
-                    return evt;
-            }
+                while (reader.Read()) {
+                    IChatEvent evt = ReadEvent(reader);
+                    if (evt != null)
+                        return evt;
+                }
+            } catch(MySqlException) { }
 
             return null;
         }
