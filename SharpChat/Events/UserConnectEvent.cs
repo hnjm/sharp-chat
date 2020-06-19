@@ -10,7 +10,7 @@ namespace SharpChat.Events {
 
         public ChatMessageFlags Flags { get; private set; } = ChatMessageFlags.Log;
 
-        public int SequenceId { get; set; }
+        public long SequenceId { get; set; }
 
         public UserConnectEvent(DateTimeOffset joined, ChatUser user, IPacketTarget target) {
             DateTime = joined;

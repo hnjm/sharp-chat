@@ -12,7 +12,7 @@ namespace SharpChat.Events {
 
         public ChatMessageFlags Flags { get; private set; } = ChatMessageFlags.Log;
 
-        public int SequenceId { get; set; }
+        public long SequenceId { get; set; }
 
         public UserChannelLeaveEvent(DateTimeOffset parted, ChatUser user, IPacketTarget target) {
             DateTime = parted;

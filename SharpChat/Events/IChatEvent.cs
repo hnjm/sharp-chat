@@ -15,7 +15,7 @@ namespace SharpChat.Events {
         ChatUser Sender { get; }
         IPacketTarget Target { get; }
         ChatMessageFlags Flags { get; }
-        int SequenceId { get; set; }
+        long SequenceId { get; set; }
     }
 
     public interface IChatMessage : IChatEvent {

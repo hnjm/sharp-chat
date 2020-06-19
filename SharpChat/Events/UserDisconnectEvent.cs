@@ -13,7 +13,7 @@ namespace SharpChat.Events {
 
         public ChatMessageFlags Flags { get; private set; } = ChatMessageFlags.Log;
 
-        public int SequenceId { get; set; }
+        public long SequenceId { get; set; }
 
         public UserDisconnectReason Reason { get; private set; }
 

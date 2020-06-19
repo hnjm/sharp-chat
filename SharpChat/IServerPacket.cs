@@ -3,16 +3,16 @@ using System.Threading;
 
 namespace SharpChat {
     public interface IServerPacket {
-        int SequenceId { get; }
+        long SequenceId { get; }
         IEnumerable<string> Pack(int version);
     }
 
     public abstract class ServerPacket : IServerPacket {
-        private static int SequenceIdCounter = 0;
+        private static long SequenceIdCounter = 0;
 
-        public int SequenceId { get; }
+        public long SequenceId { get; }
 
-        public ServerPacket(int sequenceId = 0) {
+        public ServerPacket(long sequenceId = 0) {
             // Allow sequence id to be manually set for potential message repeats
             SequenceId = sequenceId > 0 ? sequenceId : Interlocked.Increment(ref SequenceIdCounter);
         }

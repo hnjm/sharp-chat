@@ -127,6 +127,7 @@ namespace SharpChat {
                 return;
             }
 
+#if !DEBUG
             if (conn.User != null) {
                 conn.User.RateLimiter.AddTimePoint();
 
@@ -136,6 +137,7 @@ namespace SharpChat {
                 } else if (conn.User.RateLimiter.State == ChatRateLimitState.Warning)
                     conn.User.Send(new FloodWarningPacket()); // make it so this thing only sends once
             }
+#endif
 
             string[] args = msg.Split('\t');
 

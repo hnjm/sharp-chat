@@ -3,9 +3,9 @@ using System.Text;
 
 namespace SharpChat.Packet {
     public class ChatMessageDeletePacket : ServerPacket {
-        public int EventId { get; private set; }
+        public long EventId { get; private set; }
 
-        public ChatMessageDeletePacket(int eventId) {
+        public ChatMessageDeletePacket(long eventId) {
             EventId = eventId;
         }
 

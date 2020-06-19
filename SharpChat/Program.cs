@@ -30,6 +30,8 @@ namespace SharpChat {
                 }
 #endif
 
+            Database.ReadConfig();
+
             using ManualResetEvent mre = new ManualResetEvent(false);
             using SockChatServer scs = new SockChatServer(PORT);
             Console.CancelKeyPress += (s, e) => { e.Cancel = true; mre.Set(); };

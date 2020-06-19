@@ -23,6 +23,8 @@ namespace SharpChat {
 
             lock(Events)
                 Events.Add(evt);
+
+            Database.LogEvent(evt);
         }
 
         public void Remove(IChatEvent evt) {
@@ -32,6 +34,7 @@ namespace SharpChat {
             lock (Events)
                 Events.Remove(evt);
 
+            Database.DeleteEvent(evt);
             Context.Send(new ChatMessageDeletePacket(evt.SequenceId));
         }
 
