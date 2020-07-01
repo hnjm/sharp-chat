@@ -176,7 +176,7 @@ namespace SharpChat {
                     + @", UNIX_TIMESTAMP(`event_created`) AS `event_created`"
                     + @" FROM `sqc_events`"
                     + @" WHERE `event_deleted` IS NULL AND `event_target` = @target"
-                    + @" ORDER BY `event_created` DESC"
+                    + @" ORDER BY `event_id` DESC"
                     + @" LIMIT @amount OFFSET @offset",
                     new MySqlParameter(@"target", target.TargetName),
                     new MySqlParameter(@"amount", amount),
