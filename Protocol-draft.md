@@ -329,7 +329,7 @@ Informs the client that a chat message has been received.
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>Timestamp, documented below of when the message was received by the server</td>
+        <td>Timestamp of when the message was received by the server</td>
     </tr>
     <tr>
         <td><code>int</code></td>
@@ -402,7 +402,7 @@ Informs the client that a user has disconnected.
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>Timestamp, documented below of when the user disconnected</td>
+        <td>Timestamp of when the user disconnected</td>
     </tr>
     <tr>
         <td><code>int</code></td>
@@ -433,7 +433,7 @@ Informs the client that a user has disconnected.
     </tr>
     <tr>
         <td><code>int</code></td>
-        <td>Timestamp, documented below of when the user disconnected</td>
+        <td>Timestamp of when the user disconnected</td>
     </tr>
     <tr>
         <td><code>int</code></td>
@@ -951,7 +951,7 @@ Informs the client that they might be kicked soon for flood protection. This pac
 
 ## Timestamps
 
-Timestamp, documented belows in Sock Chat are seconds elapsed since a certain date. Starting with Sock Chat V2 the epoch for the timestamps is different. Under Sock Chat V1 timestamps are regular Unix Epoch timestamps where `0` is `1970-01-01 00:00:00 UTC`. Starting with Sock Chat V2 the epoch has been moved to `2019-01-01 00:00:00 UTC`. In order to convert a Sock Chat V2 timestamp to a Unix timestamp add `1546300800` to it. Sock Chat V2 will realistically never serve messages that predate 2019.
+Timestamps in Sock Chat are seconds elapsed since a certain date. Starting with Sock Chat V2 the epoch for the timestamps is different. Under Sock Chat V1 timestamps are regular Unix Epoch timestamps where `0` is `1970-01-01 00:00:00 UTC`. Starting with Sock Chat V2 the epoch has been moved to `2019-01-01 00:00:00 UTC`. In order to convert a Sock Chat V2 timestamp to a Unix timestamp add `1546300800` to it. Sock Chat V2 will realistically never serve messages that predate 2019.
 
 ## User Permission String
 The User Permission String consists out of five (5) parts concatenated by a space operator, indentified in most languages as the escape sequence <code> </code> and defined as the ASCII character `0x20`.
