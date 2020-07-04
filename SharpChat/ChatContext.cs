@@ -67,7 +67,7 @@ namespace SharpChat {
             foreach (IChatEvent msg in msgs)
                 conn.Send(new ContextMessagePacket(msg));
 
-            conn.Send(new ContextChannelsPacket(Channels.OfHierarchy(user.Hierarchy)));
+            conn.Send(new ContextChannelsPacket(Channels.OfHierarchy(user.Rank)));
 
             if (!chan.HasUser(user))
                 chan.UserJoin(user);
@@ -102,7 +102,7 @@ namespace SharpChat {
             }
 
             if (!user.Can(ChatUserPermissions.JoinAnyChannel) && chan.Owner != user) {
-                if (chan.Hierarchy > user.Hierarchy) {
+                if (chan.Hierarchy > user.Rank) {
                     user.Send(new LegacyCommandResponse(LCR.CHANNEL_INSUFFICIENT_HIERARCHY, true, chan.Name));
                     user.ForceChannel();
                     return;

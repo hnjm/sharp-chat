@@ -55,7 +55,7 @@ namespace SharpChat {
 
         public IEnumerable<ChatUser> OfHierarchy(int hierarchy) {
             lock (Users)
-                return Users.Where(u => u.Hierarchy >= hierarchy).ToList();
+                return Users.Where(u => u.Rank >= hierarchy).ToList();
         }
 
         public IEnumerable<ChatUser> WithActiveConnections() {

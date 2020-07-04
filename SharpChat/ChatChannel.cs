@@ -59,7 +59,7 @@ namespace SharpChat {
 
         public IEnumerable<ChatUser> GetUsers(IEnumerable<ChatUser> exclude = null) {
             lock (Users) {
-                IEnumerable<ChatUser> users = Users.OrderByDescending(x => x.Hierarchy);
+                IEnumerable<ChatUser> users = Users.OrderByDescending(x => x.Rank);
 
                 if (exclude != null)
                     users = users.Except(exclude);

@@ -9,14 +9,19 @@ using System.Text;
 
 namespace SharpChat {
     public class BasicUser : IEquatable<BasicUser> {
+        private const int RANK_NO_FLOOD = 9;
+
         public long UserId { get; set; }
         public string Username { get; set; }
         public ChatColour Colour { get; set; }
-        public int Hierarchy { get; set; }
+        public int Rank { get; set; }
         public string Nickname { get; set; }
         public ChatUserPermissions Permissions { get; set; }
         public ChatUserStatus Status { get; set; } = ChatUserStatus.Online;
         public string StatusMessage { get; set; }
+
+        public bool HasFloodProtection
+            => Rank < RANK_NO_FLOOD;
 
         public bool Equals([AllowNull] BasicUser other)
             => UserId == other.UserId;
@@ -56,7 +61,7 @@ namespace SharpChat {
             else
                 sb.Append(Colour);
             sb.Append('\t');
-            sb.Append(Hierarchy);
+            sb.Append(Rank);
             sb.Append(' ');
             sb.Append(Can(ChatUserPermissions.KickUser) ? '1' : '0');
             sb.Append(@" 0 ");
@@ -71,12 +76,17 @@ namespace SharpChat {
     }
 
     public class ChatUser : BasicUser, IPacketTarget {
+        private const int SATORI = 11;
+        private const int KOISHI = 21;
+
         public DateTimeOffset SilencedUntil { get; set; }
 
         private readonly List<ChatUserConnection> Connections = new List<ChatUserConnection>();
         private readonly List<ChatChannel> Channels = new List<ChatChannel>();
 
         public readonly ChatRateLimiter RateLimiter = new ChatRateLimiter();
+
+        private DateTimeOffset LastMessageReceived { get; set; } = DateTimeOffset.MinValue;
 
         public string TargetName => @"@log";
 
@@ -126,7 +136,7 @@ namespace SharpChat {
                 Status = ChatUserStatus.Online;
             
             Colour = new ChatColour(auth.ColourRaw);
-            Hierarchy = auth.Hierarchy;
+            Rank = auth.Rank;
             Permissions = auth.Permissions;
 
             if (invalidateRestrictions || !IsSilenced)
@@ -134,9 +144,21 @@ namespace SharpChat {
         }
 
         public void Send(IServerPacket packet) {
+            if(packet is ChatMessageAddPacket) {
+                if(!CanReceiveMessage())
+                    return;
+                LastMessageReceived = DateTimeOffset.Now;
+            }
+
             lock(Connections)
                 foreach (ChatUserConnection conn in Connections)
                     conn.Send(packet);
+        }
+
+        public bool CanReceiveMessage() {
+            if(UserId != SATORI && UserId != KOISHI)
+                return true;
+            return LastMessageReceived.ToUnixTimeSeconds() != DateTimeOffset.Now.ToUnixTimeSeconds();
         }
 
         public void Close() {

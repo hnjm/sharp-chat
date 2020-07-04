@@ -39,7 +39,7 @@ namespace SharpChat.Flashii {
         public int ColourRaw { get; set; }
 
         [JsonPropertyName(@"hierarchy")]
-        public int Hierarchy { get; set; }
+        public int Rank { get; set; }
 
         [JsonPropertyName(@"is_silenced")]
         public DateTimeOffset SilencedUntil { get; set; }
@@ -58,7 +58,7 @@ namespace SharpChat.Flashii {
                     UserId = request.UserId,
                     Username = @"Misaka-" + (request.UserId - 10000),
                     ColourRaw = (RNG.Next(0, 255) << 16) | (RNG.Next(0, 255) << 8) | RNG.Next(0, 255),
-                    Hierarchy = 0,
+                    Rank = 0,
                     SilencedUntil = DateTimeOffset.MinValue,
                     Permissions = ChatUserPermissions.SendMessage | ChatUserPermissions.EditOwnMessage | ChatUserPermissions.DeleteOwnMessage,
                 };

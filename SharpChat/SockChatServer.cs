@@ -40,7 +40,7 @@ namespace SharpChat {
         public static readonly ChatUser Bot = new ChatUser {
             UserId = -1,
             Username = @"ChatBot",
-            Hierarchy = 0,
+            Rank = 0,
             Colour = new ChatColour(),
         };
 
@@ -127,7 +127,7 @@ namespace SharpChat {
                 return;
             }
 
-            if (conn.User != null) {
+            if (conn.User is ChatUser && conn.User.HasFloodProtection) {
                 conn.User.RateLimiter.AddTimePoint();
 
                 if (conn.User.RateLimiter.State == ChatRateLimitState.Kick) {
@@ -450,7 +450,7 @@ namespace SharpChat {
                             break;
                         }
 
-                        if (whoChan.Hierarchy > user.Hierarchy || (whoChan.HasPassword && !user.Can(ChatUserPermissions.JoinAnyChannel))) {
+                        if (whoChan.Hierarchy > user.Rank || (whoChan.HasPassword && !user.Can(ChatUserPermissions.JoinAnyChannel))) {
                             user.Send(new LegacyCommandResponse(LCR.USERS_LISTING_ERROR, true, whoChanStr));
                             break;
                         }
@@ -533,7 +533,7 @@ namespace SharpChat {
                     if (createChanHasHierarchy)
                         int.TryParse(parts[1], out createChanHierarchy);
 
-                    if (createChanHierarchy > user.Hierarchy) {
+                    if (createChanHierarchy > user.Rank) {
                         user.Send(new LegacyCommandResponse(LCR.INSUFFICIENT_HIERARCHY));
                         break;
                     }
@@ -604,7 +604,7 @@ namespace SharpChat {
                         break;
                     }
 
-                    if (parts.Length < 2 || !int.TryParse(parts[1], out int chanHierarchy) || chanHierarchy > user.Hierarchy) {
+                    if (parts.Length < 2 || !int.TryParse(parts[1], out int chanHierarchy) || chanHierarchy > user.Rank) {
                         user.Send(new LegacyCommandResponse(LCR.INSUFFICIENT_HIERARCHY));
                         break;
                     }
@@ -642,7 +642,7 @@ namespace SharpChat {
                     Logger.Write(delMsg?.Sender?.UserId);
                     Logger.Write(delMsg?.Sender?.UserId);
 
-                    if (delMsg == null || delMsg.Sender.Hierarchy > user.Hierarchy || (!deleteAnyMessage && delMsg.Sender.UserId != user.UserId)) {
+                    if (delMsg == null || delMsg.Sender.Rank > user.Rank || (!deleteAnyMessage && delMsg.Sender.UserId != user.UserId)) {
                         user.Send(new LegacyCommandResponse(LCR.MESSAGE_DELETE_ERROR));
                         break;
                     }
@@ -665,7 +665,7 @@ namespace SharpChat {
                         break;
                     }
 
-                    if (banUser == user || banUser.Hierarchy >= user.Hierarchy || Context.Bans.Check(banUser) > DateTimeOffset.Now) {
+                    if (banUser == user || banUser.Rank >= user.Rank || Context.Bans.Check(banUser) > DateTimeOffset.Now) {
                         user.Send(new LegacyCommandResponse(LCR.KICK_NOT_ALLOWED, true, banUser.GetDisplayName(1)));
                         break;
                     }
@@ -754,7 +754,7 @@ namespace SharpChat {
                         break;
                     }
 
-                    if (silUser.Hierarchy >= user.Hierarchy) {
+                    if (silUser.Rank >= user.Rank) {
                         user.Send(new LegacyCommandResponse(LCR.SILENCE_HIERARCHY));
                         break;
                     }
@@ -792,7 +792,7 @@ namespace SharpChat {
                         break;
                     }
 
-                    if (unsilUser.Hierarchy >= user.Hierarchy) {
+                    if (unsilUser.Rank >= user.Rank) {
                         user.Send(new LegacyCommandResponse(LCR.UNSILENCE_HIERARCHY));
                         break;
                     }

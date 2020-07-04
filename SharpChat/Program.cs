@@ -52,7 +52,7 @@ namespace SharpChat {
                 Console.WriteLine($@" User ID:   {authRes.UserId}");
                 Console.WriteLine($@" Username:  {authRes.Username}");
                 Console.WriteLine($@" Colour:    {authRes.ColourRaw:X8}");
-                Console.WriteLine($@" Hierarchy: {authRes.Hierarchy}");
+                Console.WriteLine($@" Hierarchy: {authRes.Rank}");
                 Console.WriteLine($@" Silenced:  {authRes.SilencedUntil}");
                 Console.WriteLine($@" Perms:     {authRes.Permissions}");
             } else {

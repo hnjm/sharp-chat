@@ -130,7 +130,7 @@ namespace SharpChat {
                 new MySqlParameter(@"sender", evt.Sender?.UserId < 1 ? null : (long?)evt.Sender.UserId),
                 new MySqlParameter(@"sender_name", evt.Sender?.Username),
                 new MySqlParameter(@"sender_colour", evt.Sender?.Colour.Raw),
-                new MySqlParameter(@"sender_rank", evt.Sender?.Hierarchy),
+                new MySqlParameter(@"sender_rank", evt.Sender?.Rank),
                 new MySqlParameter(@"sender_nick", evt.Sender?.Nickname),
                 new MySqlParameter(@"sender_perms", evt.Sender?.Permissions)
             );
@@ -157,7 +157,7 @@ namespace SharpChat {
                     UserId = reader.GetInt64(@"event_sender"),
                     Username = reader.GetString(@"event_sender_name"),
                     Colour = new ChatColour(reader.GetInt32(@"event_sender_colour")),
-                    Hierarchy = reader.GetInt32(@"event_sender_rank"),
+                    Rank = reader.GetInt32(@"event_sender_rank"),
                     Nickname = reader.IsDBNull(reader.GetOrdinal(@"event_sender_nick")) ? null : reader.GetString(@"event_sender_nick"),
                     Permissions = (ChatUserPermissions)reader.GetInt32(@"event_sender_perms")
                 };
