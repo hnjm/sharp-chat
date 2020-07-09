@@ -1,11 +1,13 @@
 ﻿using Fleck;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
 
 // Near direct reimplementation of Fleck's WebSocketServer with address reusing
 // Fleck's Socket wrapper doesn't provide any way to do this with the normally provided APIs
@@ -123,12 +125,30 @@ namespace SharpChat {
                 clientSocket,
                 _config,
                 bytes => RequestParser.Parse(bytes, _scheme),
-                r => HandlerFactory.BuildHandler(r,
-                                                 s => connection.OnMessage(s),
-                                                 connection.Close,
-                                                 b => connection.OnBinary(b),
-                                                 b => connection.OnPing(b),
-                                                 b => connection.OnPong(b)),
+                r => {
+                    try {
+                        return HandlerFactory.BuildHandler(
+                            r, s => connection.OnMessage(s), connection.Close, b => connection.OnBinary(b),
+                            b => connection.OnPing(b), b => connection.OnPong(b)
+                        );
+                    } catch(WebSocketException) {
+                        const string responseMsg = "HTTP/1.1 200 OK\r\n"
+                                                 + "Date: {0}\r\n"
+                                                 + "Server: SharpChat\r\n"
+                                                 + "Content-Length: {1}\r\n"
+                                                 + "Content-Type: text/html; charset=utf-8\r\n"
+                                                 + "Connection: close\r\n"
+                                                 + "\r\n"
+                                                 + "{2}";
+                        string responseBody = File.Exists(@"http-motd.txt") ? File.ReadAllText(@"http-motd.txt") : @"SharpChat";
+
+                        clientSocket.Stream.Write(Encoding.UTF8.GetBytes(string.Format(
+                            responseMsg, DateTimeOffset.Now.ToString(@"r"), Encoding.UTF8.GetByteCount(responseBody), responseBody
+                        )));
+                        clientSocket.Close();
+                        return null;
+                    }
+                },
                 s => SubProtocolNegotiator.Negotiate(SupportedSubProtocols, s));
 
             if (IsSecure) {
