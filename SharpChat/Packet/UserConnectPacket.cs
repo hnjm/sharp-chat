@@ -12,18 +12,18 @@ namespace SharpChat.Packet {
             User = user ?? throw new ArgumentNullException(nameof(user));
         }
 
-        public override IEnumerable<string> Pack(int version) {
+        public override IEnumerable<string> Pack() {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)SockChatServerPacket.UserConnect);
             sb.Append('\t');
-            sb.Append(Joined.ToSockChatSeconds(version));
+            sb.Append(Joined.ToUnixTimeSeconds());
             sb.Append('\t');
-            sb.Append(User.Pack(version));
+            sb.Append(User.Pack());
             sb.Append('\t');
             sb.Append(SequenceId);
 
-            return new[] { sb.ToString() };
+            yield return sb.ToString();
         }
     }
 }

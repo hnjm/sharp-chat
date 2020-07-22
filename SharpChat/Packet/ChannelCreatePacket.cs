@@ -9,16 +9,16 @@ namespace SharpChat.Packet {
             Channel = channel;
         }
 
-        public override IEnumerable<string> Pack(int version) {
+        public override IEnumerable<string> Pack() {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)SockChatServerPacket.ChannelEvent);
             sb.Append('\t');
             sb.Append((int)SockChatServerChannelPacket.Create);
             sb.Append('\t');
-            sb.Append(Channel.Pack(version));
+            sb.Append(Channel.Pack());
 
-            return new[] { sb.ToString() };
+            yield return sb.ToString();
         }
     }
 }

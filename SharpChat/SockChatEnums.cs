@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace SharpChat {
+﻿namespace SharpChat {
     public enum SockChatClientPacket {
         // Version 1
         Ping = 0,
@@ -8,7 +6,7 @@ namespace SharpChat {
         MessageSend = 2,
 
         // Version 2
-        Upgrade = 3,
+        FocusChannel = 3,
         Typing = 4,
     }
 
@@ -22,14 +20,12 @@ namespace SharpChat {
         UserSwitch = 5,
         MessageDelete = 6,
         ContextPopulate = 7,
-        ContextClear = 8,       // Deprecated in V2
+        ContextClear = 8,
         BAKA = 9,
         UserUpdate = 10,
 
         // Version 2
-        UpgradeAck = 11,
-        Typing = 12,
-        FloodWarning = 13,
+        Typing = 11,
     }
 
     public enum SockChatServerChannelPacket {

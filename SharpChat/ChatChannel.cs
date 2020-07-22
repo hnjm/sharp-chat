@@ -7,10 +7,11 @@ namespace SharpChat {
         public string Name { get; set; }
         public string Password { get; set; } = string.Empty;
         public bool IsTemporary { get; set; } = false;
-        public int Hierarchy { get; set; } = 0;
+        public int Rank { get; set; } = 0;
         public ChatUser Owner { get; set; } = null;
 
-        private readonly List<ChatUser> Users = new List<ChatUser>();
+        private List<ChatUser> Users { get; } = new List<ChatUser>();
+        private List<ChatChannelTyping> Typing { get; } = new List<ChatChannelTyping>();
 
         public bool HasPassword
             => !string.IsNullOrWhiteSpace(Password);
@@ -68,8 +69,29 @@ namespace SharpChat {
             }
         }
 
-#pragma warning disable IDE0060 // Remove unused parameter
-        public string Pack(int targetVersion = 1) {
+        public bool IsTyping(ChatUser user) {
+            if(user == null)
+                return false;
+            lock(Typing)
+                return Typing.Any(x => x.User == user && !x.HasExpired);
+        }
+        public bool CanType(ChatUser user) {
+            if(user == null || !HasUser(user))
+                return false;
+            return !IsTyping(user);
+        }
+        public ChatChannelTyping RegisterTyping(ChatUser user) {
+            if(user == null || !HasUser(user))
+                return null;
+            ChatChannelTyping typing = new ChatChannelTyping(user);
+            lock(Typing) {
+                Typing.RemoveAll(x => x.HasExpired);
+                Typing.Add(typing);
+            }
+            return typing;
+        }
+
+        public string Pack() {
             StringBuilder sb = new StringBuilder();
 
             sb.Append(Name);
@@ -80,6 +102,5 @@ namespace SharpChat {
 
             return sb.ToString();
         }
-#pragma warning restore IDE0060 // Remove unused parameter
     }
 }

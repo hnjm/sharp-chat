@@ -4,21 +4,17 @@ using System.Text;
 
 namespace SharpChat.Packet {
     public class FloodWarningPacket : ServerPacket {
-        public override IEnumerable<string> Pack(int version) {
+        public override IEnumerable<string> Pack() {
             StringBuilder sb = new StringBuilder();
 
-            if (version >= 2)
-                sb.Append((int)SockChatServerPacket.FloodWarning);
-            else {
-                sb.Append((int)SockChatServerPacket.MessageAdd);
-                sb.Append('\t');
-                sb.Append(DateTimeOffset.Now.ToSockChatSeconds(version));
-                sb.Append("\t-1\t0\fflwarn\t");
-                sb.Append(SequenceId);
-                sb.Append("\t10010");
-            }
+            sb.Append((int)SockChatServerPacket.MessageAdd);
+            sb.Append('\t');
+            sb.Append(DateTimeOffset.Now.ToUnixTimeSeconds());
+            sb.Append("\t-1\t0\fflwarn\t");
+            sb.Append(SequenceId);
+            sb.Append("\t10010");
 
-            return new[] { sb.ToString() };
+            yield return sb.ToString();
         }
     }
 }

@@ -1,23 +1,30 @@
 ﻿using System;
+using System.Security.Cryptography;
 
 namespace SharpChat {
     public static class RNG {
-        private static readonly Random random = new Random();
-        private static readonly object randomLock = new object();
+        private static object Lock { get; } = new object();
+        private static Random NormalRandom { get; } = new Random();
+        private static RandomNumberGenerator SecureRandom { get; } = RandomNumberGenerator.Create();
 
         public static int Next() {
-            lock (randomLock)
-                return random.Next();
+            lock (Lock)
+                return NormalRandom.Next();
         }
 
         public static int Next(int max) {
-            lock (randomLock)
-                return random.Next(max);
+            lock (Lock)
+                return NormalRandom.Next(max);
         }
 
         public static int Next(int min, int max) {
-            lock (randomLock)
-                return random.Next(min, max);
+            lock (Lock)
+                return NormalRandom.Next(min, max);
+        }
+
+        public static void NextBytes(byte[] buffer) {
+            lock(Lock)
+                SecureRandom.GetBytes(buffer);
         }
     }
 }

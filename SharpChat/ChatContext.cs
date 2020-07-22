@@ -53,21 +53,21 @@ namespace SharpChat {
             UserLeave(user.Channel, user, reason);
         }
 
-        public void HandleJoin(ChatUser user, ChatChannel chan, ChatUserConnection conn) {
+        public void HandleJoin(ChatUser user, ChatChannel chan, ChatUserSession sess) {
             if (!chan.HasUser(user)) {
                 chan.Send(new UserConnectPacket(DateTimeOffset.Now, user));
                 Events.Add(new UserConnectEvent(DateTimeOffset.Now, user, chan));
             }
 
-            conn.Send(new AuthSuccessPacket(user, chan));
-            conn.Send(new ContextUsersPacket(chan.GetUsers(new[] { user })));
+            sess.Send(new AuthSuccessPacket(user, chan, sess));
+            sess.Send(new ContextUsersPacket(chan.GetUsers(new[] { user })));
 
             IEnumerable<IChatEvent> msgs = Events.GetTargetLog(chan);
 
             foreach (IChatEvent msg in msgs)
-                conn.Send(new ContextMessagePacket(msg));
+                sess.Send(new ContextMessagePacket(msg));
 
-            conn.Send(new ContextChannelsPacket(Channels.OfHierarchy(user.Rank)));
+            sess.Send(new ContextChannelsPacket(Channels.OfHierarchy(user.Rank)));
 
             if (!chan.HasUser(user))
                 chan.UserJoin(user);
@@ -95,14 +95,14 @@ namespace SharpChat {
         }
 
         public void SwitchChannel(ChatUser user, ChatChannel chan, string password) {
-            if (user.Channel == chan) {
+            if (user.CurrentChannel == chan) {
                 //user.Send(true, @"samechan", chan.Name);
                 user.ForceChannel();
                 return;
             }
 
             if (!user.Can(ChatUserPermissions.JoinAnyChannel) && chan.Owner != user) {
-                if (chan.Hierarchy > user.Rank) {
+                if (chan.Rank > user.Rank) {
                     user.Send(new LegacyCommandResponse(LCR.CHANNEL_INSUFFICIENT_HIERARCHY, true, chan.Name));
                     user.ForceChannel();
                     return;
@@ -122,14 +122,14 @@ namespace SharpChat {
             if (!Channels.Contains(chan))
                 return;
 
-            ChatChannel oldChan = user.Channel;
+            ChatChannel oldChan = user.CurrentChannel;
 
             oldChan.Send(new UserChannelLeavePacket(user));
             Events.Add(new UserChannelLeaveEvent(DateTimeOffset.Now, user, oldChan));
             chan.Send(new UserChannelJoinPacket(user));
             Events.Add(new UserChannelJoinEvent(DateTimeOffset.Now, user, chan));
 
-            user.Send(new ContextClearPacket(ContextClearMode.MessagesUsers));
+            user.Send(new ContextClearPacket(chan, ContextClearMode.MessagesUsers));
             user.Send(new ContextUsersPacket(chan.GetUsers(new[] { user })));
 
             IEnumerable<IChatEvent> msgs = Events.GetTargetLog(chan);
@@ -148,15 +148,15 @@ namespace SharpChat {
         public void CheckPings() {
             lock(Users)
                 foreach (ChatUser user in Users.All()) {
-                    IEnumerable<ChatUserConnection> timedOut = user.GetDeadConnections();
+                    IEnumerable<ChatUserSession> timedOut = user.GetDeadSessions();
 
-                    foreach(ChatUserConnection conn in timedOut) {
-                        user.RemoveConnection(conn);
-                        conn.Dispose();
-                        Logger.Write($@"Nuked a connection from {user.Username} (timeout)");
+                    foreach(ChatUserSession sess in timedOut) {
+                        user.RemoveSession(sess);
+                        sess.Dispose();
+                        Logger.Write($@"Nuked session {sess.Id} from {user.Username} (timeout)");
                     }
 
-                    if(!user.HasConnections)
+                    if(!user.HasSessions)
                         UserLeave(null, user, UserDisconnectReason.TimeOut);
                 }
         }

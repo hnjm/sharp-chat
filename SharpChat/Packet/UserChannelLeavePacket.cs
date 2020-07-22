@@ -10,7 +10,7 @@ namespace SharpChat.Packet {
             User = user ?? throw new ArgumentNullException(nameof(user));
         }
 
-        public override IEnumerable<string> Pack(int version) {
+        public override IEnumerable<string> Pack() {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)SockChatServerPacket.UserSwitch);
@@ -21,7 +21,7 @@ namespace SharpChat.Packet {
             sb.Append('\t');
             sb.Append(SequenceId);
 
-            return new[] { sb.ToString() };
+            yield return sb.ToString();
         }
     }
 }

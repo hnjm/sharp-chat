@@ -4,7 +4,7 @@ using System.Threading;
 namespace SharpChat {
     public interface IServerPacket {
         long SequenceId { get; }
-        IEnumerable<string> Pack(int version);
+        IEnumerable<string> Pack();
     }
 
     public abstract class ServerPacket : IServerPacket {
@@ -17,6 +17,6 @@ namespace SharpChat {
             SequenceId = sequenceId > 0 ? sequenceId : Interlocked.Increment(ref SequenceIdCounter);
         }
 
-        public abstract IEnumerable<string> Pack(int version);
+        public abstract IEnumerable<string> Pack();
     }
 }

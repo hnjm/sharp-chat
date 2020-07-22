@@ -21,18 +21,15 @@ namespace SharpChat.Packet {
             Reason = reason;
         }
 
-        public override IEnumerable<string> Pack(int version) {
+        public override IEnumerable<string> Pack() {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)SockChatServerPacket.UserDisconnect);
             sb.Append('\t');
             sb.Append(User.UserId);
             sb.Append('\t');
-
-            if (version < 2) {
-                sb.Append(User.GetDisplayName(version));
-                sb.Append('\t');
-            }
+            sb.Append(User.DisplayName);
+            sb.Append('\t');
 
             switch (Reason) {
                 case UserDisconnectReason.Leave:
@@ -51,7 +48,7 @@ namespace SharpChat.Packet {
             }
 
             sb.Append('\t');
-            sb.Append(Disconnected.ToSockChatSeconds(version));
+            sb.Append(Disconnected.ToUnixTimeSeconds());
             sb.Append('\t');
             sb.Append(SequenceId);
 

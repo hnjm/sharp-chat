@@ -12,40 +12,31 @@ namespace SharpChat.Packet {
             PreviousName = previousName;
         }
 
-        public override IEnumerable<string> Pack(int version) {
-            string[] lines = new string[2];
-
+        public override IEnumerable<string> Pack() {
             StringBuilder sb = new StringBuilder();
 
             bool isSilent = string.IsNullOrEmpty(PreviousName);
 
-            if (version < 2 && !isSilent) {
+            if (!isSilent) {
                 sb.Append((int)SockChatServerPacket.MessageAdd);
                 sb.Append('\t');
-                sb.Append(DateTimeOffset.Now.ToSockChatSeconds(version));
+                sb.Append(DateTimeOffset.Now.ToUnixTimeSeconds());
                 sb.Append("\t-1\t0\fnick\f");
                 sb.Append(PreviousName);
                 sb.Append('\f');
-                sb.Append(User.GetDisplayName(version));
+                sb.Append(User.DisplayName);
                 sb.Append('\t');
                 sb.Append(SequenceId);
                 sb.Append("\t10010");
-                lines[0] = sb.ToString();
+                yield return sb.ToString();
                 sb.Clear();
             }
 
             sb.Append((int)SockChatServerPacket.UserUpdate);
             sb.Append('\t');
-            sb.Append(User.Pack(version));
+            sb.Append(User.Pack());
 
-            if (version >= 2) {
-                sb.Append('\t');
-                sb.Append(isSilent ? '1' : '0');
-            }
-
-            lines[1] = sb.ToString();
-
-            return lines;
+            yield return sb.ToString();
         }
     }
 }

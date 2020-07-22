@@ -11,7 +11,7 @@ namespace SharpChat.Packet {
             Users = users?.Where(u => u != null) ?? throw new ArgumentNullException(nameof(users));
         }
 
-        public override IEnumerable<string> Pack(int version) {
+        public override IEnumerable<string> Pack() {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)SockChatServerPacket.ContextPopulate);
@@ -22,12 +22,12 @@ namespace SharpChat.Packet {
 
             foreach (ChatUser user in Users) {
                 sb.Append('\t');
-                sb.Append(user.Pack(version));
+                sb.Append(user.Pack());
                 sb.Append('\t');
                 sb.Append('1'); // visibility flag
             }
 
-            return new[] { sb.ToString() };
+            yield return sb.ToString();
         }
     }
 }

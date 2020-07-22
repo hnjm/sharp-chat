@@ -10,7 +10,7 @@ namespace SharpChat.Packet {
             User = user ?? throw new ArgumentNullException(nameof(user));
         }
 
-        public override IEnumerable<string> Pack(int version) {
+        public override IEnumerable<string> Pack() {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)SockChatServerPacket.UserSwitch);
@@ -18,14 +18,10 @@ namespace SharpChat.Packet {
             sb.Append((int)SockChatServerMovePacket.UserJoined);
             sb.Append('\t');
             sb.Append(User.UserId);
-
-            if (version < 2) {
-                sb.Append('\t');
-                sb.Append(User.GetDisplayName(version));
-                sb.Append('\t');
-                sb.Append(User.Colour);
-            }
-
+            sb.Append('\t');
+            sb.Append(User.DisplayName);
+            sb.Append('\t');
+            sb.Append(User.Colour);
             sb.Append('\t');
             sb.Append(SequenceId);
 

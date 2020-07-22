@@ -23,38 +23,23 @@ namespace SharpChat.Packet {
             }
         }
 
-        public override IEnumerable<string> Pack(int version) {
+        public override IEnumerable<string> Pack() {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)SockChatServerPacket.UserConnect);
             sb.Append("\tn\t");
 
-            if (version >= 2) {
-                switch (Reason) {
-                    case AuthFailReason.AuthInvalid:
-                    default:
-                        sb.Append(@"auth");
-                        break;
-                    case AuthFailReason.MaxSessions:
-                        sb.Append(@"conn");
-                        break;
-                    case AuthFailReason.Banned:
-                        sb.Append(@"baka");
-                        break;
-                }
-            } else {
-                switch (Reason) {
-                    case AuthFailReason.AuthInvalid:
-                    default:
-                        sb.Append(@"authfail");
-                        break;
-                    case AuthFailReason.MaxSessions:
-                        sb.Append(@"sockfail");
-                        break;
-                    case AuthFailReason.Banned:
-                        sb.Append(@"joinfail");
-                        break;
-                }
+            switch (Reason) {
+                case AuthFailReason.AuthInvalid:
+                default:
+                    sb.Append(@"authfail");
+                    break;
+                case AuthFailReason.MaxSessions:
+                    sb.Append(@"sockfail");
+                    break;
+                case AuthFailReason.Banned:
+                    sb.Append(@"joinfail");
+                    break;
             }
 
             if (Reason == AuthFailReason.Banned) {
@@ -63,10 +48,10 @@ namespace SharpChat.Packet {
                 if (Expires == DateTimeOffset.MaxValue)
                     sb.Append(@"-1");
                 else
-                    sb.Append(Expires.ToSockChatSeconds(version));
+                    sb.Append(Expires.ToUnixTimeSeconds());
             }
 
-            return new[] { sb.ToString() };
+            yield return sb.ToString();
         }
     }
 }

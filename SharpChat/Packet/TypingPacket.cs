@@ -4,17 +4,26 @@ using System.Text;
 
 namespace SharpChat.Packet {
     public class TypingPacket : ServerPacket {
-        public TypingPacket() {
-            //
+        public ChatChannel Channel { get; }
+        public ChatChannelTyping TypingInfo { get; }
+
+        public TypingPacket(ChatChannel channel, ChatChannelTyping typingInfo) {
+            Channel = channel;
+            TypingInfo = typingInfo ?? throw new ArgumentNullException(nameof(typingInfo));
         }
 
-        public override IEnumerable<string> Pack(int version) {
-            if (version < 2)
-                return null;
-
+        public override IEnumerable<string> Pack() {
             StringBuilder sb = new StringBuilder();
 
-            return new[] { sb.ToString() };
+            sb.Append((int)SockChatServerPacket.Typing);
+            sb.Append('\t');
+            sb.Append(Channel?.TargetName ?? string.Empty);
+            sb.Append('\t');
+            sb.Append(TypingInfo.User.UserId);
+            sb.Append('\t');
+            sb.Append(TypingInfo.Started.ToUnixTimeSeconds());
+
+            yield return sb.ToString();
         }
     }
 }

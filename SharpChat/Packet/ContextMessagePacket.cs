@@ -15,31 +15,27 @@ namespace SharpChat.Packet {
 
         private const string V1_CHATBOT = "-1\tChatBot\tinherit\t\t";
 
-        public override IEnumerable<string> Pack(int version) {
+        public override IEnumerable<string> Pack() {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)SockChatServerPacket.ContextPopulate);
             sb.Append('\t');
             sb.Append((int)SockChatServerContextPacket.Message);
             sb.Append('\t');
-            sb.Append(Event.DateTime.ToSockChatSeconds(version));
+            sb.Append(Event.DateTime.ToUnixTimeSeconds());
             sb.Append('\t');
 
             switch (Event) {
                 case IChatMessage msg:
-                    sb.Append(Event.Sender.Pack(version));
+                    sb.Append(Event.Sender.Pack());
                     sb.Append('\t');
-
-                    if (version >= 2)
-                        sb.Append(msg.Text);
-                    else
-                        sb.Append(
-                            msg.Text
-                               .Replace(@"<", @"&lt;")
-                               .Replace(@">", @"&gt;")
-                               .Replace("\n", @" <br/> ")
-                               .Replace("\t", @"    ")
-                        );
+                    sb.Append(
+                        msg.Text
+                            .Replace(@"<", @"&lt;")
+                            .Replace(@">", @"&gt;")
+                            .Replace("\n", @" <br/> ")
+                            .Replace("\t", @"    ")
+                    );
                     break;
 
                 case UserConnectEvent _:
@@ -90,20 +86,14 @@ namespace SharpChat.Packet {
             sb.Append(Event.SequenceId < 1 ? SequenceId : Event.SequenceId);
             sb.Append('\t');
             sb.Append(Notify ? '1' : '0');
+            sb.AppendFormat(
+                "\t1{0}0{1}{2}",
+                Event.Flags.HasFlag(ChatMessageFlags.Action) ? '1' : '0',
+                Event.Flags.HasFlag(ChatMessageFlags.Action) ? '0' : '1',
+                Event.Flags.HasFlag(ChatMessageFlags.Private) ? '1' : '0'
+            );
 
-            if (version >= 2) {
-                sb.Append('\t');
-                sb.Append((int)Event.Flags);
-            } else {
-                sb.AppendFormat(
-                    "\t1{0}0{1}{2}",
-                    Event.Flags.HasFlag(ChatMessageFlags.Action) ? '1' : '0',
-                    Event.Flags.HasFlag(ChatMessageFlags.Action) ? '0' : '1',
-                    Event.Flags.HasFlag(ChatMessageFlags.Private) ? '1' : '0'
-                );
-            }
-
-            return new[] { sb.ToString() };
+            yield return sb.ToString();
         }
     }
 }

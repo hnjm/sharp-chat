@@ -22,23 +22,19 @@ namespace SharpChat.Packet {
             }
         }
 
-        public override IEnumerable<string> Pack(int version) {
+        public override IEnumerable<string> Pack() {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)SockChatServerPacket.BAKA);
             sb.Append('\t');
-
-            if (version >= 2)
-                sb.Append((int)Reason);
-            else
-                sb.Append(Reason == ForceDisconnectReason.Banned ? '1' : '0');
+            sb.Append((int)Reason);
 
             if (Reason == ForceDisconnectReason.Banned) {
                 sb.Append('\t');
-                sb.Append(Expires.ToSockChatSeconds(version));
+                sb.Append(Expires.ToUnixTimeSeconds());
             }
 
-            return new[] { sb.ToString() };
+            yield return sb.ToString();
         }
     }
 }

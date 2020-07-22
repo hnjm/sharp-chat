@@ -11,7 +11,7 @@ namespace SharpChat.Packet {
             Channels = channels?.Where(c => c != null) ?? throw new ArgumentNullException(nameof(channels));
         }
 
-        public override IEnumerable<string> Pack(int version) {
+        public override IEnumerable<string> Pack() {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)SockChatServerPacket.ContextPopulate);
@@ -22,10 +22,10 @@ namespace SharpChat.Packet {
 
             foreach (ChatChannel channel in Channels) {
                 sb.Append('\t');
-                sb.Append(channel.Pack(version));
+                sb.Append(channel.Pack());
             }
 
-            return new[] { sb.ToString() };
+            yield return sb.ToString();
         }
     }
 }

@@ -11,27 +11,23 @@ namespace SharpChat.Packet {
             Bans = bans ?? throw new ArgumentNullException(nameof(bans));
         }
 
-        public override IEnumerable<string> Pack(int version) {
+        public override IEnumerable<string> Pack() {
             StringBuilder sb = new StringBuilder();
 
-            if (version >= 2) {
-                // construct proper packet
-            } else {
-                sb.Append((int)SockChatServerPacket.MessageAdd);
-                sb.Append('\t');
-                sb.Append(DateTimeOffset.Now.ToSockChatSeconds(version));
-                sb.Append("\t-1\t0\fbanlist\f");
+            sb.Append((int)SockChatServerPacket.MessageAdd);
+            sb.Append('\t');
+            sb.Append(DateTimeOffset.Now.ToUnixTimeSeconds());
+            sb.Append("\t-1\t0\fbanlist\f");
 
-                foreach (IBan ban in Bans)
-                    sb.AppendFormat(@"<a href=""javascript:void(0);"" onclick=""Chat.SendMessageWrapper('/unban '+ this.innerHTML);"">{0}</a>, ", ban);
+            foreach (IBan ban in Bans)
+                sb.AppendFormat(@"<a href=""javascript:void(0);"" onclick=""Chat.SendMessageWrapper('/unban '+ this.innerHTML);"">{0}</a>, ", ban);
 
-                if (Bans.Any())
-                    sb.Length -= 2;
+            if (Bans.Any())
+                sb.Length -= 2;
 
-                sb.Append('\t');
-                sb.Append(SequenceId);
-                sb.Append("\t10010");
-            }
+            sb.Append('\t');
+            sb.Append(SequenceId);
+            sb.Append("\t10010");
 
             return new[] { sb.ToString() };
         }

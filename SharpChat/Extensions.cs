@@ -24,13 +24,12 @@ namespace SharpChat {
             return sb.ToString();
         }
 
-        public static long ToSockChatSeconds(this DateTimeOffset dto, int version) {
-            long seconds = dto.ToUnixTimeSeconds();
-
-            if (version >= 2) // SCv2 epoch is the start of 2019
-                seconds -= 1546300800;
-
-            return seconds;
+        public static string GetIdString(this byte[] buffer) {
+            const string id_chars = @"abcdefghijklmnopqrstuvwxyz0123456789-_ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            StringBuilder sb = new StringBuilder();
+            foreach(byte b in buffer)
+                sb.Append(id_chars[b % id_chars.Length]);
+            return sb.ToString();
         }
     }
 }

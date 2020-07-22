@@ -26,22 +26,22 @@ namespace SharpChat {
         public bool Equals([AllowNull] BasicUser other)
             => UserId == other.UserId;
 
-        public string GetDisplayName(int version, bool forceOriginal = false) {
-            StringBuilder sb = new StringBuilder();
+        public string DisplayName {
+            get {
+                StringBuilder sb = new StringBuilder();
 
-            if (version < 2 && Status == ChatUserStatus.Away)
-                sb.AppendFormat(@"&lt;{0}&gt;_", StatusMessage.Substring(0, Math.Min(StatusMessage.Length, 5)).ToUpperInvariant());
+                if(Status == ChatUserStatus.Away)
+                    sb.AppendFormat(@"&lt;{0}&gt;_", StatusMessage.Substring(0, Math.Min(StatusMessage.Length, 5)).ToUpperInvariant());
 
-            if (forceOriginal || string.IsNullOrWhiteSpace(Nickname))
-                sb.Append(Username);
-            else {
-                if (version < 2)
+                if(string.IsNullOrWhiteSpace(Nickname))
+                    sb.Append(Username);
+                else {
                     sb.Append('~');
+                    sb.Append(Nickname);
+                }
 
-                sb.Append(Nickname);
+                return sb.ToString();
             }
-
-            return sb.ToString();
         }
 
         public bool Can(ChatUserPermissions perm, bool strict = false) {
@@ -49,17 +49,14 @@ namespace SharpChat {
             return strict ? perms == perm : perms > 0;
         }
 
-        public string Pack(int targetVersion) {
+        public string Pack() {
             StringBuilder sb = new StringBuilder();
 
             sb.Append(UserId);
             sb.Append('\t');
-            sb.Append(GetDisplayName(targetVersion));
+            sb.Append(DisplayName);
             sb.Append('\t');
-            if (targetVersion >= 2)
-                sb.Append(Colour.Raw);
-            else
-                sb.Append(Colour);
+            sb.Append(Colour);
             sb.Append('\t');
             sb.Append(Rank);
             sb.Append(' ');
@@ -81,7 +78,7 @@ namespace SharpChat {
 
         public DateTimeOffset SilencedUntil { get; set; }
 
-        private readonly List<ChatUserConnection> Connections = new List<ChatUserConnection>();
+        private readonly List<ChatUserSession> Sessions = new List<ChatUserSession>();
         private readonly List<ChatChannel> Channels = new List<ChatChannel>();
 
         public readonly ChatRateLimiter RateLimiter = new ChatRateLimiter();
@@ -90,6 +87,7 @@ namespace SharpChat {
 
         public string TargetName => @"@log";
 
+        [Obsolete]
         public ChatChannel Channel {
             get {
                 lock(Channels)
@@ -97,27 +95,30 @@ namespace SharpChat {
             }
         }
 
+        // This needs to be a session thing
+        public ChatChannel CurrentChannel { get; private set; }
+
         public bool IsSilenced
             => SilencedUntil != null && DateTimeOffset.UtcNow - SilencedUntil <= TimeSpan.Zero;
 
-        public bool HasConnections {
+        public bool HasSessions {
             get {
-                lock(Connections)
-                    return Connections.Where(c => !c.HasTimedOut && !c.IsDisposed).Any();
+                lock(Sessions)
+                    return Sessions.Where(c => !c.HasTimedOut && !c.IsDisposed).Any();
             }
         }
 
-        public int ConnectionCount {
+        public int SessionCount {
             get {
-                lock (Connections)
-                    return Connections.Where(c => !c.HasTimedOut && !c.IsDisposed).Count();
+                lock (Sessions)
+                    return Sessions.Where(c => !c.HasTimedOut && !c.IsDisposed).Count();
             }
         }
 
         public IEnumerable<IPAddress> RemoteAddresses {
             get {
-                lock(Connections)
-                    return Connections.Select(c => c.RemoteAddress);
+                lock(Sessions)
+                    return Sessions.Select(c => c.RemoteAddress);
             }
         }
 
@@ -150,8 +151,8 @@ namespace SharpChat {
                 LastMessageReceived = DateTimeOffset.Now;
             }
 
-            lock(Connections)
-                foreach (ChatUserConnection conn in Connections)
+            lock(Sessions)
+                foreach (ChatUserSession conn in Sessions)
                     conn.Send(packet);
         }
 
@@ -162,15 +163,22 @@ namespace SharpChat {
         }
 
         public void Close() {
-            lock (Connections) {
-                foreach (ChatUserConnection conn in Connections)
+            lock (Sessions) {
+                foreach (ChatUserSession conn in Sessions)
                     conn.Dispose();
-                Connections.Clear();
+                Sessions.Clear();
             }
         }
 
         public void ForceChannel(ChatChannel chan = null)
-            => Send(new UserChannelForceJoinPacket(chan ?? Channel));
+            => Send(new UserChannelForceJoinPacket(chan ?? CurrentChannel));
+
+        public void FocusChannel(ChatChannel chan) {
+            lock(Channels) {
+                if(InChannel(chan))
+                    CurrentChannel = chan;
+            }
+        }
 
         public bool InChannel(ChatChannel chan) {
             lock (Channels)
@@ -179,14 +187,18 @@ namespace SharpChat {
 
         public void JoinChannel(ChatChannel chan) {
             lock (Channels) {
-                if (!InChannel(chan))
+                if(!InChannel(chan)) {
                     Channels.Add(chan);
+                    CurrentChannel = chan;
+                }
             }
         }
 
         public void LeaveChannel(ChatChannel chan) {
-            lock (Channels)
+            lock(Channels) {
                 Channels.Remove(chan);
+                CurrentChannel = Channels.FirstOrDefault();
+            }
         }
 
         public IEnumerable<ChatChannel> GetChannels() {
@@ -194,28 +206,28 @@ namespace SharpChat {
                 return Channels.ToList();
         }
 
-        public void AddConnection(ChatUserConnection conn) {
-            if (conn == null)
+        public void AddSession(ChatUserSession sess) {
+            if (sess == null)
                 return;
-            conn.User = this;
+            sess.User = this;
 
-            lock (Connections)
-                Connections.Add(conn);
+            lock (Sessions)
+                Sessions.Add(sess);
         }
 
-        public void RemoveConnection(ChatUserConnection conn) {
-            if (conn == null)
+        public void RemoveSession(ChatUserSession sess) {
+            if (sess == null)
                 return;
-            if(!conn.IsDisposed) // this could be possible
-                conn.User = null;
+            if(!sess.IsDisposed) // this could be possible
+                sess.User = null;
 
-            lock(Connections)
-                Connections.Remove(conn);
+            lock(Sessions)
+                Sessions.Remove(sess);
         }
 
-        public IEnumerable<ChatUserConnection> GetDeadConnections() {
-            lock (Connections)
-                return Connections.Where(x => x.HasTimedOut || x.IsDisposed).ToList();
+        public IEnumerable<ChatUserSession> GetDeadSessions() {
+            lock (Sessions)
+                return Sessions.Where(x => x.HasTimedOut || x.IsDisposed).ToList();
         }
     }
 }

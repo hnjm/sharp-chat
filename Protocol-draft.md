@@ -760,6 +760,11 @@ Added in version 2.
 
 <table>
     <tr>
+        <td><code>channel name</code></td>
+        <td>Name of the channel in which the user is typing. If this field is empty, assume it has been sent to the user directly for private messaging.</td>
+        <td></td>
+    </tr>
+    <tr>
         <td><code>int</code></td>
         <td>User ID of the typing user</td>
         <td></td>

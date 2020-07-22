@@ -10,18 +10,14 @@ namespace SharpChat.Packet {
             PongTime = dto;
         }
 
-        public override IEnumerable<string> Pack(int version) {
+        public override IEnumerable<string> Pack() {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)SockChatServerPacket.Pong);
             sb.Append('\t');
+            sb.Append(PongTime.ToUnixTimeSeconds());
 
-            if (version >= 2)
-                sb.Append(PongTime.ToSockChatSeconds(version));
-            else
-                sb.Append(@"pong");
-
-            return new[] { sb.ToString() };
+            yield return sb.ToString();
         }
     }
 }

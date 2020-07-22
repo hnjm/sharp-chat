@@ -19,10 +19,7 @@ namespace SharpChat.Packet {
             Arguments = args;
         }
 
-        public override IEnumerable<string> Pack(int version) {
-            if (version > 1)
-                return null;
-
+        public override IEnumerable<string> Pack() {
             StringBuilder sb = new StringBuilder();
 
             if (StringId == LCR.WELCOME) {
@@ -30,12 +27,12 @@ namespace SharpChat.Packet {
                 sb.Append('\t');
                 sb.Append((int)SockChatServerContextPacket.Message);
                 sb.Append('\t');
-                sb.Append(DateTimeOffset.Now.ToSockChatSeconds(version));
+                sb.Append(DateTimeOffset.Now.ToUnixTimeSeconds());
                 sb.Append("\t-1\tChatBot\tinherit\t\t");
             } else {
                 sb.Append((int)SockChatServerPacket.MessageAdd);
                 sb.Append('\t');
-                sb.Append(DateTimeOffset.Now.ToSockChatSeconds(version));
+                sb.Append(DateTimeOffset.Now.ToUnixTimeSeconds());
                 sb.Append("\t-1\t");
             }
 
@@ -65,7 +62,7 @@ namespace SharpChat.Packet {
                 Flags.HasFlag(ChatMessageFlags.Private) ? '1' : '0'
             );*/
 
-            return new[] { sb.ToString() };
+            yield return sb.ToString();
         }
     }
 

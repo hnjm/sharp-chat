@@ -44,13 +44,15 @@ namespace SharpChat {
                 return Users.FirstOrDefault(x => x.UserId == userId);
         }
 
-        public ChatUser Get(string username, bool includeNickName = true, bool includeV1Name = true) {
+        public ChatUser Get(string username, bool includeNickName = true, bool includeDisplayName = true) {
             if (string.IsNullOrWhiteSpace(username))
                 return null;
             username = username.ToLowerInvariant();
 
             lock(Users)
-                return Users.FirstOrDefault(x => x.Username.ToLowerInvariant() == username || (includeNickName && x.Nickname?.ToLowerInvariant() == username) || (includeV1Name && x.GetDisplayName(1).ToLowerInvariant() == username));
+                return Users.FirstOrDefault(x => x.Username.ToLowerInvariant() == username
+                    || (includeNickName && x.Nickname?.ToLowerInvariant() == username)
+                    || (includeDisplayName && x.DisplayName.ToLowerInvariant() == username));
         }
 
         public IEnumerable<ChatUser> OfHierarchy(int hierarchy) {
@@ -60,7 +62,7 @@ namespace SharpChat {
 
         public IEnumerable<ChatUser> WithActiveConnections() {
             lock (Users)
-                return Users.Where(u => u.HasConnections).ToList();
+                return Users.Where(u => u.HasSessions).ToList();
         }
 
         public IEnumerable<ChatUser> All() {

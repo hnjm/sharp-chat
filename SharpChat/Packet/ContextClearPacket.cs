@@ -11,23 +11,27 @@ namespace SharpChat.Packet {
     }
 
     public class ContextClearPacket : ServerPacket {
+        public ChatChannel Channel { get; private set; }
         public ContextClearMode Mode { get; private set; }
 
-        public ContextClearPacket(ContextClearMode mode) {
+        public bool IsGlobal
+            => Channel == null;
+
+        public ContextClearPacket(ChatChannel channel, ContextClearMode mode) {
+            Channel = channel;
             Mode = mode;
         }
 
-        public override IEnumerable<string> Pack(int version) {
-            if (version > 1)
-                return null;
-
+        public override IEnumerable<string> Pack() {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)SockChatServerPacket.ContextClear);
             sb.Append('\t');
             sb.Append((int)Mode);
+            sb.Append('\t');
+            sb.Append(Channel?.TargetName ?? string.Empty);
 
-            return new[] { sb.ToString() };
+            yield return sb.ToString();
         }
     }
 }

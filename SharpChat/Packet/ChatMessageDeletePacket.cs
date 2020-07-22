@@ -9,14 +9,14 @@ namespace SharpChat.Packet {
             EventId = eventId;
         }
 
-        public override IEnumerable<string> Pack(int version) {
+        public override IEnumerable<string> Pack() {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)SockChatServerPacket.MessageDelete);
             sb.Append('\t');
             sb.Append(EventId);
 
-            return new[] { sb.ToString() };
+            yield return sb.ToString();
         }
     }
 }
