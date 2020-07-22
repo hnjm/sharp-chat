@@ -193,6 +193,11 @@ Informs the client that authentication has succeeded.
         <td></td>
     </tr>
     <tr>
+        <td><code>int</code></td>
+        <td>Extensions version number. If this field is missing, version 1 is implied.</td>
+        <td>Added in Version 2</td>
+    </tr>
+    <tr>
         <td><code>session id</code></td>
         <td>ID of the currently active session</td>
         <td>Added in Version 2</td>
@@ -765,9 +770,6 @@ Added in version 2.
         <td></td>
     </tr>
 </table>
-
-### Packet `12`: Flood protection warning
-Informs the client that they might be kicked soon for flood protection. This packet has no arguments.
 
 ## Bot Messages
 Formatting IDs sent by user -1.
