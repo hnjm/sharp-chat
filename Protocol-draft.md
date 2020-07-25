@@ -117,8 +117,8 @@ Commands are described lower in the document.
         <td></td>
     </tr>
     <tr>
-        <td><code>...string</code></td>
-        <td>Message text, additional packet parameters should be glued on the server using <code>\t</code></td>
+        <td><code>string</code></td>
+        <td>Message text, may not contain <code>\t</code></td>
         <td></td>
     </tr>
 </table>

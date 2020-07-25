@@ -1,7 +1,9 @@
-﻿using System;
+﻿using Microsoft.Win32.SafeHandles;
+using System;
 using System.Net.Http;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading.Tasks;
 
 namespace SharpChat.Flashii {
     public class FlashiiAuthRequest {
@@ -47,16 +49,18 @@ namespace SharpChat.Flashii {
         [JsonPropertyName(@"perms")]
         public ChatUserPermissions Permissions { get; set; }
 
-        public static FlashiiAuth Attempt(FlashiiAuthRequest request) {
-            if (request == null)
-                throw new ArgumentNullException(nameof(request));
+        public static async Task<FlashiiAuth> Attempt(HttpClient httpClient, FlashiiAuthRequest authRequest) {
+            if(httpClient == null)
+                throw new ArgumentNullException(nameof(httpClient));
+            if(authRequest == null)
+                throw new ArgumentNullException(nameof(authRequest));
 
 #if DEBUG
-            if (request.UserId >= 10000)
+            if (authRequest.UserId >= 10000)
                 return new FlashiiAuth {
                     Success = true,
-                    UserId = request.UserId,
-                    Username = @"Misaka-" + (request.UserId - 10000),
+                    UserId = authRequest.UserId,
+                    Username = @"Misaka-" + (authRequest.UserId - 10000),
                     ColourRaw = (RNG.Next(0, 255) << 16) | (RNG.Next(0, 255) << 8) | RNG.Next(0, 255),
                     Rank = 0,
                     SilencedUntil = DateTimeOffset.MinValue,
@@ -64,21 +68,18 @@ namespace SharpChat.Flashii {
                 };
 #endif
 
-            try {
-                byte[] requestData = request.GetJSON();
-                using ByteArrayContent loginContent = new ByteArrayContent(requestData);
-                using HttpRequestMessage loginRequest = new HttpRequestMessage(HttpMethod.Post, FlashiiUrls.AUTH) {
-                    Content = loginContent,
-                };
-                loginRequest.Headers.Add(@"X-SharpChat-Signature", request.Hash);
-                loginRequest.Headers.Add(@"User-Agent", @"SharpChat");
-                using HttpResponseMessage loginResponse = HttpClientS.Instance.SendAsync(loginRequest).Result;
-                byte[] responseData = loginResponse.Content.ReadAsByteArrayAsync().Result;
-                return JsonSerializer.Deserialize<FlashiiAuth>(responseData);
-            } catch (Exception ex) {
-                Logger.Write(ex.ToString());
-                return new FlashiiAuth { Success = false };
-            }
+            using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, FlashiiUrls.AUTH) {
+                Content = new ByteArrayContent(authRequest.GetJSON()),
+                Headers = {
+                    { @"X-SharpChat-Signature", authRequest.Hash },
+                },
+            };
+
+            using HttpResponseMessage response = await httpClient.SendAsync(request);
+
+            return JsonSerializer.Deserialize<FlashiiAuth>(
+                await response.Content.ReadAsByteArrayAsync()
+            );
         }
     }
 }

@@ -43,9 +43,12 @@ namespace SharpChat {
             Console.WriteLine($@"Enter token found on {FlashiiUrls.BASE_URL}/login:");
             string[] token = Console.ReadLine().Split(new[] { '_' }, 2);
 
-            FlashiiAuth authRes = FlashiiAuth.Attempt(new FlashiiAuthRequest {
+            System.Net.Http.HttpClient httpClient = new System.Net.Http.HttpClient();
+            httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(@"SharpChat");
+
+            FlashiiAuth authRes = FlashiiAuth.Attempt(httpClient, new FlashiiAuthRequest {
                 UserId = int.Parse(token[0]), Token = token[1], IPAddress = @"1.2.4.8"
-            });
+            }).GetAwaiter().GetResult();
 
             if(authRes.Success) {
                 Console.WriteLine(@"Auth success!");
@@ -61,10 +64,10 @@ namespace SharpChat {
             }
 
             Console.WriteLine(@"Bumping last seen...");
-            FlashiiBump.Submit(new[] { new ChatUser(authRes) });
+            FlashiiBump.Submit(httpClient, new[] { new ChatUser(authRes) });
 
             Console.WriteLine(@"Fetching ban list...");
-            IEnumerable<FlashiiBan> bans = FlashiiBan.GetList();
+            IEnumerable<FlashiiBan> bans = FlashiiBan.GetList(httpClient).GetAwaiter().GetResult();
             Console.WriteLine($@"{bans.Count()} BANS");
             foreach(FlashiiBan ban in bans) {
                 Console.WriteLine($@"BAN INFO");

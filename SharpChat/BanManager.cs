@@ -144,19 +144,24 @@ namespace SharpChat {
         }
 
         public void RefreshFlashiiBans() {
-            IEnumerable<FlashiiBan> bans = FlashiiBan.GetList().Where(x => x.Expires > DateTimeOffset.Now);
-
-            if (!bans.Any())
-                return;
-
-            lock (BanList) {
-                foreach (FlashiiBan fb in bans) {
-                    if (!BanList.OfType<BannedUser>().Any(x => x.UserId == fb.UserId))
-                        Add(new BannedUser(fb));
-                    if (!BanList.OfType<BannedIPAddress>().Any(x => x.Address.ToString() == fb.UserIP))
-                        Add(new BannedIPAddress(fb));
+            FlashiiBan.GetList(Context.Server.HttpClient).ContinueWith(x => {
+                if(x.IsFaulted) {
+                    Logger.Write($@"Ban Refresh: {x.Exception}");
+                    return;
                 }
-            }
+
+                if(!x.Result.Any())
+                    return;
+
+                lock(BanList) {
+                    foreach(FlashiiBan fb in x.Result) {
+                        if(!BanList.OfType<BannedUser>().Any(x => x.UserId == fb.UserId))
+                            Add(new BannedUser(fb));
+                        if(!BanList.OfType<BannedIPAddress>().Any(x => x.Address.ToString() == fb.UserIP))
+                            Add(new BannedIPAddress(fb));
+                    }
+                }
+            });
         }
 
         public IEnumerable<IBan> All() {

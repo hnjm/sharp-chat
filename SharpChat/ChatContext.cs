@@ -10,12 +10,12 @@ namespace SharpChat {
     public class ChatContext : IDisposable, IPacketTarget {
         public bool IsDisposed { get; private set; }
 
-        public readonly SockChatServer Server;
-        public readonly Timer BumpTimer;
-        public readonly BanManager Bans;
-        public readonly ChannelManager Channels;
-        public readonly UserManager Users;
-        public readonly ChatEventManager Events;
+        public SockChatServer Server { get; }
+        public Timer BumpTimer { get; }
+        public BanManager Bans { get; }
+        public ChannelManager Channels { get; }
+        public UserManager Users { get; }
+        public ChatEventManager Events { get; }
 
         public string TargetName => @"@broadcast";
 
@@ -26,7 +26,7 @@ namespace SharpChat {
             Channels = new ChannelManager(this);
             Events = new ChatEventManager(this);
 
-            BumpTimer = new Timer(e => FlashiiBump.Submit(Users.WithActiveConnections()), null, TimeSpan.Zero, TimeSpan.FromMinutes(1));
+            BumpTimer = new Timer(e => FlashiiBump.Submit(server.HttpClient, Users.WithActiveConnections()), null, TimeSpan.Zero, TimeSpan.FromMinutes(1));
         }
 
         public void Update() {

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading.Tasks;
 
 namespace SharpChat.Flashii {
     public class FlashiiBan {
@@ -20,17 +21,19 @@ namespace SharpChat.Flashii {
         [JsonPropertyName(@"username")]
         public string Username { get; set; }
 
-        public static IEnumerable<FlashiiBan> GetList() {
-            try {
-                using HttpRequestMessage bansRequest = new HttpRequestMessage(HttpMethod.Get, FlashiiUrls.BANS);
-                bansRequest.Headers.Add(@"X-SharpChat-Signature", STRING.GetSignedHash());
-                bansRequest.Headers.Add(@"User-Agent", @"SharpChat");
-                using HttpResponseMessage bansResponse = HttpClientS.Instance.SendAsync(bansRequest).Result;
-                return JsonSerializer.Deserialize<IEnumerable<FlashiiBan>>(bansResponse.Content.ReadAsByteArrayAsync().Result);
-            } catch (Exception ex) {
-                Logger.Write(ex);
-                return null;
-            }
+        public static async Task<IEnumerable<FlashiiBan>> GetList(HttpClient httpClient) {
+            if(httpClient == null)
+                throw new ArgumentNullException(nameof(httpClient));
+
+            using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, FlashiiUrls.BANS) {
+                Headers = {
+                    { @"X-SharpChat-Signature", STRING.GetSignedHash() },
+                },
+            };
+
+            using HttpResponseMessage response = await httpClient.SendAsync(request);
+
+            return JsonSerializer.Deserialize<IEnumerable<FlashiiBan>>(await response.Content.ReadAsByteArrayAsync());
         }
     }
 }
