@@ -73,30 +73,14 @@ namespace SharpChat {
     }
 
     public class ChatUser : BasicUser, IPacketTarget {
-        private const int SATORI = 11;
-        private const int KOISHI = 21;
-
         public DateTimeOffset SilencedUntil { get; set; }
 
-        private readonly List<ChatUserSession> Sessions = new List<ChatUserSession>();
-        private readonly List<ChatChannel> Channels = new List<ChatChannel>();
+        private List<ChatUserSession> Sessions { get; } = new List<ChatUserSession>();
+        private List<ChatChannel> Channels { get; } = new List<ChatChannel>();
 
-        public readonly ChatRateLimiter RateLimiter = new ChatRateLimiter();
-
-        private DateTimeOffset LastMessageReceived { get; set; } = DateTimeOffset.MinValue;
+        public ChatRateLimiter RateLimiter { get; } = new ChatRateLimiter();
 
         public string TargetName => @"@log";
-
-        [Obsolete]
-        public ChatChannel Channel {
-            get {
-                lock(Channels)
-                    return Channels.FirstOrDefault();
-            }
-        }
-
-        // This needs to be a session thing
-        public ChatChannel CurrentChannel { get; private set; }
 
         public bool IsSilenced
             => SilencedUntil != null && DateTimeOffset.UtcNow - SilencedUntil <= TimeSpan.Zero;
@@ -145,21 +129,9 @@ namespace SharpChat {
         }
 
         public void Send(IServerPacket packet) {
-            if(packet is ChatMessageAddPacket) {
-                if(!CanReceiveMessage())
-                    return;
-                LastMessageReceived = DateTimeOffset.Now;
-            }
-
             lock(Sessions)
                 foreach (ChatUserSession conn in Sessions)
                     conn.Send(packet);
-        }
-
-        public bool CanReceiveMessage() {
-            if(UserId != SATORI && UserId != KOISHI)
-                return true;
-            return LastMessageReceived.ToUnixTimeSeconds() != DateTimeOffset.Now.ToUnixTimeSeconds();
         }
 
         public void Close() {
@@ -170,13 +142,13 @@ namespace SharpChat {
             }
         }
 
-        public void ForceChannel(ChatChannel chan = null)
-            => Send(new UserChannelForceJoinPacket(chan ?? CurrentChannel));
-
-        public void FocusChannel(ChatChannel chan) {
-            lock(Channels) {
-                if(InChannel(chan))
-                    CurrentChannel = chan;
+        [Obsolete]
+        public void ForceChannel([NotNull] ChatChannel chan) {
+            lock(Sessions) {
+                foreach(ChatUserSession sess in Sessions) {
+                    if(sess.Channel == chan)
+                        sess.ForceChannel();
+                }
             }
         }
 
@@ -186,24 +158,24 @@ namespace SharpChat {
         }
 
         public void JoinChannel(ChatChannel chan) {
-            lock (Channels) {
-                if(!InChannel(chan)) {
+            lock (Channels)
+                if(!InChannel(chan))
                     Channels.Add(chan);
-                    CurrentChannel = chan;
-                }
-            }
         }
 
         public void LeaveChannel(ChatChannel chan) {
-            lock(Channels) {
+            lock(Channels)
                 Channels.Remove(chan);
-                CurrentChannel = Channels.FirstOrDefault();
-            }
         }
 
         public IEnumerable<ChatChannel> GetChannels() {
             lock (Channels)
                 return Channels.ToList();
+        }
+
+        public IEnumerable<ChatUserSession> GetSessions() {
+            lock(Sessions)
+                return Sessions.ToList();
         }
 
         public void AddSession(ChatUserSession sess) {

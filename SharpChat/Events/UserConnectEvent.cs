@@ -22,7 +22,7 @@ namespace SharpChat.Events {
         public long SequenceId { get; set; }
 
         public UserConnectEvent() { }
-        public UserConnectEvent(DateTimeOffset joined, BasicUser user, IPacketTarget target) {
+        public UserConnectEvent(DateTimeOffset joined, BasicUser user, ChatChannel target) {
             DateTime = joined;
             Sender = user;
             Target = target;

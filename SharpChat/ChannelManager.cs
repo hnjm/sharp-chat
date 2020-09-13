@@ -66,7 +66,6 @@ namespace SharpChat {
             Channels.Remove(channel);
 
             // Move all users back to the main channel
-            // TODO: Replace this with a kick. SCv2 supports being in 0 channels, SCv1 should force the user back to DefaultChannel.
             foreach (ChatUser user in channel.GetUsers()) {
                 Context.SwitchChannel(user, DefaultChannel, string.Empty);
             }
@@ -117,7 +116,7 @@ namespace SharpChat {
                 user.Send(new ChannelUpdatePacket(prevName, channel));
 
                 if (nameUpdated)
-                    user.ForceChannel();
+                    user.ForceChannel(channel);
             }
         }
 

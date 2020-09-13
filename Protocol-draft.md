@@ -114,32 +114,32 @@ Commands are described lower in the document.
     <tr>
         <td><code>int</code></td>
         <td>User ID</td>
-        <td></td>
+        <td>It goes without saying but, don't trust value provided by the client</td>
     </tr>
     <tr>
         <td><code>string</code></td>
         <td>Message text, may not contain <code>\t</code></td>
         <td></td>
     </tr>
+    <tr>
+        <td><code>channel name</code></td>
+        <td>Name of the channel this message is intended for</td>
+        <td>Added in Version 2, if missing (version 1) the message should go to the last channel the user interacted with.</td>
+    </tr>
 </table>
 
-### Packet `3`: Focus Channel
-Selects which channel messages should be sent to.
+### Packet `3`: Typing
+Informs the currently focussed channel that this client is writing a message.
 
 Added in Version 2.
 
 <table>
     <tr>
         <td><code>channel name</code></td>
-        <td>Channel to change focus to</td>
+        <td>Name of the channel this message is intended for</td>
         <td></td>
     </tr>
 </table>
-
-### Packet `4`: Typing
-Informs the currently focussed channel that this client is writing a message.
-
-Added in Version 2.
 
 ## Server Packets
 These are the packets sent from the server to the client.

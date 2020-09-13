@@ -27,7 +27,7 @@ namespace SharpChat.Events {
         public UserDisconnectReason Reason { get; set; }
 
         public UserDisconnectEvent() { }
-        public UserDisconnectEvent(DateTimeOffset parted, BasicUser user, IPacketTarget target, UserDisconnectReason reason) {
+        public UserDisconnectEvent(DateTimeOffset parted, BasicUser user, ChatChannel target, UserDisconnectReason reason) {
             DateTime = parted;
             Sender = user;
             Target = target;

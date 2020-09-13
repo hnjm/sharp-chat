@@ -1,4 +1,5 @@
 ﻿using Fleck;
+using SharpChat.Packet;
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -20,23 +21,24 @@ namespace SharpChat {
         public DateTimeOffset LastPing { get; set; } = DateTimeOffset.MinValue;
         public ChatUser User { get; set; }
 
+        // This is not authoritative, make sure the user is actually in the channel!
+        public ChatChannel Channel { get; set; }
+
         public string TargetName => @"@log";
 
 
-        private IPAddress _RemoteAddress = null;
-
+        private IPAddress RemoteAddressValue = null;
         public IPAddress RemoteAddress {
             get {
-                if (_RemoteAddress == null) {
+                if (RemoteAddressValue == null) {
                     if ((Connection.ConnectionInfo.ClientIpAddress == @"127.0.0.1" || Connection.ConnectionInfo.ClientIpAddress == @"::1")
                         && Connection.ConnectionInfo.Headers.ContainsKey(@"X-Real-IP"))
-                        _RemoteAddress = IPAddress.Parse(Connection.ConnectionInfo.Headers[@"X-Real-IP"]);
+                        RemoteAddressValue = IPAddress.Parse(Connection.ConnectionInfo.Headers[@"X-Real-IP"]);
                     else
-                        _RemoteAddress = IPAddress.Parse(Connection.ConnectionInfo.ClientIpAddress);
+                        RemoteAddressValue = IPAddress.Parse(Connection.ConnectionInfo.ClientIpAddress);
                 }
 
-                return _RemoteAddress;
-
+                return RemoteAddressValue;
             }
         }
 
@@ -62,6 +64,9 @@ namespace SharpChat {
                     if (!string.IsNullOrWhiteSpace(line))
                         Connection.Send(line);
         }
+
+        public void ForceChannel(ChatChannel chan = null)
+            => Send(new UserChannelForceJoinPacket(chan ?? Channel));
 
         public void BumpPing()
             => LastPing = DateTimeOffset.Now;

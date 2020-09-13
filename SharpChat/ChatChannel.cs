@@ -31,11 +31,8 @@ namespace SharpChat {
         }
 
         public void UserJoin(ChatUser user) {
-            if (!user.InChannel(this)) {
-                // Remove this, a different means for this should be established for V1 compat.
-                user.Channel?.UserLeave(user);
+            if (!user.InChannel(this))
                 user.JoinChannel(this);
-            }
 
             lock (Users) {
                 if (!HasUser(user))

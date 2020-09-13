@@ -22,7 +22,7 @@ namespace SharpChat.Events {
         public long SequenceId { get; set; }
 
         public UserChannelLeaveEvent() { }
-        public UserChannelLeaveEvent(DateTimeOffset parted, BasicUser user, IPacketTarget target) {
+        public UserChannelLeaveEvent(DateTimeOffset parted, BasicUser user, ChatChannel target) {
             DateTime = parted;
             Sender = user;
             Target = target;

@@ -50,7 +50,7 @@ namespace SharpChat {
                 user.Send(new ForceDisconnectPacket(ForceDisconnectReason.Kicked));
 
             user.Close();
-            UserLeave(user.Channel, user, reason);
+            UserLeave(null, user, null, reason);
         }
 
         public void HandleJoin(ChatUser user, ChatChannel chan, ChatUserSession sess) {
@@ -72,17 +72,18 @@ namespace SharpChat {
             if (!chan.HasUser(user))
                 chan.UserJoin(user);
 
+            sess.Channel = chan;
+
             if (!Users.Contains(user))
                 Users.Add(user);
         }
 
-        public void UserLeave(ChatChannel chan, ChatUser user, UserDisconnectReason reason = UserDisconnectReason.Leave) {
+        public void UserLeave(ChatChannel chan, ChatUser user, ChatUserSession sess, UserDisconnectReason reason = UserDisconnectReason.Leave) {
             user.Status = ChatUserStatus.Offline;
 
             if (chan == null) {
-                foreach(ChatChannel channel in user.GetChannels()) {
-                    UserLeave(channel, user, reason);
-                }
+                foreach(ChatChannel channel in user.GetChannels())
+                    UserLeave(channel, user, sess, reason);
                 return;
             }
 
@@ -90,39 +91,47 @@ namespace SharpChat {
                 Channels.Remove(chan);
 
             chan.UserLeave(user);
+            if(sess != null)
+                sess.Channel = null;
             chan.Send(new UserDisconnectPacket(DateTimeOffset.Now, user, reason));
             Events.Add(new UserDisconnectEvent(DateTimeOffset.Now, user, chan, reason));
         }
 
+        [Obsolete]
         public void SwitchChannel(ChatUser user, ChatChannel chan, string password) {
-            if (user.CurrentChannel == chan) {
+            foreach(ChatUserSession sess in user.GetSessions())
+                SwitchChannel(user, chan, sess, password);
+        }
+
+        public void SwitchChannel(ChatUser user, ChatChannel chan, ChatUserSession sess, string password) {
+            if (sess.Channel == chan) {
                 //user.Send(true, @"samechan", chan.Name);
-                user.ForceChannel();
+                sess.ForceChannel();
                 return;
             }
 
             if (!user.Can(ChatUserPermissions.JoinAnyChannel) && chan.Owner != user) {
                 if (chan.Rank > user.Rank) {
-                    user.Send(new LegacyCommandResponse(LCR.CHANNEL_INSUFFICIENT_HIERARCHY, true, chan.Name));
-                    user.ForceChannel();
+                    sess.Send(new LegacyCommandResponse(LCR.CHANNEL_INSUFFICIENT_HIERARCHY, true, chan.Name));
+                    sess.ForceChannel();
                     return;
                 }
 
                 if (chan.Password != password) {
-                    user.Send(new LegacyCommandResponse(LCR.CHANNEL_INVALID_PASSWORD, true, chan.Name));
-                    user.ForceChannel();
+                    sess.Send(new LegacyCommandResponse(LCR.CHANNEL_INVALID_PASSWORD, true, chan.Name));
+                    sess.ForceChannel();
                     return;
                 }
             }
 
-            ForceChannelSwitch(user, chan);
+            ForceChannelSwitch(user, chan, sess);
         }
 
-        public void ForceChannelSwitch(ChatUser user, ChatChannel chan) {
+        public void ForceChannelSwitch(ChatUser user, ChatChannel chan, ChatUserSession sess) {
             if (!Channels.Contains(chan))
                 return;
 
-            ChatChannel oldChan = user.CurrentChannel;
+            ChatChannel oldChan = sess.Channel;
 
             oldChan.Send(new UserChannelLeavePacket(user));
             Events.Add(new UserChannelLeaveEvent(DateTimeOffset.Now, user, oldChan));
@@ -137,9 +146,10 @@ namespace SharpChat {
             foreach (IChatEvent msg in msgs)
                 user.Send(new ContextMessagePacket(msg));
 
-            user.ForceChannel(chan);
             oldChan.UserLeave(user);
             chan.UserJoin(user);
+            sess.Channel = chan;
+            sess.ForceChannel();
 
             if (oldChan.IsTemporary && oldChan.Owner == user)
                 Channels.Remove(oldChan);
@@ -157,7 +167,7 @@ namespace SharpChat {
                     }
 
                     if(!user.HasSessions)
-                        UserLeave(null, user, UserDisconnectReason.TimeOut);
+                        UserLeave(null, user, null, UserDisconnectReason.TimeOut);
                 }
         }
 

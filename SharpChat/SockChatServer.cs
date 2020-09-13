@@ -100,7 +100,7 @@ namespace SharpChat {
                 user.RemoveSession(sess);
 
                 if(!user.HasSessions)
-                    Context.UserLeave(null, user);
+                    Context.UserLeave(null, user, sess);
             }
 
             // Update context
@@ -196,7 +196,8 @@ namespace SharpChat {
                             aUser = new ChatUser(auth);
                         else {
                             aUser.ApplyAuth(auth);
-                            aUser.Channel?.Send(new UserUpdatePacket(aUser));
+                            foreach(ChatChannel chan in aUser.GetChannels())
+                                chan.Send(new UserUpdatePacket(aUser));
                         }
 
                         aBanned = Context.Bans.Check(aUser);
@@ -250,7 +251,12 @@ namespace SharpChat {
                     if (!long.TryParse(args[1], out long mUserId) || mUser.UserId != mUserId)
                         break;
 #endif
-                    ChatChannel mChannel = mUser.CurrentChannel;
+
+                    string mChannelName = args.ElementAtOrDefault(3);
+                    ChatChannel mChannel = sess.Channel;
+
+                    if(!string.IsNullOrWhiteSpace(mChannelName) && mChannel?.TargetName != mChannelName)
+                        sess.Channel = mChannel = Context.Channels.Get(mChannelName);
 
                     if(mChannel == null
                         || !mUser.InChannel(mChannel)
@@ -274,7 +280,7 @@ namespace SharpChat {
                     IChatMessage message = null;
 
                     if(messageText[0] == '/') {
-                        message = HandleV1Command(messageText, mUser, mChannel);
+                        message = HandleV1Command(messageText, mChannel, mUser, sess);
 
                         if(message == null)
                             break;
@@ -293,22 +299,11 @@ namespace SharpChat {
                     mChannel.Send(new ChatMessageAddPacket(message));
                     break;
 
-                case SockChatClientPacket.FocusChannel:
-                    if(sess.User == null || args.Length < 2)
-                        break;
-
-                    ChatChannel fChannel = Context.Channels.Get(args[1]);
-                    if(fChannel == null || sess.User.CurrentChannel == fChannel)
-                        break;
-
-                    sess.User.FocusChannel(fChannel);
-                    break;
-
                 case SockChatClientPacket.Typing:
                     if(!ENABLE_TYPING_EVENT || sess.User == null)
                         break;
 
-                    ChatChannel tChannel = sess.User.CurrentChannel;
+                    ChatChannel tChannel = sess.Channel;
                     if(tChannel == null || !tChannel.CanType(sess.User))
                         break;
 
@@ -321,7 +316,7 @@ namespace SharpChat {
             }
         }
 
-        public IChatMessage HandleV1Command(string message, ChatUser user, ChatChannel channel) {
+        public IChatMessage HandleV1Command(string message, ChatChannel channel, ChatUser user, ChatUserSession session) {
             string[] parts = message.Substring(1).Split(' ');
             string commandName = parts[0].Replace(@".", string.Empty).ToLowerInvariant();
 
@@ -338,7 +333,7 @@ namespace SharpChat {
                 }
 
             if(command != null)
-                return command.Dispatch(new ChatCommandContext(parts, user, channel));
+                return command.Dispatch(new ChatCommandContext(parts, channel, user, session));
 
             switch(commandName) {
                 case @"nick": // sets a temporary nickname
@@ -391,7 +386,7 @@ namespace SharpChat {
                     break;
                 case @"whisper": // sends a pm to another user
                 case @"msg":
-                    if(parts.Length < 3) {
+                    /*if(parts.Length < 3) {
                         user.Send(new LegacyCommandResponse(LCR.COMMAND_FORMAT_ERROR));
                         break;
                     }
@@ -423,7 +418,7 @@ namespace SharpChat {
                         Sender = user,
                         Text = $@"{whisperUser.DisplayName} {whisperStr}",
                         Flags = ChatMessageFlags.Private,
-                    }));
+                    }));*/
                     break;
                 case @"action": // describe an action
                 case @"me":
@@ -512,12 +507,12 @@ namespace SharpChat {
                     ChatChannel joinChan = Context.Channels.Get(parts[1]);
 
                     if(joinChan == null) {
-                        user.Send(new LegacyCommandResponse(LCR.CHANNEL_NOT_FOUND, true, parts[1]));
-                        user.ForceChannel();
+                        session.Send(new LegacyCommandResponse(LCR.CHANNEL_NOT_FOUND, true, parts[1]));
+                        session.ForceChannel();
                         break;
                     }
 
-                    Context.SwitchChannel(user, joinChan, string.Join(' ', parts.Skip(2)));
+                    Context.SwitchChannel(user, joinChan, session, string.Join(' ', parts.Skip(2)));
                     break;
                 case @"create": // create a new channel
                     if(user.Can(ChatUserPermissions.CreateChannel)) {
@@ -558,7 +553,7 @@ namespace SharpChat {
                         break;
                     }
 
-                    Context.SwitchChannel(user, createChan, createChan.Password);
+                    Context.SwitchChannel(user, createChan, session, createChan.Password);
                     user.Send(new LegacyCommandResponse(LCR.CHANNEL_CREATED, false, createChan.Name));
                     break;
                 case @"delchan": // delete a channel

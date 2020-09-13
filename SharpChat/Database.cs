@@ -1,4 +1,5 @@
 ﻿using MySql.Data.MySqlClient;
+using SharpChat.Channels;
 using SharpChat.Events;
 using System;
 using System.Collections.Generic;
@@ -116,6 +117,14 @@ namespace SharpChat {
             if(evt.SequenceId < 1)
                 evt.SequenceId = GenerateId();
 
+            string targetName;
+            if(evt.Target is ChatChannel ochan)
+                targetName = ochan.TargetName;
+            else if(evt.Target is IChannel ichan)
+                targetName = ichan.Name;
+            else
+                throw new ArgumentException(@"event target isn't a supported type", nameof(evt));
+
             RunCommand(
                 @"INSERT INTO `sqc_events` (`event_id`, `event_created`, `event_type`, `event_target`, `event_flags`, `event_data`"
                 + @", `event_sender`, `event_sender_name`, `event_sender_colour`, `event_sender_rank`, `event_sender_nick`, `event_sender_perms`)"
@@ -124,7 +133,7 @@ namespace SharpChat {
                 new MySqlParameter(@"id", evt.SequenceId),
                 new MySqlParameter(@"created", evt.DateTime.ToUnixTimeSeconds()),
                 new MySqlParameter(@"type", evt.GetType().FullName),
-                new MySqlParameter(@"target", evt.Target.TargetName),
+                new MySqlParameter(@"target", targetName),
                 new MySqlParameter(@"flags", (byte)evt.Flags),
                 new MySqlParameter(@"data", JsonSerializer.SerializeToUtf8Bytes(evt, evt.GetType())),
                 new MySqlParameter(@"sender", evt.Sender?.UserId < 1 ? null : (long?)evt.Sender.UserId),
@@ -143,12 +152,12 @@ namespace SharpChat {
             );
         }
 
-        private static IChatEvent ReadEvent(MySqlDataReader reader, IPacketTarget target = null) {
+        private static IChatEvent ReadEvent(MySqlDataReader reader, IPacketTarget target = null, string targetName = null) {
             Type evtType = Type.GetType(reader.GetString(@"event_type"));
             IChatEvent evt = JsonSerializer.Deserialize(reader.GetString(@"event_data"), evtType) as IChatEvent;
             evt.SequenceId = reader.GetInt64(@"event_id");
             evt.Target = target;
-            evt.TargetName = target?.TargetName ?? reader.GetString(@"event_target");
+            evt.TargetName = targetName ?? reader.GetString(@"event_target");
             evt.Flags = (ChatMessageFlags)reader.GetByte(@"event_flags");
             evt.DateTime = DateTimeOffset.FromUnixTimeSeconds(reader.GetInt32(@"event_created"));
 
@@ -169,6 +178,14 @@ namespace SharpChat {
         public static IEnumerable<IChatEvent> GetEvents(IPacketTarget target, int amount, int offset) {
             List<IChatEvent> events = new List<IChatEvent>();
 
+            string targetName;
+            if(target is ChatChannel ochan)
+                targetName = ochan.TargetName;
+            else if(target is IChannel ichan)
+                targetName = ichan.Name;
+            else
+                throw new ArgumentException(@"target isn't a supported type", nameof(target));
+
             try {
                 using MySqlDataReader reader = RunQuery(
                     @"SELECT `event_id`, `event_type`, `event_flags`, `event_data`"
@@ -178,13 +195,13 @@ namespace SharpChat {
                     + @" WHERE `event_deleted` IS NULL AND `event_target` = @target"
                     + @" ORDER BY `event_id` DESC"
                     + @" LIMIT @amount OFFSET @offset",
-                    new MySqlParameter(@"target", target.TargetName),
+                    new MySqlParameter(@"target", targetName),
                     new MySqlParameter(@"amount", amount),
                     new MySqlParameter(@"offset", offset)
                 );
 
                 while (reader.Read()) {
-                    IChatEvent evt = ReadEvent(reader, target);
+                    IChatEvent evt = ReadEvent(reader, target, targetName);
                     if (evt != null)
                         events.Add(evt);
                 }
