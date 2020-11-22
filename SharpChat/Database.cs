@@ -7,15 +7,23 @@ using System.Text.Json;
 
 namespace SharpChat {
     public static partial class Database {
+        private const string CONFIG = @"mariadb.txt";
+
         private static string ConnectionString = null;
 
         public static bool HasDatabase
             => !string.IsNullOrWhiteSpace(ConnectionString);
 
         public static void ReadConfig() {
-            string[] config = File.ReadAllLines(@"mariadb.txt");
-            if (config.Length < 4)
+            if(!File.Exists(CONFIG)) {
+                Console.WriteLine(@"MariaDB configuration is missing. Skipping database connection...");
                 return;
+            }
+            string[] config = File.ReadAllLines(CONFIG);
+            if(config.Length < 4) {
+                Console.WriteLine(@"MariaDB configuration does not contain sufficient information. Skipping database connection...");
+                return;
+            }
             Init(config[0], config[1], config[2], config[3]);
         }
 
