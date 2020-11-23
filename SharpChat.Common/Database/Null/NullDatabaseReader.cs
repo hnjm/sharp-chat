@@ -50,7 +50,7 @@ namespace SharpChat.Database.Null {
         }
 
         public short ReadI16(int ordinal) {
-            throw new NotImplementedException();
+            return 0;
         }
 
         public short ReadI16(string name) {
@@ -73,44 +73,12 @@ namespace SharpChat.Database.Null {
             return 0;
         }
 
-        public sbyte ReadI8(int ordinal) {
-            return 0;
-        }
-
-        public sbyte ReadI8(string name) {
-            return 0;
-        }
-
         public string ReadString(int ordinal) {
             return string.Empty;
         }
 
         public string ReadString(string name) {
             return string.Empty;
-        }
-
-        public ushort ReadU16(int ordinal) {
-            return 0;
-        }
-
-        public ushort ReadU16(string name) {
-            return 0;
-        }
-
-        public uint ReadU32(int ordinal) {
-            return 0;
-        }
-
-        public uint ReadU32(string name) {
-            return 0;
-        }
-
-        public ulong ReadU64(int ordinal) {
-            return 0;
-        }
-
-        public ulong ReadU64(string name) {
-            return 0;
         }
 
         public byte ReadU8(int ordinal) {
