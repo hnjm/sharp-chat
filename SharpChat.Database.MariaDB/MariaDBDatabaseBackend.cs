@@ -25,6 +25,13 @@ namespace SharpChat.Database.MariaDB {
         public IDatabaseParameter CreateParameter(string name, object value)
             => new MariaDBDatabaseParameter(name, value);
 
+        public string FromUnixTime(string param)
+            => string.Format(@"FROM_UNIXTIME({0})", param);
+        public string ToUnixTime(string param)
+            => string.Format(@"UNIX_TIMESTAMP({0})", param);
+        public string DateTimeNow()
+            => @"NOW()";
+
         private bool IsDisposed;
         ~MariaDBDatabaseBackend()
             => Dispose(false);
@@ -33,6 +40,7 @@ namespace SharpChat.Database.MariaDB {
         private void Dispose(bool disposing) {
             if(IsDisposed)
                 return;
+            IsDisposed = true;
 
             if(disposing)
                 GC.SuppressFinalize(this);

@@ -41,7 +41,7 @@ namespace SharpChat {
             Wrapper.RunCommand(
                 @"INSERT INTO `sqc_events` (`event_id`, `event_created`, `event_type`, `event_target`, `event_flags`, `event_data`"
                 + @", `event_sender`, `event_sender_name`, `event_sender_colour`, `event_sender_rank`, `event_sender_nick`, `event_sender_perms`)"
-                + @" VALUES (@id, FROM_UNIXTIME(@created), @type, @target, @flags, @data"
+                + @" VALUES (@id, " + Wrapper.FromUnixTime(@"@created") + @", @type, @target, @flags, @data"
                 + @", @sender, @sender_name, @sender_colour, @sender_rank, @sender_nick, @sender_perms)",
                 Wrapper.CreateParam(@"id", evt.SequenceId),
                 Wrapper.CreateParam(@"created", evt.DateTime.ToUnixTimeSeconds()),
@@ -60,7 +60,7 @@ namespace SharpChat {
 
         public static void DeleteEvent(IChatEvent evt) {
             Wrapper.RunCommand(
-                @"UPDATE IGNORE `sqc_events` SET `event_deleted` = NOW() WHERE `event_id` = @id AND `event_deleted` IS NULL",
+                @"UPDATE IGNORE `sqc_events` SET `event_deleted` = " + Wrapper.DateTimeNow() + @" WHERE `event_id` = @id AND `event_deleted` IS NULL",
                 Wrapper.CreateParam(@"id", evt.SequenceId)
             );
         }
@@ -94,7 +94,7 @@ namespace SharpChat {
             Wrapper.RunQuery(
                 @"SELECT `event_id`, `event_type`, `event_flags`, `event_data`"
                 + @", `event_sender`, `event_sender_name`, `event_sender_colour`, `event_sender_rank`, `event_sender_nick`, `event_sender_perms`"
-                + @", UNIX_TIMESTAMP(`event_created`) AS `event_created`"
+                + @", " + Wrapper.ToUnixTime(@"`event_created`") + @" AS `event_created`"
                 + @" FROM `sqc_events`"
                 + @" WHERE `event_deleted` IS NULL AND `event_target` = @target"
                 + @" ORDER BY `event_id` DESC"
@@ -120,7 +120,7 @@ namespace SharpChat {
             Wrapper.RunQuery(
                 @"SELECT `event_id`, `event_type`, `event_flags`, `event_data`"
                 + @", `event_sender`, `event_sender_name`, `event_sender_colour`, `event_sender_rank`, `event_sender_nick`, `event_sender_perms`"
-                + @", UNIX_TIMESTAMP(`event_created`) AS `event_created`"
+                + @", " + Wrapper.ToUnixTime(@"`event_created`") + @" AS `event_created`"
                 + @" FROM `sqc_events`"
                 + @" WHERE `event_id` = @id",
                 reader => {

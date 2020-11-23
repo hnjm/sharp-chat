@@ -13,5 +13,12 @@ namespace SharpChat.Database.Null {
         public void Dispose() {
             GC.SuppressFinalize(this);
         }
+
+        public string FromUnixTime(string param)
+            => string.Empty;
+        public string ToUnixTime(string param)
+            => string.Empty;
+        public string DateTimeNow()
+            => string.Empty;
     }
 }

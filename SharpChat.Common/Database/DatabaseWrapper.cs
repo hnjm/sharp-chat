@@ -15,7 +15,15 @@ namespace SharpChat.Database {
         public IDatabaseParameter CreateParam(string name, object value)
             => Backend.CreateParameter(name, value);
 
+        public string ToUnixTime(string param)
+            => Backend.ToUnixTime(param);
+        public string FromUnixTime(string param)
+            => Backend.FromUnixTime(param);
+        public string DateTimeNow()
+            => Backend.DateTimeNow();
+
         public void RunCommand(object query, Action<IDatabaseCommand> action, params IDatabaseParameter[] @params) {
+            Logger.Debug(query);
             using IDatabaseConnection conn = Backend.CreateConnection();
             using IDatabaseCommand comm = conn.CreateCommand(query);
             if(@params.Any()) {
