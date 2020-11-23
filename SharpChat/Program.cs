@@ -1,7 +1,15 @@
-﻿using SharpChat.Flashii;
+﻿using SharpChat.Bans;
+using SharpChat.Misuzu;
+using SharpChat.Misuzu.Users.Auth;
+using SharpChat.Users;
+using SharpChat.Users.Auth;
+using SharpChat.WebSocket;
+using SharpChat.WebSocket.Fleck;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
 using System.Threading;
 
 namespace SharpChat {
@@ -15,66 +23,85 @@ namespace SharpChat {
             Console.WriteLine(@" ___/ / / / / /_/ / /  / /_/ / /___/ / / / /_/ / /_  ");
             Console.WriteLine(@"/____/_/ /_/\__,_/_/  / .___/\____/_/ /_/\__,_/\__/  ");
             Console.WriteLine(@"                     / _/            Sock Chat Server");
-#if DEBUG
-            Console.WriteLine(@"============================================ DEBUG ==");
-#endif
 
 #if DEBUG
-            Console.WriteLine(@"HOLD A KEY TO START A TEST NOW");
-            Thread.Sleep(1000);
-            if (Console.KeyAvailable)
-                switch (Console.ReadKey(true).Key) {
-                    case ConsoleKey.F:
-                        TestMisuzuAuth();
-                        return;
+            Console.WriteLine(@"============================================ DEBUG ==");
+
+            Console.Write(@"Press a key to start a test");
+            for(int i = 10; i > 0; --i) {
+                Thread.Sleep(100);
+                Console.Write('.');
+                if(Console.KeyAvailable) {
+                    Console.WriteLine();
+                    switch(Console.ReadKey(true).Key) {
+                        case ConsoleKey.F:
+                            TestMisuzuAuth();
+                            return;
+                        default:
+                            break;
+                    }
                 }
+            }
+            Console.WriteLine();
 #endif
+
+            using ManualResetEvent mre = new ManualResetEvent(false);
 
             Database.ReadConfig();
 
-            using ManualResetEvent mre = new ManualResetEvent(false);
-            using SockChatServer scs = new SockChatServer(PORT);
+            using HttpClient httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(@"SharpChat");
+
+            using IWebSocketServer wss = new FleckWebSocketServer(PORT);
+            using SockChatServer scs = new SockChatServer(wss, httpClient, new MisuzuDataProvider(httpClient));
+
             Console.CancelKeyPress += (s, e) => { e.Cancel = true; mre.Set(); };
             mre.WaitOne();
         }
 
 #if DEBUG
         private static void TestMisuzuAuth() {
-            Console.WriteLine($@"Enter token found on {FlashiiUrls.BASE_URL}/login:");
+            Console.WriteLine($@"Enter token found on {MisuzuUrls.BASE_URL}/login:");
             string[] token = Console.ReadLine().Split(new[] { '_' }, 2);
 
-            System.Net.Http.HttpClient httpClient = new System.Net.Http.HttpClient();
+            HttpClient httpClient = new HttpClient();
             httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(@"SharpChat");
 
-            FlashiiAuth authRes = FlashiiAuth.Attempt(httpClient, new FlashiiAuthRequest {
-                UserId = int.Parse(token[0]), Token = token[1], IPAddress = @"1.2.4.8"
-            }).GetAwaiter().GetResult();
+            IDataProvider dataProvider = new MisuzuDataProvider(httpClient);
 
-            if(authRes.Success) {
-                Console.WriteLine(@"Auth success!");
-                Console.WriteLine($@" User ID:   {authRes.UserId}");
-                Console.WriteLine($@" Username:  {authRes.Username}");
-                Console.WriteLine($@" Colour:    {authRes.ColourRaw:X8}");
-                Console.WriteLine($@" Hierarchy: {authRes.Rank}");
-                Console.WriteLine($@" Silenced:  {authRes.SilencedUntil}");
-                Console.WriteLine($@" Perms:     {authRes.Permissions}");
-            } else {
-                Console.WriteLine($@"Auth failed: {authRes.Reason}");
-                return;
-            }
+            long userId = long.Parse(token[0]);
+            IPAddress remoteAddr = IPAddress.Parse(@"1.2.4.8");
 
-            Console.WriteLine(@"Bumping last seen...");
-            FlashiiBump.Submit(httpClient, new[] { new ChatUser(authRes) });
+            for(int i = 0; i < 100; ++i) {
+                IUserAuthResponse authRes;
+                try {
+                    authRes = dataProvider.UserAuthClient.AttemptAuth(new UserAuthRequest(userId, token[1], remoteAddr));
 
-            Console.WriteLine(@"Fetching ban list...");
-            IEnumerable<FlashiiBan> bans = FlashiiBan.GetList(httpClient).GetAwaiter().GetResult();
-            Console.WriteLine($@"{bans.Count()} BANS");
-            foreach(FlashiiBan ban in bans) {
-                Console.WriteLine($@"BAN INFO");
-                Console.WriteLine($@" User ID:    {ban.UserId}");
-                Console.WriteLine($@" Username:   {ban.Username}");
-                Console.WriteLine($@" IP Address: {ban.UserIP}");
-                Console.WriteLine($@" Expires:    {ban.Expires}");
+                    Console.WriteLine(@"Auth success!");
+                    Console.WriteLine($@" User ID:   {authRes.UserId}");
+                    Console.WriteLine($@" Username:  {authRes.Username}");
+                    Console.WriteLine($@" Colour:    {authRes.Colour.Raw:X8}");
+                    Console.WriteLine($@" Hierarchy: {authRes.Rank}");
+                    Console.WriteLine($@" Silenced:  {authRes.SilencedUntil}");
+                    Console.WriteLine($@" Perms:     {authRes.Permissions}");
+                } catch(UserAuthFailedException ex) {
+                    Console.WriteLine($@"Auth failed: {ex.Message}");
+                    return;
+                }
+
+                Console.WriteLine(@"Bumping last seen...");
+                dataProvider.UserBumpClient.SubmitBumpUsers(new[] { new ChatUser(authRes) });
+
+                Console.WriteLine(@"Fetching ban list...");
+                IEnumerable<IBanRecord> bans = dataProvider.BanClient.GetBanList();
+                Console.WriteLine($@"{bans.Count()} BANS");
+                foreach(IBanRecord ban in bans) {
+                    Console.WriteLine($@"BAN INFO");
+                    Console.WriteLine($@" User ID:    {ban.UserId}");
+                    Console.WriteLine($@" Username:   {ban.Username}");
+                    Console.WriteLine($@" IP Address: {ban.UserIP}");
+                    Console.WriteLine($@" Expires:    {ban.Expires}");
+                }
             }
         }
 #endif
