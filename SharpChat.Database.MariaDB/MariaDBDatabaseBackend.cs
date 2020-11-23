@@ -25,6 +25,27 @@ namespace SharpChat.Database.MariaDB {
         public IDatabaseParameter CreateParameter(string name, object value)
             => new MariaDBDatabaseParameter(name, value);
 
+        public string TimestampType
+            => @"TIMESTAMP";
+        public string BlobType
+            => @"BLOB";
+        public string VarCharType(int size)
+            => string.Format(@"VARCHAR({0})", size);
+        public string VarBinaryType(int size)
+            => string.Format(@"VARBINARY({0})", size);
+        public string BigIntType(int length)
+            => string.Format(@"BIGINT({0})", length);
+        public string BigUIntType(int length)
+            => string.Format(@"BIGINT({0}) UNSIGNED", length);
+        public string IntType(int length)
+            => string.Format(@"INT({0})", length);
+        public string UIntType(int length)
+            => string.Format(@"INT({0}) UNSIGNED", length);
+        public string TinyIntType(int length)
+            => string.Format(@"TINYINT({0})", length);
+        public string TinyUIntType(int length)
+            => string.Format(@"TINYINT({0}) UNSIGNED", length);
+
         public string FromUnixTime(string param)
             => string.Format(@"FROM_UNIXTIME({0})", param);
         public string ToUnixTime(string param)

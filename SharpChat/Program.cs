@@ -2,6 +2,7 @@
 using SharpChat.Database;
 using SharpChat.Database.MariaDB;
 using SharpChat.Database.Null;
+using SharpChat.Database.SQLite;
 using SharpChat.Misuzu;
 using SharpChat.Users;
 using SharpChat.Users.Auth;
@@ -17,7 +18,8 @@ using System.Threading;
 
 namespace SharpChat {
     public class Program {
-        public const string DB_CONFIG = @"mariadb.txt";
+        public const string SQL_CONFIG = @"sqlite.txt";
+        public const string MDB_CONFIG = @"mariadb.txt";
         public const ushort PORT = 6770;
 
         public static void Main(string[] args) {
@@ -53,10 +55,22 @@ namespace SharpChat {
 
             IDatabaseBackend db = new NullDatabaseBackend();
 
-            if(!File.Exists(DB_CONFIG)) {
-                Console.WriteLine(@"MariaDB configuration is missing. Skipping database connection...");
+            // TODO: Make this not suck
+            if(!File.Exists(MDB_CONFIG)) {
+                Console.WriteLine(@"MariaDB configuration is missing. Attempting SQLite...");
+                if(!File.Exists(SQL_CONFIG)) {
+                    Console.WriteLine(@"SQLite configuration is also missing. Skipping database connection...");
+                } else {
+                    string[] config = File.ReadAllLines(SQL_CONFIG);
+                    if(config.Length < 1) {
+                        Console.WriteLine(@"SQLite configuration does not contain sufficient information. Skipping database connection...");
+                    } else {
+                        db.Dispose();
+                        db = new SQLiteDatabaseBackend(config[0]);
+                    }
+                }
             } else {
-                string[] config = File.ReadAllLines(DB_CONFIG);
+                string[] config = File.ReadAllLines(MDB_CONFIG);
                 if(config.Length < 4) {
                     Console.WriteLine(@"MariaDB configuration does not contain sufficient information. Skipping database connection...");
                 } else {

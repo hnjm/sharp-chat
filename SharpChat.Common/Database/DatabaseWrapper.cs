@@ -15,6 +15,27 @@ namespace SharpChat.Database {
         public IDatabaseParameter CreateParam(string name, object value)
             => Backend.CreateParameter(name, value);
 
+        public string TimestampType
+            => Backend.TimestampType;
+        public string BlobType
+            => Backend.BlobType;
+        public string VarCharType(int size)
+            => Backend.VarCharType(size);
+        public string VarBinaryType(int size)
+            => Backend.VarBinaryType(size);
+        public string BigIntType(int length)
+            => Backend.BigIntType(length);
+        public string BigUIntType(int length)
+            => Backend.BigUIntType(length);
+        public string IntType(int length)
+            => Backend.IntType(length);
+        public string UIntType(int length)
+            => Backend.UIntType(length);
+        public string TinyIntType(int length)
+            => Backend.TinyIntType(length);
+        public string TinyUIntType(int length)
+            => Backend.TinyUIntType(length);
+
         public string ToUnixTime(string param)
             => Backend.ToUnixTime(param);
         public string FromUnixTime(string param)

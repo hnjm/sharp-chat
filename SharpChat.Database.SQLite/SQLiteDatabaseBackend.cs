@@ -8,7 +8,7 @@ namespace SharpChat.Database.SQLite {
         public SQLiteDatabaseBackend(string path) {
             DSN = new SQLiteConnectionStringBuilder {
                 DataSource = path,
-                DateTimeFormat = SQLiteDateFormats.ISO8601,
+                DateTimeFormat = SQLiteDateFormats.UnixEpoch,
                 DateTimeKind = DateTimeKind.Utc,
                 ForeignKeys = true,
                 LegacyFormat = false,
@@ -23,12 +23,33 @@ namespace SharpChat.Database.SQLite {
         public IDatabaseParameter CreateParameter(string name, object value)
             => new SQLiteDatabaseParameter(name, value);
 
+        public string TimestampType
+            => @"INTEGER";
+        public string BlobType
+            => @"BLOB";
+        public string VarCharType(int size)
+            => @"TEXT";
+        public string VarBinaryType(int size)
+            => @"BLOB";
+        public string BigIntType(int length)
+            => @"INTEGER";
+        public string BigUIntType(int length)
+            => @"INTEGER";
+        public string IntType(int length)
+            => @"INTEGER";
+        public string UIntType(int length)
+            => @"INTEGER";
+        public string TinyIntType(int length)
+            => @"INTEGER";
+        public string TinyUIntType(int length)
+            => @"INTEGER";
+
         public string FromUnixTime(string param)
-            => string.Format(@"datetime({0}, 'unixepoch')", param);
+            => param;
         public string ToUnixTime(string param)
-            => string.Format(@"strftime('%s', {0})", param);
+            => param;
         public string DateTimeNow()
-            => @"datetime('now')";
+            => @"strftime('%s', 'now')";
 
         private bool IsDisposed;
         ~SQLiteDatabaseBackend()

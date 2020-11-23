@@ -8,6 +8,7 @@
   <ItemGroup>
     <ProjectReference Include="..\SharpChat.Common\SharpChat.Common.csproj" />
     <ProjectReference Include="..\SharpChat.Database.MariaDB\SharpChat.Database.MariaDB.csproj" />
+    <ProjectReference Include="..\SharpChat.Database.SQLite\SharpChat.Database.SQLite.csproj" />
     <ProjectReference Include="..\SharpChat.Misuzu\SharpChat.Misuzu.csproj" />
     <ProjectReference Include="..\SharpChat.WebSocket.Fleck\SharpChat.WebSocket.Fleck.csproj" />
   </ItemGroup>
