@@ -1,25 +1,24 @@
-﻿using MySql.Data.MySqlClient;
-using System;
+﻿using System;
 
 namespace SharpChat {
-    public static partial class Database {
+    public static partial class DB {
         private static void DoMigration(string name, Action action) {
-            bool done = (long)RunQueryValue(
+            bool done = (long)Wrapper.RunQueryValue(
                 @"SELECT COUNT(*) FROM `sqc_migrations` WHERE `migration_name` = @name",
-                new MySqlParameter(@"name", name)
+                Wrapper.CreateParam(@"name", name)
             ) > 0;
             if (!done) {
                 Logger.Write($@"Running migration '{name}'...");
                 action();
-                RunCommand(
+                Wrapper.RunCommand(
                     @"INSERT INTO `sqc_migrations` (`migration_name`) VALUES (@name)",
-                    new MySqlParameter(@"name", name)
+                    Wrapper.CreateParam(@"name", name)
                 );
             }
         }
 
         public static void RunMigrations() {
-            RunCommand(
+            Wrapper.RunCommand(
                 @"CREATE TABLE IF NOT EXISTS `sqc_migrations` ("
                 + @"`migration_name` VARCHAR(255) NOT NULL,"
                 + @"`migration_completed` TIMESTAMP NOT NULL DEFAULT current_timestamp(),"
@@ -32,7 +31,7 @@ namespace SharpChat {
         }
 
         private static void CreateEventsTable() {
-            RunCommand(
+            Wrapper.RunCommand(
                 @"CREATE TABLE `sqc_events` ("
                 + @"`event_id` BIGINT(20) NOT NULL,"
                 + @"`event_sender` BIGINT(20) UNSIGNED NULL DEFAULT NULL,"

@@ -1,6 +1,7 @@
 ﻿using SharpChat.Bans;
 using SharpChat.Channels;
 using SharpChat.Commands;
+using SharpChat.Database;
 using SharpChat.Events;
 using SharpChat.Packets;
 using SharpChat.Users;
@@ -40,6 +41,7 @@ namespace SharpChat {
 
         public IWebSocketServer Server { get; }
         public IDataProvider DataProvider { get; }
+        public DatabaseWrapper Database { get; }
         public ChatContext Context { get; }
 
         public HttpClient HttpClient { get; }
@@ -56,17 +58,13 @@ namespace SharpChat {
                 return Sessions.FirstOrDefault(x => x.Connection == conn);
         }
 
-        public SockChatServer(IWebSocketServer server, HttpClient httpClient, IDataProvider dataProvider) {
+        public SockChatServer(IWebSocketServer server, HttpClient httpClient, IDataProvider dataProvider, IDatabaseBackend databaseBackend) {
             Logger.Write("Starting Sock Chat server...");
 
             DataProvider = dataProvider ?? throw new ArgumentNullException(nameof(dataProvider));
+            Database = new DatabaseWrapper(databaseBackend ?? throw new ArgumentNullException(nameof(databaseBackend)));
 
-            Server = server ?? throw new ArgumentNullException(nameof(server));
-            Server.OnOpen += OnOpen;
-            Server.OnClose += OnClose;
-            Server.OnError += OnError;
-            Server.OnMessage += OnMessage;
-            Server.Start();
+            DB.Init(Database);
 
             HttpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
 
@@ -80,6 +78,13 @@ namespace SharpChat {
             Context.Channels.Add(new ChatChannel(@"Password") { Password = @"meow", });
 #endif
             Context.Channels.Add(new ChatChannel(@"Staff") { Rank = 5 });
+
+            Server = server ?? throw new ArgumentNullException(nameof(server));
+            Server.OnOpen += OnOpen;
+            Server.OnClose += OnClose;
+            Server.OnError += OnError;
+            Server.OnMessage += OnMessage;
+            Server.Start();
         }
 
         private void OnOpen(IWebSocketConnection conn) {
@@ -832,6 +837,7 @@ namespace SharpChat {
             Server?.Dispose();
             Context?.Dispose();
             HttpClient?.Dispose();
+            Database?.Dispose();
 
             if(disposing)
                 GC.SuppressFinalize(this);

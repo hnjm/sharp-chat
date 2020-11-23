@@ -1,12 +1,15 @@
 ﻿using SharpChat.Bans;
+using SharpChat.Database;
+using SharpChat.Database.MariaDB;
+using SharpChat.Database.Null;
 using SharpChat.Misuzu;
-using SharpChat.Misuzu.Users.Auth;
 using SharpChat.Users;
 using SharpChat.Users.Auth;
 using SharpChat.WebSocket;
 using SharpChat.WebSocket.Fleck;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -14,6 +17,7 @@ using System.Threading;
 
 namespace SharpChat {
     public class Program {
+        public const string DB_CONFIG = @"mariadb.txt";
         public const ushort PORT = 6770;
 
         public static void Main(string[] args) {
@@ -47,16 +51,30 @@ namespace SharpChat {
 
             using ManualResetEvent mre = new ManualResetEvent(false);
 
-            Database.ReadConfig();
+            IDatabaseBackend db = new NullDatabaseBackend();
+
+            if(!File.Exists(DB_CONFIG)) {
+                Console.WriteLine(@"MariaDB configuration is missing. Skipping database connection...");
+            } else {
+                string[] config = File.ReadAllLines(DB_CONFIG);
+                if(config.Length < 4) {
+                    Console.WriteLine(@"MariaDB configuration does not contain sufficient information. Skipping database connection...");
+                } else {
+                    db.Dispose();
+                    db = new MariaDBDatabaseBackend(config[0], config[1], config[2], config[3]);
+                }
+            }
 
             using HttpClient httpClient = new HttpClient();
             httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(@"SharpChat");
 
             using IWebSocketServer wss = new FleckWebSocketServer(PORT);
-            using SockChatServer scs = new SockChatServer(wss, httpClient, new MisuzuDataProvider(httpClient));
+            using SockChatServer scs = new SockChatServer(wss, httpClient, new MisuzuDataProvider(httpClient), db);
 
             Console.CancelKeyPress += (s, e) => { e.Cancel = true; mre.Set(); };
             mre.WaitOne();
+
+            db.Dispose();
         }
 
 #if DEBUG

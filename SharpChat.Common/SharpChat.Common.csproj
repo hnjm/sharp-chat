@@ -5,8 +5,4 @@
     <RootNamespace>SharpChat</RootNamespace>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="MySql.Data" Version="8.0.22" />
-  </ItemGroup>
-
 </Project>

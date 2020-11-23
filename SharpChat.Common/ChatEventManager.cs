@@ -15,7 +15,7 @@ namespace SharpChat {
         public ChatEventManager(ChatContext context) {
             Context = context;
 
-            if (Database.HasDatabase)
+            if (!DB.HasDatabase)
                 Events = new List<IChatEvent>();
         }
 
@@ -27,8 +27,8 @@ namespace SharpChat {
                 lock(Events)
                     Events.Add(evt);
 
-            if(Database.HasDatabase)
-                Database.LogEvent(evt);
+            if(DB.HasDatabase)
+                DB.LogEvent(evt);
         }
 
         public void Remove(IChatEvent evt) {
@@ -39,8 +39,8 @@ namespace SharpChat {
                 lock (Events)
                     Events.Remove(evt);
 
-            if (Database.HasDatabase)
-                Database.DeleteEvent(evt);
+            if (DB.HasDatabase)
+                DB.DeleteEvent(evt);
 
             Context.Send(new ChatMessageDeletePacket(evt.SequenceId));
         }
@@ -49,8 +49,8 @@ namespace SharpChat {
             if (seqId < 1)
                 return null;
 
-            if (Database.HasDatabase)
-                return Database.GetEvent(seqId);
+            if (DB.HasDatabase)
+                return DB.GetEvent(seqId);
 
             if (Events != null)
                 lock (Events)
@@ -60,8 +60,8 @@ namespace SharpChat {
         }
 
         public IEnumerable<IChatEvent> GetTargetLog(IPacketTarget target, int amount = 20, int offset = 0) {
-            if (Database.HasDatabase)
-                return Database.GetEvents(target, amount, offset).Reverse();
+            if (DB.HasDatabase)
+                return DB.GetEvents(target, amount, offset).Reverse();
 
             if (Events != null)
                 lock (Events) {
@@ -91,7 +91,7 @@ namespace SharpChat {
                 return;
             IsDisposed = true;
 
-            Events.Clear();
+            Events?.Clear();
 
             if (disposing)
                 GC.SuppressFinalize(this);
