@@ -13,7 +13,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpChat.Common", "SharpCh
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpChat.WebSocket.Fleck", "SharpChat.WebSocket.Fleck\SharpChat.WebSocket.Fleck.csproj", "{505498BC-0DC8-459D-9AA8-BAD1457FEC19}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpChat.Database.MariaDB", "SharpChat.Database.MariaDB\SharpChat.Database.MariaDB.csproj", "{E53DA108-2C3A-4F7B-AACC-CDA44CD04C92}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpChat.Database.MariaDB", "SharpChat.Database.MariaDB\SharpChat.Database.MariaDB.csproj", "{E53DA108-2C3A-4F7B-AACC-CDA44CD04C92}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Databases", "Databases", "{EC70B2EC-31AE-44B3-8259-2E718F224420}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "WebSockets", "WebSockets", "{D1BE38EC-325D-46CC-A0E0-C42E5635A662}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DataProviders", "DataProviders", "{9CF387F1-938F-4B3B-AEB1-992F6686BDD0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -48,6 +54,11 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{651D2015-E0E6-48EE-9733-AA991FA67A8C} = {9CF387F1-938F-4B3B-AEB1-992F6686BDD0}
+		{505498BC-0DC8-459D-9AA8-BAD1457FEC19} = {D1BE38EC-325D-46CC-A0E0-C42E5635A662}
+		{E53DA108-2C3A-4F7B-AACC-CDA44CD04C92} = {EC70B2EC-31AE-44B3-8259-2E718F224420}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {42279FE1-5980-440A-87F8-25338DFE54CF}
