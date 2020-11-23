@@ -18,8 +18,10 @@ namespace SharpChat.Database {
         public void RunCommand(object query, Action<IDatabaseCommand> action, params IDatabaseParameter[] @params) {
             using IDatabaseConnection conn = Backend.CreateConnection();
             using IDatabaseCommand comm = conn.CreateCommand(query);
-            if(@params.Any())
+            if(@params.Any()) {
                 comm.AddParameters(@params);
+                comm.Prepare();
+            }
             action.Invoke(comm);
         }
 
@@ -35,21 +37,11 @@ namespace SharpChat.Database {
             return value;
         }
 
-        public IDatabaseReader RunQuery(object query, params IDatabaseParameter[] @params) {
-            IDatabaseConnection conn = Backend.CreateConnection();
-            IDatabaseCommand comm = conn.CreateCommand(query);
-            if(@params.Any())
-                comm.AddParameters(@params);
-            return comm.ExecuteReader();
-        }
-
         public void RunQuery(object query, Action<IDatabaseReader> action, params IDatabaseParameter[] @params) {
-            using IDatabaseConnection conn = Backend.CreateConnection();
-            using IDatabaseCommand comm = conn.CreateCommand(query);
-            if(@params.Any())
-                comm.AddParameters(@params);
-            using IDatabaseReader reader = comm.ExecuteReader();
-            action.Invoke(reader);
+            RunCommand(query, comm => {
+                using IDatabaseReader reader = comm.ExecuteReader();
+                action.Invoke(reader);
+            }, @params);
         }
 
         private bool IsDisposed;

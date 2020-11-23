@@ -34,11 +34,15 @@ namespace SharpChat.Database.MariaDB {
             Command.Parameters.Clear();
         }
 
+        public void Prepare() {
+            Command.Prepare();
+        }
+
         public int Execute()
             => Command.ExecuteNonQuery();
 
-        public IDatabaseReader ExecuteReader(bool closeConnection = true)
-            => new ADODatabaseReader(Command.ExecuteReader(closeConnection ? CommandBehavior.CloseConnection : CommandBehavior.Default));
+        public IDatabaseReader ExecuteReader()
+            => new ADODatabaseReader(Command.ExecuteReader());
 
         public object ExecuteScalar()
             => Command.ExecuteScalar();
@@ -52,7 +56,7 @@ namespace SharpChat.Database.MariaDB {
             if(IsDisposed)
                 return;
             IsDisposed = true;
-
+            
             Command.Dispose();
 
             if(disposing)

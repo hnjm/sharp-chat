@@ -10,9 +10,10 @@ namespace SharpChat.Database {
         IDatabaseParameter AddParameter(IDatabaseParameter param);
         void AddParameters(IDatabaseParameter[] @params);
         void ClearParameters();
+        void Prepare();
 
         int Execute();
-        IDatabaseReader ExecuteReader(bool closeConnection = true);
+        IDatabaseReader ExecuteReader();
         object ExecuteScalar();
     }
 }

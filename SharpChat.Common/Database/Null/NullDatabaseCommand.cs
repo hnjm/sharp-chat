@@ -31,12 +31,14 @@ namespace SharpChat.Database.Null {
             return 0;
         }
 
-        public IDatabaseReader ExecuteReader(bool closeConnection = true) {
+        public IDatabaseReader ExecuteReader() {
             return new NullDatabaseReader();
         }
 
         public object ExecuteScalar() {
             return null;
         }
+
+        public void Prepare() {}
     }
 }
