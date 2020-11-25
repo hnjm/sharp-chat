@@ -1,23 +1,8 @@
 ﻿using System;
 
-namespace SharpChat {
-    public static partial class DB {
-        private static void DoMigration(string name, Action action) {
-            bool done = (long)Wrapper.RunQueryValue(
-                @"SELECT COUNT(*) FROM `sqc_migrations` WHERE `migration_name` = @name",
-                Wrapper.CreateParam(@"name", name)
-            ) > 0;
-            if (!done) {
-                Logger.Write($@"Running migration '{name}'...");
-                action();
-                Wrapper.RunCommand(
-                    @"INSERT INTO `sqc_migrations` (`migration_name`, `migration_completed`) VALUES (@name, " + Wrapper.DateTimeNow() + @")",
-                    Wrapper.CreateParam(@"name", name)
-                );
-            }
-        }
-
-        public static void RunMigrations() {
+namespace SharpChat.Events.Storage {
+    public partial class ADOChatEventStorage {
+        public void RunMigrations() {
             Wrapper.RunCommand(
                 @"CREATE TABLE IF NOT EXISTS `sqc_migrations` ("
                 + @"`migration_name` " + Wrapper.VarCharType(255) + @" PRIMARY KEY,"
@@ -29,7 +14,22 @@ namespace SharpChat {
             DoMigration(@"create_events_table", CreateEventsTable);
         }
 
-        private static void CreateEventsTable() {
+        private void DoMigration(string name, Action action) {
+            bool done = (long)Wrapper.RunQueryValue(
+                @"SELECT COUNT(*) FROM `sqc_migrations` WHERE `migration_name` = @name",
+                Wrapper.CreateParam(@"name", name)
+            ) > 0;
+            if(!done) {
+                Logger.Write($@"Running migration '{name}'...");
+                action();
+                Wrapper.RunCommand(
+                    @"INSERT INTO `sqc_migrations` (`migration_name`, `migration_completed`) VALUES (@name, " + Wrapper.DateTimeNow() + @")",
+                    Wrapper.CreateParam(@"name", name)
+                );
+            }
+        }
+
+        private void CreateEventsTable() {
             Wrapper.RunCommand(
                 @"CREATE TABLE `sqc_events` ("
                 + @"`event_id` " + Wrapper.BigIntType(20) + @" PRIMARY KEY,"

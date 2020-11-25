@@ -64,8 +64,6 @@ namespace SharpChat {
             DataProvider = dataProvider ?? throw new ArgumentNullException(nameof(dataProvider));
             Database = new DatabaseWrapper(databaseBackend ?? throw new ArgumentNullException(nameof(databaseBackend)));
 
-            DB.Init(Database);
-
             HttpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
 
             Context = new ChatContext(this);
@@ -266,7 +264,7 @@ namespace SharpChat {
                     Logger.Write($@"<{sess.Id} {mUser.Username}> {messageText}");
 #endif
 
-                    IChatMessage message = null;
+                    IChatMessageEvent message = null;
 
                     if(messageText[0] == '/') {
                         message = HandleV1Command(messageText, mUser, mChannel);
@@ -276,15 +274,9 @@ namespace SharpChat {
                     }
 
                     if(message == null)
-                        message = new ChatMessage {
-                            Target = mChannel,
-                            TargetName = mChannel.TargetName,
-                            DateTime = DateTimeOffset.UtcNow,
-                            Sender = mUser,
-                            Text = messageText,
-                        };
+                        message = new ChatMessageEvent(mUser, mChannel, messageText);
 
-                    Context.Events.Add(message);
+                    Context.Events.AddEvent(message);
                     mChannel.Send(new ChatMessageAddPacket(message));
                     break;
 
@@ -316,7 +308,7 @@ namespace SharpChat {
             }
         }
 
-        public IChatMessage HandleV1Command(string message, ChatUser user, ChatChannel channel) {
+        public IChatMessageEvent HandleV1Command(string message, ChatUser user, ChatChannel channel) {
             string[] parts = message[1..].Split(' ');
             string commandName = parts[0].Replace(@".", string.Empty).ToLowerInvariant();
 
@@ -403,22 +395,8 @@ namespace SharpChat {
 
                     string whisperStr = string.Join(' ', parts.Skip(2));
 
-                    whisperUser.Send(new ChatMessageAddPacket(new ChatMessage {
-                        DateTime = DateTimeOffset.Now,
-                        Target = whisperUser,
-                        TargetName = whisperUser.TargetName,
-                        Sender = user,
-                        Text = whisperStr,
-                        Flags = ChatMessageFlags.Private,
-                    }));
-                    user.Send(new ChatMessageAddPacket(new ChatMessage {
-                        DateTime = DateTimeOffset.Now,
-                        Target = whisperUser,
-                        TargetName = whisperUser.TargetName,
-                        Sender = user,
-                        Text = $@"{whisperUser.DisplayName} {whisperStr}",
-                        Flags = ChatMessageFlags.Private,
-                    }));
+                    whisperUser.Send(new ChatMessageAddPacket(new ChatMessageEvent(user, whisperUser, whisperStr, ChatEventFlags.Private)));
+                    user.Send(new ChatMessageAddPacket(new ChatMessageEvent(user, user, $@"{whisperUser.DisplayName} {whisperStr}", ChatEventFlags.Private)));
                     break;
                 case @"action": // describe an action
                 case @"me":
@@ -427,14 +405,7 @@ namespace SharpChat {
 
                     string actionMsg = string.Join(' ', parts.Skip(1));
 
-                    return new ChatMessage {
-                        Target = channel,
-                        TargetName = channel.TargetName,
-                        DateTime = DateTimeOffset.UtcNow,
-                        Sender = user,
-                        Text = actionMsg,
-                        Flags = ChatMessageFlags.Action,
-                    };
+                    return new ChatMessageEvent(user, channel, actionMsg, ChatEventFlags.Action);
                 case @"who": // gets all online users/online users in a channel if arg
                     StringBuilder whoChanSB = new StringBuilder();
                     string whoChanStr = parts.Length > 1 && !string.IsNullOrEmpty(parts[1]) ? parts[1] : string.Empty;
@@ -631,14 +602,15 @@ namespace SharpChat {
                         break;
                     }
 
-                    IChatEvent delMsg = Context.Events.Get(delSeqId);
+                    IChatEvent delMsg = Context.Events.GetEvent(delSeqId);
 
                     if(delMsg == null || delMsg.Sender.Rank > user.Rank || (!deleteAnyMessage && delMsg.Sender.UserId != user.UserId)) {
                         user.Send(new LegacyCommandResponse(LCR.MESSAGE_DELETE_ERROR));
                         break;
                     }
 
-                    Context.Events.Remove(delMsg);
+                    if(Context.Events.RemoveEvent(delMsg))
+                        Context.Send(new ChatMessageDeletePacket(delMsg.SequenceId));
                     break;
                 case @"kick": // kick a user from the server
                 case @"ban": // ban a user from the server, this differs from /kick in that it adds all remote address to the ip banlist

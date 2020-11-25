@@ -3,7 +3,7 @@ using System;
 
 namespace SharpChat.Events {
     [Flags]
-    public enum ChatMessageFlags {
+    public enum ChatEventFlags {
         None = 0,
         Action = 1,
         Broadcast = 1 << 1,
@@ -16,11 +16,11 @@ namespace SharpChat.Events {
         BasicUser Sender { get; set; }
         IPacketTarget Target { get; set; }
         string TargetName { get; set; }
-        ChatMessageFlags Flags { get; set; }
+        ChatEventFlags Flags { get; set; }
         long SequenceId { get; set; }
     }
 
-    public interface IChatMessage : IChatEvent {
+    public interface IChatMessageEvent : IChatEvent {
         string Text { get; }
     }
 }

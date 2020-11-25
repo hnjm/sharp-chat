@@ -12,7 +12,7 @@ namespace SharpChat.Commands {
             return name == @"afk";
         }
 
-        public IChatMessage Dispatch(IChatCommandContext context) {
+        public IChatMessageEvent Dispatch(IChatCommandContext context) {
             string statusText = context.Args.ElementAtOrDefault(1);
             if(string.IsNullOrWhiteSpace(statusText))
                 statusText = DEFAULT;

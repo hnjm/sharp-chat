@@ -1,6 +1,7 @@
 ﻿using SharpChat.Bans;
 using SharpChat.Channels;
 using SharpChat.Events;
+using SharpChat.Events.Storage;
 using SharpChat.Packets;
 using SharpChat.Users;
 using System;
@@ -17,7 +18,7 @@ namespace SharpChat {
         public BanManager Bans { get; }
         public ChannelManager Channels { get; }
         public UserManager Users { get; }
-        public ChatEventManager Events { get; }
+        public IChatEventStorage Events { get; }
 
         public string TargetName => @"@broadcast";
 
@@ -26,7 +27,9 @@ namespace SharpChat {
             Bans = new BanManager(this);
             Users = new UserManager(this);
             Channels = new ChannelManager(this);
-            Events = new ChatEventManager(this);
+            Events = server.Database.IsNullBackend
+                ? new MemoryChatEventStorage()
+                : new ADOChatEventStorage(server.Database);
 
             BumpTimer = new Timer(e => {
                 Server.DataProvider.UserBumpClient.SubmitBumpUsers(Users.WithActiveConnections());
@@ -60,13 +63,13 @@ namespace SharpChat {
         public void HandleJoin(ChatUser user, ChatChannel chan, ChatUserSession sess) {
             if (!chan.HasUser(user)) {
                 chan.Send(new UserConnectPacket(DateTimeOffset.Now, user));
-                Events.Add(new UserConnectEvent(DateTimeOffset.Now, user, chan));
+                Events.AddEvent(new UserConnectEvent(DateTimeOffset.Now, user, chan));
             }
 
             sess.Send(new AuthSuccessPacket(user, chan, sess));
             sess.Send(new ContextUsersPacket(chan.GetUsers(new[] { user })));
 
-            IEnumerable<IChatEvent> msgs = Events.GetTargetLog(chan);
+            IEnumerable<IChatEvent> msgs = Events.GetEventsForTarget(chan);
 
             foreach (IChatEvent msg in msgs)
                 sess.Send(new ContextMessagePacket(msg));
@@ -95,7 +98,7 @@ namespace SharpChat {
 
             chan.UserLeave(user);
             chan.Send(new UserDisconnectPacket(DateTimeOffset.Now, user, reason));
-            Events.Add(new UserDisconnectEvent(DateTimeOffset.Now, user, chan, reason));
+            Events.AddEvent(new UserDisconnectEvent(DateTimeOffset.Now, user, chan, reason));
         }
 
         public void SwitchChannel(ChatUser user, ChatChannel chan, string password) {
@@ -129,14 +132,14 @@ namespace SharpChat {
             ChatChannel oldChan = user.CurrentChannel;
 
             oldChan.Send(new UserChannelLeavePacket(user));
-            Events.Add(new UserChannelLeaveEvent(DateTimeOffset.Now, user, oldChan));
+            Events.AddEvent(new UserChannelLeaveEvent(DateTimeOffset.Now, user, oldChan));
             chan.Send(new UserChannelJoinPacket(user));
-            Events.Add(new UserChannelJoinEvent(DateTimeOffset.Now, user, chan));
+            Events.AddEvent(new UserChannelJoinEvent(DateTimeOffset.Now, user, chan));
 
             user.Send(new ContextClearPacket(chan, ContextClearMode.MessagesUsers));
             user.Send(new ContextUsersPacket(chan.GetUsers(new[] { user })));
 
-            IEnumerable<IChatEvent> msgs = Events.GetTargetLog(chan);
+            IEnumerable<IChatEvent> msgs = Events.GetEventsForTarget(chan);
 
             foreach (IChatEvent msg in msgs)
                 user.Send(new ContextMessagePacket(msg));

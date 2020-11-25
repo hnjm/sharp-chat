@@ -26,7 +26,7 @@ namespace SharpChat.Packets {
             sb.Append('\t');
 
             switch (Event) {
-                case IChatMessage msg:
+                case IChatMessageEvent msg:
                     sb.Append(Event.Sender.Pack());
                     sb.Append('\t');
                     sb.Append(
@@ -88,9 +88,9 @@ namespace SharpChat.Packets {
             sb.Append(Notify ? '1' : '0');
             sb.AppendFormat(
                 "\t1{0}0{1}{2}",
-                Event.Flags.HasFlag(ChatMessageFlags.Action) ? '1' : '0',
-                Event.Flags.HasFlag(ChatMessageFlags.Action) ? '0' : '1',
-                Event.Flags.HasFlag(ChatMessageFlags.Private) ? '1' : '0'
+                Event.Flags.HasFlag(ChatEventFlags.Action) ? '1' : '0',
+                Event.Flags.HasFlag(ChatEventFlags.Action) ? '0' : '1',
+                Event.Flags.HasFlag(ChatEventFlags.Private) ? '1' : '0'
             );
 
             yield return sb.ToString();
