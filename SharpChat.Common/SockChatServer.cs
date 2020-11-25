@@ -278,17 +278,6 @@ namespace SharpChat {
                     mChannel.Send(new ChatMessageAddPacket(message));
                     break;
 
-                case SockChatClientPacket.FocusChannel:
-                    if(sess.User == null || args.Length < 2)
-                        break;
-
-                    ChatChannel fChannel = Context.Channels.Get(args[1]);
-                    if(fChannel == null || sess.User.CurrentChannel == fChannel)
-                        break;
-
-                    sess.User.FocusChannel(fChannel);
-                    break;
-
                 case SockChatClientPacket.Typing:
                     if(!ENABLE_TYPING_EVENT || sess.User == null)
                         break;
@@ -791,7 +780,6 @@ namespace SharpChat {
 
             return null;
         }
-
 
         private bool IsDisposed;
 

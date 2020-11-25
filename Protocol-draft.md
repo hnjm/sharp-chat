@@ -123,20 +123,7 @@ Commands are described lower in the document.
     </tr>
 </table>
 
-### Packet `3`: Focus Channel
-Selects which channel messages should be sent to.
-
-Added in Version 2.
-
-<table>
-    <tr>
-        <td><code>channel name</code></td>
-        <td>Channel to change focus to</td>
-        <td></td>
-    </tr>
-</table>
-
-### Packet `4`: Typing
+### Packet `3`: Typing
 Informs the currently focussed channel that this client is writing a message.
 
 Added in Version 2.

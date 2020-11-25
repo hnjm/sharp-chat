@@ -6,8 +6,7 @@
         MessageSend = 2,
 
         // Version 2
-        FocusChannel = 3,
-        Typing = 4,
+        Typing = 3,
     }
 
     public enum SockChatServerPacket {
