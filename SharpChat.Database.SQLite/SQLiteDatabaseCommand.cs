@@ -47,19 +47,20 @@ namespace SharpChat.Database.SQLite {
             => Command.ExecuteScalar();
 
         private bool IsDisposed;
+
         ~SQLiteDatabaseCommand()
-            => Dispose(false);
-        public void Dispose()
-            => Dispose(true);
-        private void Dispose(bool disposing) {
+            => DoDispose();
+
+        public void Dispose() {
+            DoDispose();
+            GC.SuppressFinalize(this);
+        }
+
+        private void DoDispose() {
             if(IsDisposed)
                 return;
             IsDisposed = true;
-
             Command.Dispose();
-
-            if(disposing)
-                GC.SuppressFinalize(this);
         }
     }
 }

@@ -18,19 +18,20 @@ namespace SharpChat.Database.MariaDB {
         }
 
         private bool IsDisposed;
+
         ~MariaDBDatabaseConnection()
-            => Dispose(false);
-        public void Dispose()
-            => Dispose(true);
-        private void Dispose(bool disposing) {
+            => DoDispose();
+
+        public void Dispose() {
+            DoDispose();
+            GC.SuppressFinalize(this);
+        }
+
+        private void DoDispose() {
             if(IsDisposed)
                 return;
             IsDisposed = true;
-
             Connection.Dispose();
-
-            if(disposing)
-                GC.SuppressFinalize(this);
         }
     }
 }

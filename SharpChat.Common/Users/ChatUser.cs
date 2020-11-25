@@ -104,26 +104,25 @@ namespace SharpChat.Users {
         public bool HasSessions {
             get {
                 lock(Sessions)
-                    return Sessions.Where(c => !c.HasTimedOut && !c.IsDisposed).Any();
+                    return Sessions.Any(c => c.IsAlive);
             }
         }
 
         public int SessionCount {
             get {
                 lock (Sessions)
-                    return Sessions.Where(c => !c.HasTimedOut && !c.IsDisposed).Count();
+                    return Sessions.Count(c => c.IsAlive);
             }
         }
 
         public IEnumerable<IPAddress> RemoteAddresses {
             get {
                 lock(Sessions)
-                    return Sessions.Select(c => c.RemoteAddress);
+                    return Sessions.Select(c => c.RemoteAddress).ToArray();
             }
         }
 
         public ChatUser() {}
-
         public ChatUser(IUserAuthResponse auth) {
             UserId = auth.UserId;
             ApplyAuth(auth, true);
@@ -205,16 +204,15 @@ namespace SharpChat.Users {
         public void RemoveSession(ChatUserSession sess) {
             if (sess == null)
                 return;
-            if(!sess.IsDisposed) // this could be possible
+            if(sess.IsAlive) // this could be possible
                 sess.User = null;
-
             lock(Sessions)
                 Sessions.Remove(sess);
         }
 
         public IEnumerable<ChatUserSession> GetDeadSessions() {
             lock (Sessions)
-                return Sessions.Where(x => x.HasTimedOut || x.IsDisposed).ToList();
+                return Sessions.Where(x => !x.IsAlive).ToList();
         }
     }
 }

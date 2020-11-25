@@ -16,7 +16,6 @@ namespace SharpChat.Users {
         public IWebSocketConnection Connection { get; }
 
         public string Id { get; private set; }
-        public bool IsDisposed { get; private set; }
         public DateTimeOffset LastPing { get; set; } = DateTimeOffset.MinValue;
         public ChatUser User { get; set; }
 
@@ -55,21 +54,24 @@ namespace SharpChat.Users {
         public bool HasTimedOut
             => DateTimeOffset.Now - LastPing > SessionTimeOut;
 
-        public void Dispose()
-            => Dispose(true);
+        public bool IsAlive
+            => !HasTimedOut && !IsDisposed;
+
+        private bool IsDisposed;
 
         ~ChatUserSession()
-            => Dispose(false);
+            => DoDispose();
 
-        private void Dispose(bool disposing) {
+        public void Dispose() {
+            DoDispose();
+            GC.SuppressFinalize(this);
+        }
+
+        private void DoDispose() {
             if (IsDisposed)
                 return;
-
             IsDisposed = true;
             Connection.Dispose();
-
-            if (disposing)
-                GC.SuppressFinalize(this);
         }
     }
 }

@@ -14,8 +14,6 @@ namespace SharpChat.Channels {
 
         public readonly ChatContext Context;
 
-        public bool IsDisposed { get; private set; }
-
         public ChannelManager(ChatContext context) {
             Context = context;
         }
@@ -141,21 +139,21 @@ namespace SharpChat.Channels {
                 return Channels.Where(c => c.Rank <= hierarchy).ToList();
         }
 
+        private bool IsDisposed;
+
         ~ChannelManager()
-            => Dispose(false);
+            => DoDispose();
 
-        public void Dispose()
-            => Dispose(true);
+        public void Dispose() {
+            DoDispose();
+            GC.SuppressFinalize(this);
+        }
 
-        private void Dispose(bool disposing) {
+        private void DoDispose() {
             if (IsDisposed)
                 return;
             IsDisposed = true;
-
             Channels.Clear();
-
-            if (disposing)
-                GC.SuppressFinalize(this);
         }
     }
 }

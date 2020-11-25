@@ -47,8 +47,6 @@ namespace SharpChat.Bans {
 
         public readonly ChatContext Context;
 
-        public bool IsDisposed { get; private set; }
-
         public BanManager(ChatContext context) {
             Context = context;
             RefreshFlashiiBans();
@@ -171,21 +169,21 @@ namespace SharpChat.Bans {
                 return BanList.ToList();
         }
 
+        private bool IsDisposed;
+
         ~BanManager()
-            => Dispose(false);
+            => DoDispose();
 
-        public void Dispose()
-            => Dispose(true);
+        public void Dispose() {
+            DoDispose();
+            GC.SuppressFinalize(this);
+        }
 
-        private void Dispose(bool disposing) {
+        private void DoDispose() {
             if (IsDisposed)
                 return;
             IsDisposed = true;
-
             BanList.Clear();
-
-            if (disposing)
-                GC.SuppressFinalize(this);
         }
     }
 }

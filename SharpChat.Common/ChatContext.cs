@@ -11,8 +11,6 @@ using System.Threading;
 
 namespace SharpChat {
     public class ChatContext : IDisposable, IPacketTarget {
-        public bool IsDisposed { get; private set; }
-
         public SockChatServer Server { get; }
         public Timer BumpTimer { get; }
         public BanManager Bans { get; }
@@ -173,13 +171,17 @@ namespace SharpChat {
                 user.Send(packet);
         }
 
+        private bool IsDisposed;
+
         ~ChatContext()
-            => Dispose(false);
+            => DoDispose();
 
-        public void Dispose()
-            => Dispose(true);
+        public void Dispose() {
+            DoDispose();
+            GC.SuppressFinalize(this);
+        }
 
-        private void Dispose(bool disposing) {
+        private void DoDispose() {
             if (IsDisposed)
                 return;
             IsDisposed = true;
@@ -189,9 +191,6 @@ namespace SharpChat {
             Channels?.Dispose();
             Users?.Dispose();
             Bans?.Dispose();
-
-            if (disposing)
-                GC.SuppressFinalize(this);
         }
     }
 }

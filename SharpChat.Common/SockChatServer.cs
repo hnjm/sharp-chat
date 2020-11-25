@@ -30,8 +30,6 @@ namespace SharpChat {
         public const bool ENABLE_TYPING_EVENT = false;
 #endif
 
-        public bool IsDisposed { get; private set; }
-
         public static ChatUser Bot { get; } = new ChatUser {
             UserId = -1,
             Username = @"ChatBot",
@@ -794,13 +792,18 @@ namespace SharpChat {
             return null;
         }
 
+
+        private bool IsDisposed;
+
         ~SockChatServer()
-            => Dispose(false);
+            => DoDispose();
 
-        public void Dispose()
-            => Dispose(true);
+        public void Dispose() { 
+            DoDispose();
+            GC.SuppressFinalize(this);
+        }
 
-        private void Dispose(bool disposing) {
+        private void DoDispose() {
             if(IsDisposed)
                 return;
             IsDisposed = true;
@@ -810,9 +813,6 @@ namespace SharpChat {
             Context?.Dispose();
             HttpClient?.Dispose();
             Database?.Dispose();
-
-            if(disposing)
-                GC.SuppressFinalize(this);
         }
     }
 }

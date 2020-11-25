@@ -51,18 +51,8 @@ namespace SharpChat.Database.SQLite {
         public string DateTimeNow()
             => @"strftime('%s', 'now')";
 
-        private bool IsDisposed;
-        ~SQLiteDatabaseBackend()
-            => Dispose(false);
-        public void Dispose()
-            => Dispose(true);
-        private void Dispose(bool disposing) {
-            if(IsDisposed)
-                return;
-            IsDisposed = true;
-
-            if(disposing)
-                GC.SuppressFinalize(this);
+        public void Dispose() {
+            GC.SuppressFinalize(this);
         }
     }
 }

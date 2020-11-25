@@ -8,8 +8,6 @@ namespace SharpChat.Users {
 
         public readonly ChatContext Context;
 
-        public bool IsDisposed { get; private set; }
-
         public UserManager(ChatContext context) {
             Context = context;
         }
@@ -69,22 +67,22 @@ namespace SharpChat.Users {
             lock (Users)
                 return Users.ToList();
         }
-        
+
+        private bool IsDisposed;
+
         ~UserManager()
-            => Dispose(false);
+            => DoDispose();
 
-        public void Dispose()
-            => Dispose(true);
+        public void Dispose() {
+            DoDispose();
+            GC.SuppressFinalize(this);
+        }
 
-        private void Dispose(bool disposing) {
+        private void DoDispose() {
             if (IsDisposed)
                 return;
             IsDisposed = true;
-
             Users.Clear();
-
-            if (disposing)
-                GC.SuppressFinalize(this);
         }
     }
 }

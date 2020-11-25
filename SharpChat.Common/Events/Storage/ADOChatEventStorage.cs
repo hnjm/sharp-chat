@@ -109,21 +109,8 @@ namespace SharpChat.Events.Storage {
             return evt;
         }
 
-        private bool IsDisposed;
-        ~ADOChatEventStorage()
-            => Dispose(false);
-        public void Dispose()
-            => Dispose(true);
-        private void Dispose(bool disposing) {
-            if(IsDisposed)
-                return;
-            IsDisposed = true;
-
-            // there is nothing to dispose here, we don't own the wrapper
-            // i don't know why this comment exists, it's pretty obvious
-
-            if(disposing)
-                GC.SuppressFinalize(this);
+        public void Dispose() {
+            GC.SuppressFinalize(this);
         }
     }
 }

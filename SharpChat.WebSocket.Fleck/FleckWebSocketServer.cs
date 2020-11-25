@@ -44,20 +44,20 @@ namespace SharpChat.WebSocket.Fleck {
         }
 
         private bool IsDisposed;
-        ~FleckWebSocketServer()
-            => Dispose(false);
-        public void Dispose()
-            => Dispose(true);
 
-        private void Dispose(bool disposing) {
+        ~FleckWebSocketServer()
+            => DoDispose();
+
+        public void Dispose() {
+            DoDispose();
+            GC.SuppressFinalize(this);
+        }
+
+        private void DoDispose() {
             if(IsDisposed)
                 return;
             IsDisposed = true;
-
             Server?.Dispose();
-
-            if(disposing)
-                GC.SuppressFinalize(this);
         }
 
         private class InternalFleckWebSocketServer : IFleckWebSocketServer {
