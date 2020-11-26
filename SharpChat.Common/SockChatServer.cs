@@ -46,6 +46,12 @@ namespace SharpChat {
 
         private IReadOnlyCollection<IChatCommand> Commands { get; } = new IChatCommand[] {
             new AFKCommand(),
+            new WhisperCommand(),
+            new ActionCommand(),
+
+            new NickCommand(),
+
+            new BroadcastCommand(),
         };
 
         public List<ChatUserSession> Sessions { get; } = new List<ChatUserSession>();
@@ -311,88 +317,16 @@ namespace SharpChat {
                     break;
                 }
 
-            if(command != null)
-                return command.Dispatch(new ChatCommandContext(parts, user, channel));
+            if(command != null) {
+                try {
+                    return command.Dispatch(new ChatCommandContext(parts, user, channel, Context));
+                } catch(CommandException ex) {
+                    user.Send(ex.ToPacket());
+                    return null;
+                }
+            }
 
             switch(commandName) {
-                case @"nick": // sets a temporary nickname
-                    bool setOthersNick = user.Can(ChatUserPermissions.SetOthersNickname);
-
-                    if(!setOthersNick && !user.Can(ChatUserPermissions.SetOwnNickname)) {
-                        user.Send(new LegacyCommandResponse(LCR.COMMAND_NOT_ALLOWED, true, $@"/{commandName}"));
-                        break;
-                    }
-
-                    ChatUser targetUser = null;
-                    int offset = 1;
-
-                    if(setOthersNick && parts.Length > 1 && long.TryParse(parts[1], out long targetUserId) && targetUserId > 0) {
-                        targetUser = Context.Users.Get(targetUserId);
-                        offset = 2;
-                    }
-
-                    if(targetUser == null)
-                        targetUser = user;
-
-                    if(parts.Length < offset) {
-                        user.Send(new LegacyCommandResponse(LCR.COMMAND_FORMAT_ERROR));
-                        break;
-                    }
-
-                    string nickStr = string.Join('_', parts.Skip(offset))
-                        .Replace(' ', '_')
-                        .Replace("\n", string.Empty)
-                        .Replace("\r", string.Empty)
-                        .Replace("\f", string.Empty)
-                        .Replace("\t", string.Empty)
-                        .Trim();
-
-                    if(nickStr == targetUser.Username)
-                        nickStr = null;
-                    else if(nickStr.Length > 15)
-                        nickStr = nickStr.Substring(0, 15);
-                    else if(string.IsNullOrEmpty(nickStr))
-                        nickStr = null;
-
-                    if(nickStr != null && Context.Users.Get(nickStr) != null) {
-                        user.Send(new LegacyCommandResponse(LCR.NAME_IN_USE, true, nickStr));
-                        break;
-                    }
-
-                    string previousName = targetUser == user ? (targetUser.Nickname ?? targetUser.Username) : null;
-                    targetUser.Nickname = nickStr;
-                    channel.Send(new UserUpdatePacket(targetUser, previousName));
-                    break;
-                case @"whisper": // sends a pm to another user
-                case @"msg":
-                    if(parts.Length < 3) {
-                        user.Send(new LegacyCommandResponse(LCR.COMMAND_FORMAT_ERROR));
-                        break;
-                    }
-
-                    ChatUser whisperUser = Context.Users.Get(parts[1]);
-
-                    if(whisperUser == null) {
-                        user.Send(new LegacyCommandResponse(LCR.USER_NOT_FOUND, true, parts[1]));
-                        break;
-                    }
-
-                    if(whisperUser == user)
-                        break;
-
-                    string whisperStr = string.Join(' ', parts.Skip(2));
-
-                    whisperUser.Send(new ChatMessageAddPacket(new ChatMessageEvent(user, whisperUser, whisperStr, ChatEventFlags.Private)));
-                    user.Send(new ChatMessageAddPacket(new ChatMessageEvent(user, user, $@"{whisperUser.DisplayName} {whisperStr}", ChatEventFlags.Private)));
-                    break;
-                case @"action": // describe an action
-                case @"me":
-                    if(parts.Length < 2)
-                        break;
-
-                    string actionMsg = string.Join(' ', parts.Skip(1));
-
-                    return new ChatMessageEvent(user, channel, actionMsg, ChatEventFlags.Action);
                 case @"who": // gets all online users/online users in a channel if arg
                     StringBuilder whoChanSB = new StringBuilder();
                     string whoChanStr = parts.Length > 1 && !string.IsNullOrEmpty(parts[1]) ? parts[1] : string.Empty;
@@ -568,14 +502,6 @@ namespace SharpChat {
                     user.Send(new LegacyCommandResponse(LCR.CHANNEL_HIERARCHY_CHANGED, false));
                     break;
 
-                case @"say": // pretend to be the bot
-                    if(!user.Can(ChatUserPermissions.Broadcast)) {
-                        user.Send(new LegacyCommandResponse(LCR.COMMAND_NOT_ALLOWED, true, $@"/{commandName}"));
-                        break;
-                    }
-
-                    Context.Send(new LegacyCommandResponse(LCR.BROADCAST, false, string.Join(' ', parts.Skip(1))));
-                    break;
                 case @"delmsg": // deletes a message
                     bool deleteAnyMessage = user.Can(ChatUserPermissions.DeleteAnyMessage);
 

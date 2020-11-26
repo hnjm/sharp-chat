@@ -8,17 +8,20 @@ namespace SharpChat {
         IEnumerable<string> Args { get; }
         ChatUser User { get; }
         ChatChannel Channel { get; }
+        ChatContext Chat { get; }
     }
 
     public class ChatCommandContext : IChatCommandContext {
         public IEnumerable<string> Args { get; }
         public ChatUser User { get; }
         public ChatChannel Channel { get; }
+        public ChatContext Chat { get; }
 
-        public ChatCommandContext(IEnumerable<string> args, ChatUser user, ChatChannel channel) {
+        public ChatCommandContext(IEnumerable<string> args, ChatUser user, ChatChannel channel, ChatContext context) {
             Args = args ?? throw new ArgumentNullException(nameof(args));
             User = user ?? throw new ArgumentNullException(nameof(user));
             Channel = channel ?? throw new ArgumentNullException(nameof(channel));
+            Chat = context ?? throw new ArgumentNullException(nameof(context));
         }
     }
 }

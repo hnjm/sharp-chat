@@ -8,12 +8,11 @@ namespace SharpChat.Commands {
         private const string DEFAULT = @"AFK";
         private const int MAX_LENGTH = 5;
 
-        public bool IsMatch(string name) {
-            return name == @"afk";
-        }
+        public bool IsMatch(string name)
+            => name == @"afk";
 
-        public IChatMessageEvent Dispatch(IChatCommandContext context) {
-            string statusText = context.Args.ElementAtOrDefault(1);
+        public IChatMessageEvent Dispatch(IChatCommandContext ctx) {
+            string statusText = ctx.Args.ElementAtOrDefault(1);
             if(string.IsNullOrWhiteSpace(statusText))
                 statusText = DEFAULT;
             else {
@@ -22,10 +21,9 @@ namespace SharpChat.Commands {
                     statusText = statusText.Substring(0, MAX_LENGTH).Trim();
             }
 
-            context.User.Status = ChatUserStatus.Away;
-            context.User.StatusMessage = statusText;
-            context.Channel.Send(new UserUpdatePacket(context.User));
-
+            ctx.User.Status = ChatUserStatus.Away;
+            ctx.User.StatusMessage = statusText;
+            ctx.Channel.Send(new UserUpdatePacket(ctx.User));
             return null;
         }
     }
