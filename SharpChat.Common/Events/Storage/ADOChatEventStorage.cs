@@ -3,6 +3,7 @@ using SharpChat.Users;
 using System;
 using System.Collections.Generic;
 using System.Text.Json;
+using System.Linq;
 
 namespace SharpChat.Events.Storage {
     public partial class ADOChatEventStorage : IChatEventStorage {
@@ -83,6 +84,7 @@ namespace SharpChat.Events.Storage {
                 Wrapper.CreateParam(@"offset", offset)
             );
 
+            events.Reverse();
             return events;
         }
 
