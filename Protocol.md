@@ -1010,7 +1010,7 @@ Actions sent through messages prefixed with `/` in Version 1 of the protocol. Ar
     </tr>
     <tr>
         <td>
-            <code>/join [channel]</code>
+            <code>/join [channel] [password?]</code>
         </td>
         <td>Switches the current user to a different channel.</td>
         <td>

@@ -5,7 +5,23 @@ VisualStudioVersion = 16.0.29025.244
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpChat", "SharpChat\SharpChat.csproj", "{DDB24C19-B802-4C96-AC15-0449C6FC77F2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpChatTest", "SharpChatTest\SharpChatTest.csproj", "{6CD6DB9D-E0FF-4DEB-8E28-0C3EA6BA26B2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpChatTest", "SharpChatTest\SharpChatTest.csproj", "{6CD6DB9D-E0FF-4DEB-8E28-0C3EA6BA26B2}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpChat.Misuzu", "SharpChat.Misuzu\SharpChat.Misuzu.csproj", "{651D2015-E0E6-48EE-9733-AA991FA67A8C}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpChat.Common", "SharpChat.Common\SharpChat.Common.csproj", "{15CA52F0-8883-44BF-8DD8-80224795D78F}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpChat.WebSocket.Fleck", "SharpChat.WebSocket.Fleck\SharpChat.WebSocket.Fleck.csproj", "{505498BC-0DC8-459D-9AA8-BAD1457FEC19}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpChat.Database.MariaDB", "SharpChat.Database.MariaDB\SharpChat.Database.MariaDB.csproj", "{E53DA108-2C3A-4F7B-AACC-CDA44CD04C92}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Databases", "Databases", "{EC70B2EC-31AE-44B3-8259-2E718F224420}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "WebSockets", "WebSockets", "{D1BE38EC-325D-46CC-A0E0-C42E5635A662}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DataProviders", "DataProviders", "{9CF387F1-938F-4B3B-AEB1-992F6686BDD0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpChat.Database.SQLite", "SharpChat.Database.SQLite\SharpChat.Database.SQLite.csproj", "{B0873F00-4EB9-465A-8BB3-C1C9000EF395}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,9 +37,35 @@ Global
 		{6CD6DB9D-E0FF-4DEB-8E28-0C3EA6BA26B2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6CD6DB9D-E0FF-4DEB-8E28-0C3EA6BA26B2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6CD6DB9D-E0FF-4DEB-8E28-0C3EA6BA26B2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{651D2015-E0E6-48EE-9733-AA991FA67A8C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{651D2015-E0E6-48EE-9733-AA991FA67A8C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{651D2015-E0E6-48EE-9733-AA991FA67A8C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{651D2015-E0E6-48EE-9733-AA991FA67A8C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{15CA52F0-8883-44BF-8DD8-80224795D78F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{15CA52F0-8883-44BF-8DD8-80224795D78F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{15CA52F0-8883-44BF-8DD8-80224795D78F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{15CA52F0-8883-44BF-8DD8-80224795D78F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{505498BC-0DC8-459D-9AA8-BAD1457FEC19}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{505498BC-0DC8-459D-9AA8-BAD1457FEC19}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{505498BC-0DC8-459D-9AA8-BAD1457FEC19}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{505498BC-0DC8-459D-9AA8-BAD1457FEC19}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E53DA108-2C3A-4F7B-AACC-CDA44CD04C92}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E53DA108-2C3A-4F7B-AACC-CDA44CD04C92}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E53DA108-2C3A-4F7B-AACC-CDA44CD04C92}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E53DA108-2C3A-4F7B-AACC-CDA44CD04C92}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B0873F00-4EB9-465A-8BB3-C1C9000EF395}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B0873F00-4EB9-465A-8BB3-C1C9000EF395}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B0873F00-4EB9-465A-8BB3-C1C9000EF395}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B0873F00-4EB9-465A-8BB3-C1C9000EF395}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{651D2015-E0E6-48EE-9733-AA991FA67A8C} = {9CF387F1-938F-4B3B-AEB1-992F6686BDD0}
+		{505498BC-0DC8-459D-9AA8-BAD1457FEC19} = {D1BE38EC-325D-46CC-A0E0-C42E5635A662}
+		{E53DA108-2C3A-4F7B-AACC-CDA44CD04C92} = {EC70B2EC-31AE-44B3-8259-2E718F224420}
+		{B0873F00-4EB9-465A-8BB3-C1C9000EF395} = {EC70B2EC-31AE-44B3-8259-2E718F224420}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {42279FE1-5980-440A-87F8-25338DFE54CF}

@@ -6,8 +6,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Fleck" Version="1.1.0" />
-    <PackageReference Include="MySql.Data" Version="8.0.20" />
+    <ProjectReference Include="..\SharpChat.Common\SharpChat.Common.csproj" />
+    <ProjectReference Include="..\SharpChat.Database.MariaDB\SharpChat.Database.MariaDB.csproj" />
+    <ProjectReference Include="..\SharpChat.Database.SQLite\SharpChat.Database.SQLite.csproj" />
+    <ProjectReference Include="..\SharpChat.Misuzu\SharpChat.Misuzu.csproj" />
+    <ProjectReference Include="..\SharpChat.WebSocket.Fleck\SharpChat.WebSocket.Fleck.csproj" />
   </ItemGroup>
 
 </Project>
