@@ -21,6 +21,8 @@ namespace SharpChat.Users {
 
         public string TargetName => @"@log";
 
+        public bool HasUser
+            => User != null;
 
         public IPAddress RemoteAddress
             => Connection.RemoteAddress;

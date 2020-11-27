@@ -1,14 +1,12 @@
 ﻿using SharpChat.Channels;
 using SharpChat.Commands;
 using SharpChat.Database;
-using SharpChat.Events;
+using SharpChat.PacketHandlers;
 using SharpChat.Packets;
 using SharpChat.Users;
-using SharpChat.Users.Auth;
 using SharpChat.WebSocket;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Net.Http;
 
@@ -35,34 +33,38 @@ namespace SharpChat {
         };
 
         public IWebSocketServer Server { get; }
-        public IDataProvider DataProvider { get; }
         public DatabaseWrapper Database { get; }
         public ChatContext Context { get; }
 
         public HttpClient HttpClient { get; }
 
-        private IReadOnlyCollection<IChatCommand> Commands { get; } = new IChatCommand[] {
-            new JoinCommand(),
-            new AFKCommand(),
-            new WhisperCommand(),
-            new ActionCommand(),
-            new WhoCommand(),
-            new DeleteMessageCommand(),
+        private IReadOnlyCollection<IPacketHandler> PacketHandlers { get; } = new IPacketHandler[] {
+            new PingPacketHandler(),
+            new AuthPacketHandler(),
+            new MessageSendPacketHandler(new IChatCommand[] {
+                new JoinCommand(),
+                new AFKCommand(),
+                new WhisperCommand(),
+                new ActionCommand(),
+                new WhoCommand(),
+                new DeleteMessageCommand(),
 
-            new NickCommand(),
-            new CreateChannelCommand(),
-            new DeleteChannelCommand(),
-            new ChannelPasswordCommand(),
-            new ChannelRankCommand(),
+                new NickCommand(),
+                new CreateChannelCommand(),
+                new DeleteChannelCommand(),
+                new ChannelPasswordCommand(),
+                new ChannelRankCommand(),
 
-            new BroadcastCommand(),
-            new KickBanUserCommand(),
-            new PardonUserCommand(),
-            new PardonIPCommand(),
-            new BanListCommand(),
-            new WhoIsUserCommand(),
-            new SilenceUserCommand(),
-            new UnsilenceUserCommand(),
+                new BroadcastCommand(),
+                new KickBanUserCommand(),
+                new PardonUserCommand(),
+                new PardonIPCommand(),
+                new BanListCommand(),
+                new WhoIsUserCommand(),
+                new SilenceUserCommand(),
+                new UnsilenceUserCommand(),
+            }),
+            new TypingPacketHandler(),
         };
 
         public List<ChatUserSession> Sessions { get; } = new List<ChatUserSession>();
@@ -76,12 +78,11 @@ namespace SharpChat {
         public SockChatServer(IWebSocketServer server, HttpClient httpClient, IDataProvider dataProvider, IDatabaseBackend databaseBackend) {
             Logger.Write("Starting Sock Chat server...");
 
-            DataProvider = dataProvider ?? throw new ArgumentNullException(nameof(dataProvider));
             Database = new DatabaseWrapper(databaseBackend ?? throw new ArgumentNullException(nameof(databaseBackend)));
 
             HttpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
 
-            Context = new ChatContext(this);
+            Context = new ChatContext(this, dataProvider);
 
             Context.Channels.Add(new ChatChannel(@"Lounge"));
 #if DEBUG
@@ -165,172 +166,9 @@ namespace SharpChat {
             if(args.Length < 1 || !Enum.TryParse(args[0], out SockChatClientPacket opCode))
                 return;
 
-            switch(opCode) {
-                case SockChatClientPacket.Ping:
-                    if(!int.TryParse(args[1], out int pTime))
-                        break;
-
-                    sess.BumpPing();
-                    sess.Send(new PongPacket(sess.LastPing));
-                    break;
-
-                case SockChatClientPacket.Authenticate:
-                    if(sess.User != null)
-                        break;
-
-                    DateTimeOffset aBanned = Context.Bans.Check(sess.RemoteAddress);
-
-                    if(aBanned > DateTimeOffset.UtcNow) {
-                        sess.Send(new AuthFailPacket(AuthFailReason.Banned, aBanned));
-                        sess.Dispose();
-                        break;
-                    }
-
-                    if(args.Length < 3 || !long.TryParse(args[1], out long aUserId))
-                        break;
-
-                    IUserAuthResponse aAuthResponse;
-                    try {
-                        aAuthResponse = DataProvider.UserAuthClient.AttemptAuth(new UserAuthRequest(aUserId, args[2], sess.RemoteAddress));
-                    } catch(Exception ex) {
-                        Logger.Debug($@"<{sess.Id}> Auth fail: {ex.Message}");
-                        sess.Send(new AuthFailPacket(AuthFailReason.AuthInvalid));
-                        sess.Dispose();
-                        return;
-                    }
-                     
-                    ChatUser aUser = Context.Users.Get(aAuthResponse.UserId);
-
-                    if(aUser == null)
-                        aUser = new ChatUser(aAuthResponse);
-                    else {
-                        aUser.ApplyAuth(aAuthResponse);
-                        aUser.Channel?.Send(new UserUpdatePacket(aUser));
-                    }
-
-                    aBanned = Context.Bans.Check(aUser);
-
-                    if(aBanned > DateTimeOffset.Now) {
-                        sess.Send(new AuthFailPacket(AuthFailReason.Banned, aBanned));
-                        sess.Dispose();
-                        return;
-                    }
-
-                    // Enforce a maximum amount of connections per user
-                    if(aUser.SessionCount >= MAX_CONNECTIONS) {
-                        sess.Send(new AuthFailPacket(AuthFailReason.MaxSessions));
-                        sess.Dispose();
-                        return;
-                    }
-
-                    // Bumping the ping to prevent upgrading
-                    sess.BumpPing();
-
-                    aUser.AddSession(sess);
-
-                    sess.Send(new LegacyCommandResponse(LCR.WELCOME, false, $@"Welcome to Flashii Chat, {aUser.Username}!"));
-
-                    if(File.Exists(@"welcome.txt")) {
-                        IEnumerable<string> lines = File.ReadAllLines(@"welcome.txt").Where(x => !string.IsNullOrWhiteSpace(x));
-                        string line = lines.ElementAtOrDefault(RNG.Next(lines.Count()));
-
-                        if(!string.IsNullOrWhiteSpace(line))
-                            sess.Send(new LegacyCommandResponse(LCR.WELCOME, false, line));
-                    }
-
-                    Context.HandleJoin(aUser, Context.Channels.DefaultChannel, sess);
-                    break;
-
-                case SockChatClientPacket.MessageSend:
-                    if(args.Length < 3)
-                        break;
-
-                    ChatUser mUser = sess.User;
-
-                    // No longer concats everything after index 1 with \t, no previous implementation did that either
-                    string messageText = args.ElementAtOrDefault(2);
-
-                    if(mUser == null || !mUser.Can(ChatUserPermissions.SendMessage) || string.IsNullOrWhiteSpace(messageText))
-                        break;
-
-#if !DEBUG
-                    // Extra validation step, not necessary at all but enforces proper formatting in SCv1.
-                    if (!long.TryParse(args[1], out long mUserId) || mUser.UserId != mUserId)
-                        break;
-#endif
-                    ChatChannel mChannel = mUser.CurrentChannel;
-
-                    if(mChannel == null
-                        || !mUser.InChannel(mChannel)
-                        || (mUser.IsSilenced && !mUser.Can(ChatUserPermissions.SilenceUser)))
-                        break;
-
-                    if(mUser.Status != ChatUserStatus.Online) {
-                        mUser.Status = ChatUserStatus.Online;
-                        mChannel.Send(new UserUpdatePacket(mUser));
-                    }
-
-                    if(messageText.Length > MSG_LENGTH_MAX)
-                        messageText = messageText.Substring(0, MSG_LENGTH_MAX);
-
-                    messageText = messageText.Trim();
-
-#if DEBUG
-                    Logger.Write($@"<{sess.Id} {mUser.Username}> {messageText}");
-#endif
-
-                    IChatMessageEvent message = null;
-
-                    if(messageText[0] == '/') {
-                        message = HandleCommand(messageText, mUser, mChannel);
-
-                        if(message == null)
-                            break;
-                    }
-
-                    if(message == null)
-                        message = new ChatMessageEvent(mUser, mChannel, messageText);
-
-                    Context.Events.AddEvent(message);
-                    mChannel.Send(new ChatMessageAddPacket(message));
-                    break;
-
-                case SockChatClientPacket.Typing:
-                    if(!ENABLE_TYPING_EVENT || sess.User == null)
-                        break;
-
-                    ChatChannel tChannel = sess.User.CurrentChannel;
-                    if(tChannel == null || !tChannel.CanType(sess.User))
-                        break;
-
-                    ChatChannelTyping tInfo = tChannel.RegisterTyping(sess.User);
-                    if(tInfo == null)
-                        return;
-
-                    tChannel.Send(new TypingPacket(tChannel, tInfo));
-                    break;
-            }
-        }
-
-        public IChatMessageEvent HandleCommand(string message, ChatUser user, ChatChannel channel) {
-            string[] parts = message[1..].Split(' ');
-            string commandName = parts[0].Replace(@".", string.Empty).ToLowerInvariant();
-
-            for(int i = 1; i < parts.Length; i++)
-                parts[i] = parts[i].Replace(@"<", @"&lt;")
-                                   .Replace(@">", @"&gt;")
-                                   .Replace("\n", @" <br/> ");
-
-            IChatCommand command = Commands.FirstOrDefault(x => x.IsCommandMatch(commandName, parts));
-            if(command == null)
-                user.Send(new LegacyCommandResponse(LCR.COMMAND_NOT_FOUND, true, commandName));
-
-            try {
-                return command.DispatchCommand(new ChatCommandContext(parts, user, channel, Context));
-            } catch(CommandException ex) {
-                user.Send(ex.ToPacket());
-                return null;
-            }
+            PacketHandlers.FirstOrDefault(x => x.PacketId == opCode)?.HandlePacket(
+                new PacketHandlerContext(args, Context, sess)
+            );
         }
 
         private bool IsDisposed;

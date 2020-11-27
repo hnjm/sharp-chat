@@ -144,7 +144,7 @@ namespace SharpChat.Bans {
         public void RefreshFlashiiBans() {
             IEnumerable<IBanRecord> bans;
             try {
-                bans = Context.Server.DataProvider.BanClient.GetBanList();
+                bans = Context.DataProvider.BanClient.GetBanList();
             } catch(Exception ex) {
                 Logger.Write($@"Ban Refresh: {ex.Message}");
                 Logger.Write(ex);

@@ -17,11 +17,13 @@ namespace SharpChat {
         public ChannelManager Channels { get; }
         public UserManager Users { get; }
         public IChatEventStorage Events { get; }
+        public IDataProvider DataProvider { get; }
 
         public string TargetName => @"@broadcast";
 
-        public ChatContext(SockChatServer server) {
+        public ChatContext(SockChatServer server, IDataProvider dataProvider) {
             Server = server;
+            DataProvider = dataProvider ?? throw new ArgumentNullException(nameof(dataProvider));
             Bans = new BanManager(this);
             Users = new UserManager(this);
             Channels = new ChannelManager(this);
@@ -30,7 +32,7 @@ namespace SharpChat {
                 : new ADOChatEventStorage(server.Database);
 
             BumpTimer = new Timer(e => {
-                Server.DataProvider.UserBumpClient.SubmitBumpUsers(Users.WithActiveConnections());
+                DataProvider.UserBumpClient.SubmitBumpUsers(Users.WithActiveConnections());
             }, null, TimeSpan.Zero, TimeSpan.FromMinutes(1));
         }
 

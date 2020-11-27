@@ -3,7 +3,7 @@ using SharpChat.Users;
 using System;
 using System.Collections.Generic;
 
-namespace SharpChat {
+namespace SharpChat.Commands {
     public interface IChatCommandContext {
         IEnumerable<string> Args { get; }
         ChatUser User { get; }
