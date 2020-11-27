@@ -66,7 +66,7 @@ namespace SharpChat {
                 Events.AddEvent(new UserConnectEvent(DateTimeOffset.UtcNow, user, chan));
             }
 
-            sess.Send(new AuthSuccessPacket(user, chan, sess));
+            sess.Send(new AuthSuccessPacket(user, chan, SockChatServer.EXT_VERSION, sess));
             sess.Send(new ContextUsersPacket(chan.GetUsers(new[] { user })));
 
             IEnumerable<IChatEvent> msgs = Events.GetEventsForTarget(chan);
