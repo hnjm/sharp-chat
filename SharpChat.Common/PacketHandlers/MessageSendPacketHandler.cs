@@ -74,15 +74,17 @@ namespace SharpChat.PacketHandlers {
                                    .Replace("\n", @" <br/> ");
 
             IChatCommand command = Commands.FirstOrDefault(x => x.IsCommandMatch(commandName, parts));
-            if(command == null)
+            if(command == null) {
                 user.Send(new LegacyCommandResponse(LCR.COMMAND_NOT_FOUND, true, commandName));
-
-            try {
-                return command.DispatchCommand(new ChatCommandContext(parts, user, channel, context));
-            } catch(CommandException ex) {
-                user.Send(ex.ToPacket());
-                return null;
+            } else {
+                try {
+                    return command.DispatchCommand(new ChatCommandContext(parts, user, channel, context));
+                } catch(CommandException ex) {
+                    user.Send(ex.ToPacket());
+                }
             }
+
+            return null;
         }
     }
 }

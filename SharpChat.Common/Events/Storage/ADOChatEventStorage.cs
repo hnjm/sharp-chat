@@ -46,7 +46,7 @@ namespace SharpChat.Events.Storage {
             IChatEvent evt = null;
 
             Wrapper.RunQuery(
-                @"SELECT `event_id`, `event_type`, `event_flags`, `event_data`"
+                @"SELECT `event_id`, `event_type`, `event_flags`, `event_data`, `event_target`"
                 + @", `event_sender`, `event_sender_name`, `event_sender_colour`, `event_sender_rank`, `event_sender_nick`, `event_sender_perms`"
                 + @", " + Wrapper.ToUnixTime(@"`event_created`") + @" AS `event_created`"
                 + @" FROM `sqc_events`"
@@ -65,7 +65,7 @@ namespace SharpChat.Events.Storage {
             List<IChatEvent> events = new List<IChatEvent>();
 
             Wrapper.RunQuery(
-                @"SELECT `event_id`, `event_type`, `event_flags`, `event_data`"
+                @"SELECT `event_id`, `event_type`, `event_flags`, `event_data`, `event_target`"
                 + @", `event_sender`, `event_sender_name`, `event_sender_colour`, `event_sender_rank`, `event_sender_nick`, `event_sender_perms`"
                 + @", " + Wrapper.ToUnixTime(@"`event_created`") + @" AS `event_created`"
                 + @" FROM `sqc_events`"

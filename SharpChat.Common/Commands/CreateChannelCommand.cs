@@ -11,15 +11,15 @@ namespace SharpChat.Commands {
             => name == @"create";
 
         public IChatMessageEvent DispatchCommand(IChatCommandContext ctx) {
-            if(ctx.User.Can(ChatUserPermissions.CreateChannel))
-                throw new CommandException(LCR.COMMAND_NOT_ALLOWED, true, @"/create");
+            if(!ctx.User.Can(ChatUserPermissions.CreateChannel))
+                throw new CommandException(LCR.COMMAND_NOT_ALLOWED, @"/create");
 
             bool hasRank;
             if(ctx.Args.Count() < 2 || (hasRank = ctx.Args.ElementAtOrDefault(1)?.All(char.IsDigit) == true && ctx.Args.Count() < 3))
                 throw new CommandException(LCR.COMMAND_FORMAT_ERROR);
 
             int rank = 0;
-            if(hasRank && !int.TryParse(ctx.Args.ElementAtOrDefault(1), out rank))
+            if(hasRank && !int.TryParse(ctx.Args.ElementAtOrDefault(1), out rank) && rank < 0)
                 rank = 0;
 
             if(rank > ctx.User.Rank)

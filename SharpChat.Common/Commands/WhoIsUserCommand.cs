@@ -20,7 +20,7 @@ namespace SharpChat.Commands {
                 throw new CommandException(LCR.USER_NOT_FOUND, user?.Username ?? userName ?? @"User");
 
             foreach(IPAddress ip in user.RemoteAddresses)
-                user.Send(new LegacyCommandResponse(LCR.IP_ADDRESS, false, user.Username, ip));
+                ctx.User.Send(new LegacyCommandResponse(LCR.IP_ADDRESS, false, user.Username, ip));
             return null;
         }
     }
