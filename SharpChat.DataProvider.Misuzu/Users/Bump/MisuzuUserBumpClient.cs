@@ -6,7 +6,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
 
-namespace SharpChat.Misuzu.Users.Bump {
+namespace SharpChat.DataProvider.Misuzu.Users.Bump {
     public class MisuzuUserBumpClient : IUserBumpClient {
         private HttpClient HttpClient { get; }
 

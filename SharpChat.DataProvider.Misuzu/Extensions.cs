@@ -2,7 +2,7 @@
 using System.Security.Cryptography;
 using System.Text;
 
-namespace SharpChat.Misuzu {
+namespace SharpChat.DataProvider.Misuzu {
     internal static class Extensions {
         public static string GetSignedHash(this string str, string key = null)
             => Encoding.UTF8.GetBytes(str).GetSignedHash(key);

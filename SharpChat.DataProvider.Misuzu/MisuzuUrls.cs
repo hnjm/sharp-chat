@@ -1,4 +1,4 @@
-﻿namespace SharpChat.Misuzu {
+﻿namespace SharpChat.DataProvider.Misuzu {
     public static class MisuzuUrls {
         public const string BASE_URL =
 #if DEBUG

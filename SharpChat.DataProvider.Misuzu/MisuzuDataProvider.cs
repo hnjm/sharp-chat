@@ -1,13 +1,13 @@
 ﻿using SharpChat.Bans;
-using SharpChat.Misuzu.Bans;
-using SharpChat.Misuzu.Users.Auth;
-using SharpChat.Misuzu.Users.Bump;
+using SharpChat.DataProvider.Misuzu.Bans;
+using SharpChat.DataProvider.Misuzu.Users.Auth;
+using SharpChat.DataProvider.Misuzu.Users.Bump;
 using SharpChat.Users.Auth;
 using SharpChat.Users.Bump;
 using System;
 using System.Net.Http;
 
-namespace SharpChat.Misuzu {
+namespace SharpChat.DataProvider.Misuzu {
     public class MisuzuDataProvider : IDataProvider {
         private HttpClient HttpClient { get; }
         public IBanClient BanClient { get; }

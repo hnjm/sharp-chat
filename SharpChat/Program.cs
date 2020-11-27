@@ -3,7 +3,7 @@ using SharpChat.Database;
 using SharpChat.Database.MariaDB;
 using SharpChat.Database.Null;
 using SharpChat.Database.SQLite;
-using SharpChat.Misuzu;
+using SharpChat.DataProvider.Misuzu;
 using SharpChat.Users;
 using SharpChat.Users.Auth;
 using SharpChat.WebSocket;

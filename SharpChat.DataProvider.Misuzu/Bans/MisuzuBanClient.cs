@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Text.Json;
 
-namespace SharpChat.Misuzu.Bans {
+namespace SharpChat.DataProvider.Misuzu.Bans {
     public class MisuzuBanClient : IBanClient {
         private const string STRING = @"givemethebeans";
 
