@@ -76,14 +76,14 @@ namespace SharpChat.Packets {
         public const string IP_ADDRESS = @"ipaddr";
         public const string USER_NOT_FOUND = @"usernf";
         public const string SILENCE_SELF = @"silself";
-        public const string SILENCE_HIERARCHY = @"silperr";
+        public const string SILENCE_RANK = @"silperr";
         public const string SILENCE_ALREADY = @"silerr";
         public const string TARGET_SILENCED = @"silok";
         public const string SILENCED = @"silence";
         public const string UNSILENCED = @"unsil";
         public const string TARGET_UNSILENCED = @"usilok";
         public const string NOT_SILENCED = @"usilerr";
-        public const string UNSILENCE_HIERARCHY = @"usilperr";
+        public const string UNSILENCE_RANK = @"usilperr";
         public const string NAME_IN_USE = @"nameinuse";
         public const string CHANNEL_INSUFFICIENT_HIERARCHY = @"ipchan";
         public const string CHANNEL_INVALID_PASSWORD = @"ipwchan";
@@ -98,7 +98,7 @@ namespace SharpChat.Packets {
         public const string USERS_LISTING_ERROR = @"whoerr";
         public const string USERS_LISTING_CHANNEL = @"whochan";
         public const string USERS_LISTING_SERVER = @"who";
-        public const string INSUFFICIENT_HIERARCHY = @"rankerr";
+        public const string INSUFFICIENT_RANK = @"rankerr";
         public const string MESSAGE_DELETE_ERROR = @"delerr";
         public const string KICK_NOT_ALLOWED = @"kickna";
         public const string USER_NOT_BANNED = @"notban";

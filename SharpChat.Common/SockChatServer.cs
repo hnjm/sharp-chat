@@ -1,5 +1,4 @@
-﻿using SharpChat.Bans;
-using SharpChat.Channels;
+﻿using SharpChat.Channels;
 using SharpChat.Commands;
 using SharpChat.Database;
 using SharpChat.Events;
@@ -11,9 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
-using System.Text;
 
 namespace SharpChat {
     public class SockChatServer : IDisposable {
@@ -45,13 +42,27 @@ namespace SharpChat {
         public HttpClient HttpClient { get; }
 
         private IReadOnlyCollection<IChatCommand> Commands { get; } = new IChatCommand[] {
+            new JoinCommand(),
             new AFKCommand(),
             new WhisperCommand(),
             new ActionCommand(),
+            new WhoCommand(),
+            new DeleteMessageCommand(),
 
             new NickCommand(),
+            new CreateChannelCommand(),
+            new DeleteChannelCommand(),
+            new ChannelPasswordCommand(),
+            new ChannelRankCommand(),
 
             new BroadcastCommand(),
+            new KickBanUserCommand(),
+            new PardonUserCommand(),
+            new PardonIPCommand(),
+            new BanListCommand(),
+            new WhoIsUserCommand(),
+            new SilenceUserCommand(),
+            new UnsilenceUserCommand(),
         };
 
         public List<ChatUserSession> Sessions { get; } = new List<ChatUserSession>();
@@ -271,7 +282,7 @@ namespace SharpChat {
                     IChatMessageEvent message = null;
 
                     if(messageText[0] == '/') {
-                        message = HandleV1Command(messageText, mUser, mChannel);
+                        message = HandleCommand(messageText, mUser, mChannel);
 
                         if(message == null)
                             break;
@@ -301,7 +312,7 @@ namespace SharpChat {
             }
         }
 
-        public IChatMessageEvent HandleV1Command(string message, ChatUser user, ChatChannel channel) {
+        public IChatMessageEvent HandleCommand(string message, ChatUser user, ChatChannel channel) {
             string[] parts = message[1..].Split(' ');
             string commandName = parts[0].Replace(@".", string.Empty).ToLowerInvariant();
 
@@ -310,401 +321,16 @@ namespace SharpChat {
                                    .Replace(@">", @"&gt;")
                                    .Replace("\n", @" <br/> ");
 
-            IChatCommand command = null;
-            foreach(IChatCommand cmd in Commands)
-                if(cmd.IsMatch(commandName)) {
-                    command = cmd;
-                    break;
-                }
+            IChatCommand command = Commands.FirstOrDefault(x => x.IsMatch(commandName, parts));
+            if(command == null)
+                user.Send(new LegacyCommandResponse(LCR.COMMAND_NOT_FOUND, true, commandName));
 
-            if(command != null) {
-                try {
-                    return command.Dispatch(new ChatCommandContext(parts, user, channel, Context));
-                } catch(CommandException ex) {
-                    user.Send(ex.ToPacket());
-                    return null;
-                }
+            try {
+                return command.Dispatch(new ChatCommandContext(parts, user, channel, Context));
+            } catch(CommandException ex) {
+                user.Send(ex.ToPacket());
+                return null;
             }
-
-            switch(commandName) {
-                case @"who": // gets all online users/online users in a channel if arg
-                    StringBuilder whoChanSB = new StringBuilder();
-                    string whoChanStr = parts.Length > 1 && !string.IsNullOrEmpty(parts[1]) ? parts[1] : string.Empty;
-
-                    if(!string.IsNullOrEmpty(whoChanStr)) {
-                        ChatChannel whoChan = Context.Channels.Get(whoChanStr);
-
-                        if(whoChan == null) {
-                            user.Send(new LegacyCommandResponse(LCR.CHANNEL_NOT_FOUND, true, whoChanStr));
-                            break;
-                        }
-
-                        if(whoChan.Rank > user.Rank || (whoChan.HasPassword && !user.Can(ChatUserPermissions.JoinAnyChannel))) {
-                            user.Send(new LegacyCommandResponse(LCR.USERS_LISTING_ERROR, true, whoChanStr));
-                            break;
-                        }
-
-                        foreach(ChatUser whoUser in whoChan.GetUsers()) {
-                            whoChanSB.Append(@"<a href=""javascript:void(0);"" onclick=""UI.InsertChatText(this.innerHTML);""");
-
-                            if(whoUser == user)
-                                whoChanSB.Append(@" style=""font-weight: bold;""");
-
-                            whoChanSB.Append('>');
-                            whoChanSB.Append(whoUser.DisplayName);
-                            whoChanSB.Append(@"</a>, ");
-                        }
-
-                        if(whoChanSB.Length > 2)
-                            whoChanSB.Length -= 2;
-
-                        user.Send(new LegacyCommandResponse(LCR.USERS_LISTING_CHANNEL, false, whoChanSB));
-                    } else {
-                        foreach(ChatUser whoUser in Context.Users.All()) {
-                            whoChanSB.Append(@"<a href=""javascript:void(0);"" onclick=""UI.InsertChatText(this.innerHTML);""");
-
-                            if(whoUser == user)
-                                whoChanSB.Append(@" style=""font-weight: bold;""");
-
-                            whoChanSB.Append('>');
-                            whoChanSB.Append(whoUser.DisplayName);
-                            whoChanSB.Append(@"</a>, ");
-                        }
-
-                        if(whoChanSB.Length > 2)
-                            whoChanSB.Length -= 2;
-
-                        user.Send(new LegacyCommandResponse(LCR.USERS_LISTING_SERVER, false, whoChanSB));
-                    }
-                    break;
-
-                // double alias for delchan and delmsg
-                // if the argument is a number we're deleting a message
-                // if the argument is a string we're deleting a channel
-                case @"delete":
-                    if(parts.Length < 2) {
-                        user.Send(new LegacyCommandResponse(LCR.COMMAND_FORMAT_ERROR));
-                        break;
-                    }
-
-                    if(parts[1].All(char.IsDigit))
-                        goto case @"delmsg";
-                    goto case @"delchan";
-
-                // anyone can use these
-                case @"join": // join a channel
-                    if(parts.Length < 2)
-                        break;
-
-                    ChatChannel joinChan = Context.Channels.Get(parts[1]);
-
-                    if(joinChan == null) {
-                        user.Send(new LegacyCommandResponse(LCR.CHANNEL_NOT_FOUND, true, parts[1]));
-                        user.ForceChannel();
-                        break;
-                    }
-
-                    Context.SwitchChannel(user, joinChan, string.Join(' ', parts.Skip(2)));
-                    break;
-                case @"create": // create a new channel
-                    if(user.Can(ChatUserPermissions.CreateChannel)) {
-                        user.Send(new LegacyCommandResponse(LCR.COMMAND_NOT_ALLOWED, true, $@"/{commandName}"));
-                        break;
-                    }
-
-                    bool createChanHasHierarchy;
-                    if(parts.Length < 2 || (createChanHasHierarchy = parts[1].All(char.IsDigit) && parts.Length < 3)) {
-                        user.Send(new LegacyCommandResponse(LCR.COMMAND_FORMAT_ERROR));
-                        break;
-                    }
-
-                    int createChanHierarchy = 0;
-                    if(createChanHasHierarchy && !int.TryParse(parts[1], out createChanHierarchy))
-                        createChanHierarchy = 0;
-
-                    if(createChanHierarchy > user.Rank) {
-                        user.Send(new LegacyCommandResponse(LCR.INSUFFICIENT_HIERARCHY));
-                        break;
-                    }
-
-                    string createChanName = string.Join('_', parts.Skip(createChanHasHierarchy ? 2 : 1));
-                    ChatChannel createChan = new ChatChannel {
-                        Name = createChanName,
-                        IsTemporary = !user.Can(ChatUserPermissions.SetChannelPermanent),
-                        Rank = createChanHierarchy,
-                        Owner = user,
-                    };
-
-                    try {
-                        Context.Channels.Add(createChan);
-                    } catch(ChannelExistException) {
-                        user.Send(new LegacyCommandResponse(LCR.CHANNEL_ALREADY_EXISTS, true, createChan.Name));
-                        break;
-                    } catch(ChannelInvalidNameException) {
-                        user.Send(new LegacyCommandResponse(LCR.CHANNEL_NAME_INVALID));
-                        break;
-                    }
-
-                    Context.SwitchChannel(user, createChan, createChan.Password);
-                    user.Send(new LegacyCommandResponse(LCR.CHANNEL_CREATED, false, createChan.Name));
-                    break;
-                case @"delchan": // delete a channel
-                    if(parts.Length < 2 || string.IsNullOrWhiteSpace(parts[1])) {
-                        user.Send(new LegacyCommandResponse(LCR.COMMAND_FORMAT_ERROR));
-                        break;
-                    }
-
-                    string delChanName = string.Join('_', parts.Skip(1));
-                    ChatChannel delChan = Context.Channels.Get(delChanName);
-
-                    if(delChan == null) {
-                        user.Send(new LegacyCommandResponse(LCR.CHANNEL_NOT_FOUND, true, delChanName));
-                        break;
-                    }
-
-                    if(!user.Can(ChatUserPermissions.DeleteChannel) && delChan.Owner != user) {
-                        user.Send(new LegacyCommandResponse(LCR.CHANNEL_DELETE_FAILED, true, delChan.Name));
-                        break;
-                    }
-
-                    Context.Channels.Remove(delChan);
-                    user.Send(new LegacyCommandResponse(LCR.CHANNEL_DELETED, false, delChan.Name));
-                    break;
-                case @"password": // set a password on the channel
-                case @"pwd":
-                    if(!user.Can(ChatUserPermissions.SetChannelPassword) || channel.Owner != user) {
-                        user.Send(new LegacyCommandResponse(LCR.COMMAND_NOT_ALLOWED, true, $@"/{commandName}"));
-                        break;
-                    }
-
-                    string chanPass = string.Join(' ', parts.Skip(1)).Trim();
-
-                    if(string.IsNullOrWhiteSpace(chanPass))
-                        chanPass = string.Empty;
-
-                    Context.Channels.Update(channel, password: chanPass);
-                    user.Send(new LegacyCommandResponse(LCR.CHANNEL_PASSWORD_CHANGED, false));
-                    break;
-                case @"privilege": // sets a minimum hierarchy requirement on the channel
-                case @"rank":
-                case @"priv":
-                    if(!user.Can(ChatUserPermissions.SetChannelHierarchy) || channel.Owner != user) {
-                        user.Send(new LegacyCommandResponse(LCR.COMMAND_NOT_ALLOWED, true, $@"/{commandName}"));
-                        break;
-                    }
-
-                    if(parts.Length < 2 || !int.TryParse(parts[1], out int chanHierarchy) || chanHierarchy > user.Rank) {
-                        user.Send(new LegacyCommandResponse(LCR.INSUFFICIENT_HIERARCHY));
-                        break;
-                    }
-
-                    Context.Channels.Update(channel, hierarchy: chanHierarchy);
-                    user.Send(new LegacyCommandResponse(LCR.CHANNEL_HIERARCHY_CHANGED, false));
-                    break;
-
-                case @"delmsg": // deletes a message
-                    bool deleteAnyMessage = user.Can(ChatUserPermissions.DeleteAnyMessage);
-
-                    if(!deleteAnyMessage && !user.Can(ChatUserPermissions.DeleteOwnMessage)) {
-                        user.Send(new LegacyCommandResponse(LCR.COMMAND_NOT_ALLOWED, true, $@"/{commandName}"));
-                        break;
-                    }
-
-                    if(parts.Length < 2 || !parts[1].All(char.IsDigit) || !long.TryParse(parts[1], out long delSeqId)) {
-                        user.Send(new LegacyCommandResponse(LCR.COMMAND_FORMAT_ERROR));
-                        break;
-                    }
-
-                    IChatEvent delMsg = Context.Events.GetEvent(delSeqId);
-
-                    if(delMsg == null || delMsg.Sender.Rank > user.Rank || (!deleteAnyMessage && delMsg.Sender.UserId != user.UserId)) {
-                        user.Send(new LegacyCommandResponse(LCR.MESSAGE_DELETE_ERROR));
-                        break;
-                    }
-
-                    if(Context.Events.RemoveEvent(delMsg))
-                        Context.Send(new ChatMessageDeletePacket(delMsg.SequenceId));
-                    break;
-                case @"kick": // kick a user from the server
-                case @"ban": // ban a user from the server, this differs from /kick in that it adds all remote address to the ip banlist
-                    bool isBanning = commandName == @"ban";
-
-                    if(!user.Can(isBanning ? ChatUserPermissions.BanUser : ChatUserPermissions.KickUser)) {
-                        user.Send(new LegacyCommandResponse(LCR.COMMAND_NOT_ALLOWED, true, $@"/{commandName}"));
-                        break;
-                    }
-
-                    ChatUser banUser;
-
-                    if(parts.Length < 2 || (banUser = Context.Users.Get(parts[1])) == null) {
-                        user.Send(new LegacyCommandResponse(LCR.USER_NOT_FOUND, true, parts.Length < 2 ? @"User" : parts[1]));
-                        break;
-                    }
-
-                    if(banUser == user || banUser.Rank >= user.Rank || Context.Bans.Check(banUser) > DateTimeOffset.Now) {
-                        user.Send(new LegacyCommandResponse(LCR.KICK_NOT_ALLOWED, true, banUser.DisplayName));
-                        break;
-                    }
-
-                    DateTimeOffset? banUntil = isBanning ? (DateTimeOffset?)DateTimeOffset.MaxValue : null;
-
-                    if(parts.Length > 2) {
-                        if(!double.TryParse(parts[2], out double silenceSeconds)) {
-                            user.Send(new LegacyCommandResponse(LCR.COMMAND_FORMAT_ERROR));
-                            break;
-                        }
-
-                        banUntil = DateTimeOffset.UtcNow.AddSeconds(silenceSeconds);
-                    }
-
-                    Context.BanUser(banUser, banUntil, isBanning);
-                    break;
-                case @"pardon":
-                case @"unban":
-                    if(!user.Can(ChatUserPermissions.BanUser | ChatUserPermissions.KickUser)) {
-                        user.Send(new LegacyCommandResponse(LCR.COMMAND_NOT_ALLOWED, true, $@"/{commandName}"));
-                        break;
-                    }
-
-                    if(parts.Length < 2) {
-                        user.Send(new LegacyCommandResponse(LCR.USER_NOT_BANNED, true, string.Empty));
-                        break;
-                    }
-
-                    BannedUser unbanUser = Context.Bans.GetUser(parts[1]);
-
-                    if(unbanUser == null || unbanUser.Expires <= DateTimeOffset.Now) {
-                        user.Send(new LegacyCommandResponse(LCR.USER_NOT_BANNED, true, unbanUser?.Username ?? parts[1]));
-                        break;
-                    }
-
-                    Context.Bans.Remove(unbanUser);
-
-                    user.Send(new LegacyCommandResponse(LCR.USER_UNBANNED, false, unbanUser));
-                    break;
-                case @"pardonip":
-                case @"unbanip":
-                    if(!user.Can(ChatUserPermissions.BanUser | ChatUserPermissions.KickUser)) {
-                        user.Send(new LegacyCommandResponse(LCR.COMMAND_NOT_ALLOWED, true, $@"/{commandName}"));
-                        break;
-                    }
-
-                    if(parts.Length < 2 || !IPAddress.TryParse(parts[1], out IPAddress unbanIP)) {
-                        user.Send(new LegacyCommandResponse(LCR.USER_NOT_BANNED, true, string.Empty));
-                        break;
-                    }
-
-                    if(Context.Bans.Check(unbanIP) <= DateTimeOffset.Now) {
-                        user.Send(new LegacyCommandResponse(LCR.USER_NOT_BANNED, true, unbanIP));
-                        break;
-                    }
-
-                    Context.Bans.Remove(unbanIP);
-
-                    user.Send(new LegacyCommandResponse(LCR.USER_UNBANNED, false, unbanIP));
-                    break;
-                case @"bans": // gets a list of bans
-                case @"banned":
-                    if(!user.Can(ChatUserPermissions.BanUser | ChatUserPermissions.KickUser)) {
-                        user.Send(new LegacyCommandResponse(LCR.COMMAND_NOT_ALLOWED, true, $@"/{commandName}"));
-                        break;
-                    }
-
-                    user.Send(new BanListPacket(Context.Bans.All()));
-                    break;
-                case @"silence": // silence a user
-                    if(!user.Can(ChatUserPermissions.SilenceUser)) {
-                        user.Send(new LegacyCommandResponse(LCR.COMMAND_NOT_ALLOWED, true, $@"/{commandName}"));
-                        break;
-                    }
-
-                    ChatUser silUser;
-
-                    if(parts.Length < 2 || (silUser = Context.Users.Get(parts[1])) == null) {
-                        user.Send(new LegacyCommandResponse(LCR.USER_NOT_FOUND, true, parts.Length < 2 ? @"User" : parts[1]));
-                        break;
-                    }
-
-                    if(silUser == user) {
-                        user.Send(new LegacyCommandResponse(LCR.SILENCE_SELF));
-                        break;
-                    }
-
-                    if(silUser.Rank >= user.Rank) {
-                        user.Send(new LegacyCommandResponse(LCR.SILENCE_HIERARCHY));
-                        break;
-                    }
-
-                    if(silUser.IsSilenced) {
-                        user.Send(new LegacyCommandResponse(LCR.SILENCE_ALREADY));
-                        break;
-                    }
-
-                    DateTimeOffset silenceUntil = DateTimeOffset.MaxValue;
-
-                    if(parts.Length > 2) {
-                        if(!double.TryParse(parts[2], out double silenceSeconds)) {
-                            user.Send(new LegacyCommandResponse(LCR.COMMAND_FORMAT_ERROR));
-                            break;
-                        }
-
-                        silenceUntil = DateTimeOffset.UtcNow.AddSeconds(silenceSeconds);
-                    }
-
-                    silUser.SilencedUntil = silenceUntil;
-                    silUser.Send(new LegacyCommandResponse(LCR.SILENCED, false));
-                    user.Send(new LegacyCommandResponse(LCR.TARGET_SILENCED, false, silUser.DisplayName));
-                    break;
-                case @"unsilence": // unsilence a user
-                    if(!user.Can(ChatUserPermissions.SilenceUser)) {
-                        user.Send(new LegacyCommandResponse(LCR.COMMAND_NOT_ALLOWED, true, $@"/{commandName}"));
-                        break;
-                    }
-
-                    ChatUser unsilUser;
-
-                    if(parts.Length < 2 || (unsilUser = Context.Users.Get(parts[1])) == null) {
-                        user.Send(new LegacyCommandResponse(LCR.USER_NOT_FOUND, true, parts.Length < 2 ? @"User" : parts[1]));
-                        break;
-                    }
-
-                    if(unsilUser.Rank >= user.Rank) {
-                        user.Send(new LegacyCommandResponse(LCR.UNSILENCE_HIERARCHY));
-                        break;
-                    }
-
-                    if(!unsilUser.IsSilenced) {
-                        user.Send(new LegacyCommandResponse(LCR.NOT_SILENCED));
-                        break;
-                    }
-
-                    unsilUser.SilencedUntil = DateTimeOffset.MinValue;
-                    unsilUser.Send(new LegacyCommandResponse(LCR.UNSILENCED, false));
-                    user.Send(new LegacyCommandResponse(LCR.TARGET_UNSILENCED, false, unsilUser.DisplayName));
-                    break;
-                case @"ip": // gets a user's ip (from all connections in this case)
-                case @"whois":
-                    if(!user.Can(ChatUserPermissions.SeeIPAddress)) {
-                        user.Send(new LegacyCommandResponse(LCR.COMMAND_NOT_ALLOWED, true, @"/ip"));
-                        break;
-                    }
-
-                    ChatUser ipUser;
-                    if(parts.Length < 2 || (ipUser = Context.Users.Get(parts[1])) == null) {
-                        user.Send(new LegacyCommandResponse(LCR.USER_NOT_FOUND, true, parts.Length < 2 ? @"User" : parts[1]));
-                        break;
-                    }
-
-                    foreach(IPAddress ip in ipUser.RemoteAddresses.Distinct().ToArray())
-                        user.Send(new LegacyCommandResponse(LCR.IP_ADDRESS, false, ipUser.Username, ip));
-                    break;
-
-                default:
-                    user.Send(new LegacyCommandResponse(LCR.COMMAND_NOT_FOUND, true, commandName));
-                    break;
-            }
-
-            return null;
         }
 
         private bool IsDisposed;

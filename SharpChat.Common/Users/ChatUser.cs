@@ -118,7 +118,7 @@ namespace SharpChat.Users {
         public IEnumerable<IPAddress> RemoteAddresses {
             get {
                 lock(Sessions)
-                    return Sessions.Select(c => c.RemoteAddress).ToArray();
+                    return Sessions.Select(c => c.RemoteAddress).Distinct().ToArray();
             }
         }
 

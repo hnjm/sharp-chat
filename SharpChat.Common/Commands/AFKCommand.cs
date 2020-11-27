@@ -1,6 +1,7 @@
 ﻿using SharpChat.Events;
 using SharpChat.Packets;
 using SharpChat.Users;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace SharpChat.Commands {
@@ -8,7 +9,7 @@ namespace SharpChat.Commands {
         private const string DEFAULT = @"AFK";
         private const int MAX_LENGTH = 5;
 
-        public bool IsMatch(string name)
+        public bool IsMatch(string name, IEnumerable<string> args)
             => name == @"afk";
 
         public IChatMessageEvent Dispatch(IChatCommandContext ctx) {

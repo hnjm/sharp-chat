@@ -83,7 +83,7 @@ namespace SharpChat.Channels {
                 return Channels.Contains(chan) || Channels.Any(c => c.Name.ToLowerInvariant() == chan.Name.ToLowerInvariant());
         }
 
-        public void Update(ChatChannel channel, string name = null, bool? temporary = null, int? hierarchy = null, string password = null) {
+        public void Update(ChatChannel channel, string name = null, bool? temporary = null, int? rank = null, string password = null) {
             if (channel == null)
                 throw new ArgumentNullException(nameof(channel));
             if (!Channels.Contains(channel))
@@ -105,8 +105,8 @@ namespace SharpChat.Channels {
             if (temporary.HasValue)
                 channel.IsTemporary = temporary.Value;
 
-            if (hierarchy.HasValue)
-                channel.Rank = hierarchy.Value;
+            if (rank.HasValue)
+                channel.Rank = rank.Value;
 
             if (password != null)
                 channel.Password = password;
