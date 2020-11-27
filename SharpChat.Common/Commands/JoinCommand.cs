@@ -6,10 +6,10 @@ using System.Linq;
 
 namespace SharpChat.Commands {
     public class JoinCommand : IChatCommand {
-        public bool IsMatch(string name, IEnumerable<string> args)
+        public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == @"join";
 
-        public IChatMessageEvent Dispatch(IChatCommandContext ctx) {
+        public IChatMessageEvent DispatchCommand(IChatCommandContext ctx) {
             string channelName = ctx.Args.ElementAtOrDefault(1);
 
             // no error, apparently

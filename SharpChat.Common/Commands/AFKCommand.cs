@@ -9,10 +9,10 @@ namespace SharpChat.Commands {
         private const string DEFAULT = @"AFK";
         private const int MAX_LENGTH = 5;
 
-        public bool IsMatch(string name, IEnumerable<string> args)
+        public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == @"afk";
 
-        public IChatMessageEvent Dispatch(IChatCommandContext ctx) {
+        public IChatMessageEvent DispatchCommand(IChatCommandContext ctx) {
             string statusText = ctx.Args.ElementAtOrDefault(1);
             if(string.IsNullOrWhiteSpace(statusText))
                 statusText = DEFAULT;

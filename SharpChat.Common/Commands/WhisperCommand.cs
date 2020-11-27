@@ -6,10 +6,10 @@ using System.Linq;
 
 namespace SharpChat.Commands {
     public class WhisperCommand : IChatCommand {
-        public bool IsMatch(string name, IEnumerable<string> args)
+        public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == @"whisper" || name == @"msg";
 
-        public IChatMessageEvent Dispatch(IChatCommandContext ctx) {
+        public IChatMessageEvent DispatchCommand(IChatCommandContext ctx) {
             if(ctx.Args.Count() < 3)
                 throw new CommandException(LCR.COMMAND_FORMAT_ERROR);
 

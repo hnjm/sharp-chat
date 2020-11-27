@@ -8,7 +8,7 @@ using System.Text;
 
 namespace SharpChat.Commands {
     public class WhoCommand : IChatCommand {
-        public bool IsMatch(string name, IEnumerable<string> args)
+        public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == @"who";
 
         private static string MakeUserList(ChatUser currentUser, IEnumerable<ChatUser> users) {
@@ -47,7 +47,7 @@ namespace SharpChat.Commands {
             ctx.User.Send(new LegacyCommandResponse(LCR.USERS_LISTING_CHANNEL, false, whoChan.Name, MakeUserList(ctx.User, whoChan.GetUsers())));
         }
 
-        public IChatMessageEvent Dispatch(IChatCommandContext ctx) {
+        public IChatMessageEvent DispatchCommand(IChatCommandContext ctx) {
             string channelName = ctx.Args.ElementAtOrDefault(1) ?? string.Empty;
 
             if(string.IsNullOrEmpty(channelName))

@@ -6,10 +6,10 @@ using System.Linq;
 
 namespace SharpChat.Commands {
     public class DeleteMessageCommand : IChatCommand {
-        public bool IsMatch(string name, IEnumerable<string> args)
+        public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == @"delmsg" || (name == @"delete" && args.ElementAtOrDefault(1)?.All(char.IsDigit) == true);
 
-        public IChatMessageEvent Dispatch(IChatCommandContext ctx) {
+        public IChatMessageEvent DispatchCommand(IChatCommandContext ctx) {
             bool deleteAnyMessage = ctx.User.Can(ChatUserPermissions.DeleteAnyMessage);
 
             if(!deleteAnyMessage && !ctx.User.Can(ChatUserPermissions.DeleteOwnMessage))

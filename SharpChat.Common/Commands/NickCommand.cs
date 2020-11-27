@@ -6,10 +6,10 @@ using System.Linq;
 
 namespace SharpChat.Commands {
     public class NickCommand : IChatCommand {
-        public bool IsMatch(string name, IEnumerable<string> args)
+        public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == @"nick";
 
-        public IChatMessageEvent Dispatch(IChatCommandContext ctx) {
+        public IChatMessageEvent DispatchCommand(IChatCommandContext ctx) {
             bool setOthersNick = ctx.User.Can(ChatUserPermissions.SetOthersNickname);
 
             if(!setOthersNick && !ctx.User.Can(ChatUserPermissions.SetOwnNickname))

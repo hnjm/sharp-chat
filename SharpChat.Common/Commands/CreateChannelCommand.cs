@@ -7,10 +7,10 @@ using System.Linq;
 
 namespace SharpChat.Commands {
     public class CreateChannelCommand : IChatCommand {
-        public bool IsMatch(string name, IEnumerable<string> args)
+        public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == @"create";
 
-        public IChatMessageEvent Dispatch(IChatCommandContext ctx) {
+        public IChatMessageEvent DispatchCommand(IChatCommandContext ctx) {
             if(ctx.User.Can(ChatUserPermissions.CreateChannel))
                 throw new CommandException(LCR.COMMAND_NOT_ALLOWED, true, @"/create");
 

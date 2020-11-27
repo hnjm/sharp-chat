@@ -321,12 +321,12 @@ namespace SharpChat {
                                    .Replace(@">", @"&gt;")
                                    .Replace("\n", @" <br/> ");
 
-            IChatCommand command = Commands.FirstOrDefault(x => x.IsMatch(commandName, parts));
+            IChatCommand command = Commands.FirstOrDefault(x => x.IsCommandMatch(commandName, parts));
             if(command == null)
                 user.Send(new LegacyCommandResponse(LCR.COMMAND_NOT_FOUND, true, commandName));
 
             try {
-                return command.Dispatch(new ChatCommandContext(parts, user, channel, Context));
+                return command.DispatchCommand(new ChatCommandContext(parts, user, channel, Context));
             } catch(CommandException ex) {
                 user.Send(ex.ToPacket());
                 return null;

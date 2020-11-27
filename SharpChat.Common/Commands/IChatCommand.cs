@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace SharpChat.Commands {
     public interface IChatCommand {
-        bool IsMatch(string name, IEnumerable<string> args);
-        IChatMessageEvent Dispatch(IChatCommandContext ctx);
+        bool IsCommandMatch(string name, IEnumerable<string> args);
+        IChatMessageEvent DispatchCommand(IChatCommandContext ctx);
     }
 }

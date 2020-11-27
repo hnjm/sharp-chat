@@ -6,10 +6,10 @@ using System.Linq;
 
 namespace SharpChat.Commands {
     public class BroadcastCommand : IChatCommand {
-        public bool IsMatch(string name, IEnumerable<string> args)
+        public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == @"say";
 
-        public IChatMessageEvent Dispatch(IChatCommandContext ctx) {
+        public IChatMessageEvent DispatchCommand(IChatCommandContext ctx) {
             if(!ctx.User.Can(ChatUserPermissions.Broadcast))
                 throw new CommandException(LCR.COMMAND_NOT_ALLOWED, @"/say");
 

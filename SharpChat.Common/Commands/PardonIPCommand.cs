@@ -9,10 +9,10 @@ using System.Net;
 
 namespace SharpChat.Commands {
     public class PardonIPCommand : IChatCommand {
-        public bool IsMatch(string name, IEnumerable<string> args)
+        public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == @"pardonip" || name == @"unbanip";
 
-        public IChatMessageEvent Dispatch(IChatCommandContext ctx) {
+        public IChatMessageEvent DispatchCommand(IChatCommandContext ctx) {
             if(!ctx.User.Can(ChatUserPermissions.BanUser | ChatUserPermissions.KickUser))
                 throw new CommandException(LCR.COMMAND_NOT_ALLOWED, $@"/{ctx.Args.First()}");
 

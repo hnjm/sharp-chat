@@ -4,10 +4,10 @@ using System.Linq;
 
 namespace SharpChat.Commands {
     public class ActionCommand : IChatCommand {
-        public bool IsMatch(string name, IEnumerable<string> args)
+        public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == @"action" || name == @"me";
 
-        public IChatMessageEvent Dispatch(IChatCommandContext ctx) {
+        public IChatMessageEvent DispatchCommand(IChatCommandContext ctx) {
             if(ctx.Args.Count() < 2)
                 return null;
 
