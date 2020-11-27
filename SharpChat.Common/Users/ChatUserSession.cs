@@ -51,10 +51,10 @@ namespace SharpChat.Users {
         }
 
         public void BumpPing()
-            => LastPing = DateTimeOffset.Now;
+            => LastPing = DateTimeOffset.UtcNow;
 
         public bool HasTimedOut
-            => DateTimeOffset.Now - LastPing > SessionTimeOut;
+            => DateTimeOffset.UtcNow - LastPing > SessionTimeOut;
 
         public bool IsAlive
             => !HasTimedOut && !IsDisposed;

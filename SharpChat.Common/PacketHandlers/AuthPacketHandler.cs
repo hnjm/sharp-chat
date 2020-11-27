@@ -52,7 +52,7 @@ namespace SharpChat.PacketHandlers {
 
             banDuration = ctx.Chat.Bans.Check(user);
 
-            if(banDuration > DateTimeOffset.Now) {
+            if(banDuration > DateTimeOffset.UtcNow) {
                 ctx.Session.Send(new AuthFailPacket(AuthFailReason.Banned, banDuration));
                 ctx.Session.Dispose();
                 return;

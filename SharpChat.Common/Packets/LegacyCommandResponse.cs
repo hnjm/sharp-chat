@@ -27,12 +27,12 @@ namespace SharpChat.Packets {
                 sb.Append('\t');
                 sb.Append((int)SockChatServerContextPacket.Message);
                 sb.Append('\t');
-                sb.Append(DateTimeOffset.Now.ToUnixTimeSeconds());
+                sb.Append(DateTimeOffset.UtcNow.ToUnixTimeSeconds());
                 sb.Append("\t-1\tChatBot\tinherit\t\t");
             } else {
                 sb.Append((int)SockChatServerPacket.MessageAdd);
                 sb.Append('\t');
-                sb.Append(DateTimeOffset.Now.ToUnixTimeSeconds());
+                sb.Append(DateTimeOffset.UtcNow.ToUnixTimeSeconds());
                 sb.Append("\t-1\t");
             }
 

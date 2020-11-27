@@ -21,7 +21,7 @@ namespace SharpChat.Packets {
             if (!isSilent) {
                 sb.Append((int)SockChatServerPacket.MessageAdd);
                 sb.Append('\t');
-                sb.Append(DateTimeOffset.Now.ToUnixTimeSeconds());
+                sb.Append(DateTimeOffset.UtcNow.ToUnixTimeSeconds());
                 sb.Append("\t-1\t0\fnick\f");
                 sb.Append(PreviousName);
                 sb.Append('\f');

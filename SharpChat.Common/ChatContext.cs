@@ -62,8 +62,8 @@ namespace SharpChat {
 
         public void HandleJoin(ChatUser user, ChatChannel chan, ChatUserSession sess) {
             if (!chan.HasUser(user)) {
-                chan.Send(new UserConnectPacket(DateTimeOffset.Now, user));
-                Events.AddEvent(new UserConnectEvent(DateTimeOffset.Now, user, chan));
+                chan.Send(new UserConnectPacket(DateTimeOffset.UtcNow, user));
+                Events.AddEvent(new UserConnectEvent(DateTimeOffset.UtcNow, user, chan));
             }
 
             sess.Send(new AuthSuccessPacket(user, chan, sess));
@@ -97,8 +97,8 @@ namespace SharpChat {
                 Channels.Remove(chan);
 
             chan.UserLeave(user);
-            chan.Send(new UserDisconnectPacket(DateTimeOffset.Now, user, reason));
-            Events.AddEvent(new UserDisconnectEvent(DateTimeOffset.Now, user, chan, reason));
+            chan.Send(new UserDisconnectPacket(DateTimeOffset.UtcNow, user, reason));
+            Events.AddEvent(new UserDisconnectEvent(DateTimeOffset.UtcNow, user, chan, reason));
         }
 
         public void SwitchChannel(ChatUser user, ChatChannel chan, string password) {
@@ -132,9 +132,9 @@ namespace SharpChat {
             ChatChannel oldChan = user.CurrentChannel;
 
             oldChan.Send(new UserChannelLeavePacket(user));
-            Events.AddEvent(new UserChannelLeaveEvent(DateTimeOffset.Now, user, oldChan));
+            Events.AddEvent(new UserChannelLeaveEvent(DateTimeOffset.UtcNow, user, oldChan));
             chan.Send(new UserChannelJoinPacket(user));
-            Events.AddEvent(new UserChannelJoinEvent(DateTimeOffset.Now, user, chan));
+            Events.AddEvent(new UserChannelJoinEvent(DateTimeOffset.UtcNow, user, chan));
 
             user.Send(new ContextClearPacket(chan, ContextClearMode.MessagesUsers));
             user.Send(new ContextUsersPacket(chan.GetUsers(new[] { user })));

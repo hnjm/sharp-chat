@@ -29,7 +29,7 @@ namespace SharpChat.Events {
             if(SequenceIdCounter > 200)
                 SequenceIdCounter = 0;
             long id = 0;
-            id |= (DateTimeOffset.Now.ToUnixTimeMilliseconds() - SEQ_ID_EPOCH) << 8;
+            id |= (DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - SEQ_ID_EPOCH) << 8;
             id |= (ushort)(++SequenceIdCounter);
             return id;
         }

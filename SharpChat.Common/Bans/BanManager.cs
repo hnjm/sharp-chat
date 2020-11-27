@@ -53,7 +53,7 @@ namespace SharpChat.Bans {
         }
 
         public void Add(ChatUser user, DateTimeOffset expires) {
-            if (expires <= DateTimeOffset.Now)
+            if (expires <= DateTimeOffset.UtcNow)
                 return;
 
             lock (BanList) {
@@ -67,7 +67,7 @@ namespace SharpChat.Bans {
         }
 
         public void Add(IPAddress addr, DateTimeOffset expires) {
-            if (expires <= DateTimeOffset.Now)
+            if (expires <= DateTimeOffset.UtcNow)
                 return;
 
             lock (BanList) {
@@ -138,7 +138,7 @@ namespace SharpChat.Bans {
 
         public void RemoveExpired() {
             lock(BanList)
-                BanList.RemoveAll(x => x.Expires <= DateTimeOffset.Now);
+                BanList.RemoveAll(x => x.Expires <= DateTimeOffset.UtcNow);
         }
 
         public void RefreshFlashiiBans() {

@@ -9,7 +9,7 @@ namespace SharpChat.Packets {
 
             sb.Append((int)SockChatServerPacket.MessageAdd);
             sb.Append('\t');
-            sb.Append(DateTimeOffset.Now.ToUnixTimeSeconds());
+            sb.Append(DateTimeOffset.UtcNow.ToUnixTimeSeconds());
             sb.Append("\t-1\t0\fflwarn\t");
             sb.Append(SequenceId);
             sb.Append("\t10010");

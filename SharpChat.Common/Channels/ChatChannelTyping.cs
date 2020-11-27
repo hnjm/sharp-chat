@@ -9,11 +9,11 @@ namespace SharpChat.Channels {
         public DateTimeOffset Started { get; }
 
         public bool HasExpired
-            => DateTimeOffset.Now - Started > Lifetime;
+            => DateTimeOffset.UtcNow - Started > Lifetime;
 
         public ChatChannelTyping(ChatUser user) {
             User = user ?? throw new ArgumentNullException(nameof(user));
-            Started = DateTimeOffset.Now;
+            Started = DateTimeOffset.UtcNow;
         }
     }
 }

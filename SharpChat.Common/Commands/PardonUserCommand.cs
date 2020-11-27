@@ -20,7 +20,7 @@ namespace SharpChat.Commands {
 
             if(string.IsNullOrEmpty(userName)
                 || (banRecord = ctx.Chat.Bans.GetUser(userName)) == null
-                || banRecord.Expires <= DateTimeOffset.Now)
+                || banRecord.Expires <= DateTimeOffset.UtcNow)
                 throw new CommandException(LCR.USER_NOT_BANNED, banRecord?.Username ?? userName ?? @"User");
 
             ctx.Chat.Bans.Remove(banRecord);
