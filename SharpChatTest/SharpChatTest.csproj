@@ -9,4 +9,8 @@
     <PackageReference Include="PureWebSockets" Version="3.0.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\SharpChat\SharpChat.csproj" />
+  </ItemGroup>
+
 </Project>
