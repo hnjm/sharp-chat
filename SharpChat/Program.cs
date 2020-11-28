@@ -39,8 +39,6 @@ namespace SharpChat {
             string databaseBackend = GetFlagArgument(args, @"--dbb");
             string dataProviderName = GetFlagArgument(args, @"--dpn");
 
-            using ManualResetEvent mre = new ManualResetEvent(false);
-
             // TODO: This still sucks
             IDatabaseBackend db;
             switch(databaseBackend) {
@@ -124,8 +122,17 @@ namespace SharpChat {
             using IWebSocketServer wss = new FleckWebSocketServer(PORT);
             using SockChatServer scs = new SockChatServer(wss, httpClient, dataProvider, db);
 
-            Console.CancelKeyPress += (s, e) => { e.Cancel = true; mre.Set(); };
-            mre.WaitOne();
+            if(args.Contains(@"--testmode")) {
+                for(; ; ) {
+                    char chr = (char)Console.In.Read();
+                    if(chr == '\x3')
+                        break;
+                }
+            } else {
+                using ManualResetEvent mre = new ManualResetEvent(false);
+                Console.CancelKeyPress += (s, e) => { e.Cancel = true; mre.Set(); };
+                mre.WaitOne();
+            }
 
             db.Dispose();
         }
