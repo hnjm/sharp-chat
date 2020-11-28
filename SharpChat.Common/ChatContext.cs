@@ -1,5 +1,6 @@
 ﻿using SharpChat.Bans;
 using SharpChat.Channels;
+using SharpChat.DataProvider;
 using SharpChat.Events;
 using SharpChat.Events.Storage;
 using SharpChat.Packets;

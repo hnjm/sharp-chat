@@ -3,6 +3,7 @@ using SharpChat.Database;
 using SharpChat.Database.MariaDB;
 using SharpChat.Database.Null;
 using SharpChat.Database.SQLite;
+using SharpChat.DataProvider;
 using SharpChat.DataProvider.Misuzu;
 using SharpChat.Users;
 using SharpChat.Users.Auth;
@@ -82,8 +83,10 @@ namespace SharpChat {
             using HttpClient httpClient = new HttpClient();
             httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(@"SharpChat");
 
+            IDataProvider dataProvider = new MisuzuDataProvider(httpClient);
+
             using IWebSocketServer wss = new FleckWebSocketServer(PORT);
-            using SockChatServer scs = new SockChatServer(wss, httpClient, new MisuzuDataProvider(httpClient), db);
+            using SockChatServer scs = new SockChatServer(wss, httpClient, dataProvider, db);
 
             Console.CancelKeyPress += (s, e) => { e.Cancel = true; mre.Set(); };
             mre.WaitOne();
