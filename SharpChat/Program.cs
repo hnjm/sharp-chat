@@ -120,22 +120,15 @@ namespace SharpChat {
                     goto case @"null";
             }
 
-            IPEndPoint endPoint = new IPEndPoint(IPAddress.Any, PORT);
+            string ipArg = GetFlagArgument(args, @"--ip");
+            string portArg = GetFlagArgument(args, @"--port");
 
-            string endPointStr = GetFlagArgument(args, @"--ep");
-            if(!string.IsNullOrEmpty(endPointStr)) {
-                string[] epParts = endPointStr.Split(':');
-                if(epParts.ElementAtOrDefault(0).Any(x => x == '.' || x == ':')
-                    && IPAddress.TryParse(epParts.ElementAtOrDefault(0), out IPAddress epAddr)) {
-                    if(!ushort.TryParse(epParts.ElementAtOrDefault(1), out ushort port))
-                        port = PORT;
-                    endPoint = new IPEndPoint(epAddr, port);
-                } else {
-                    if(!ushort.TryParse(epParts.ElementAtOrDefault(0), out ushort port))
-                        port = PORT;
-                    endPoint = new IPEndPoint(IPAddress.Any, port);
-                }
-            }
+            if(!string.IsNullOrEmpty(ipArg) || !IPAddress.TryParse(ipArg, out IPAddress ip))
+                ip = IPAddress.Any;
+            if(!string.IsNullOrEmpty(portArg) || !ushort.TryParse(portArg, out ushort port))
+                port = PORT;
+
+            IPEndPoint endPoint = new IPEndPoint(ip, port);
 
             using IWebSocketServer wss = new FleckWebSocketServer(endPoint);
             using SockChatServer scs = new SockChatServer(wss, httpClient, dataProvider, db);
