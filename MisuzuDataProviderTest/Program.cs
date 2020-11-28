@@ -15,7 +15,7 @@ namespace MisuzuDataProviderTest {
         public static void Main() {
             WriteLine("Misuzu Authentication Tester");
 
-            WriteLine($@"Enter token found on {MisuzuUrls.BASE_URL}/login:");
+            WriteLine($@"Enter token found on {MisuzuConstants.BASE_URL}/login:");
             string[] token = Console.ReadLine().Split(new[] { '_' }, 2);
 
             HttpClient httpClient = new HttpClient();

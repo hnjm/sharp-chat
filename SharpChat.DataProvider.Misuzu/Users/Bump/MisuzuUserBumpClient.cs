@@ -22,7 +22,7 @@ namespace SharpChat.DataProvider.Misuzu.Users.Bump {
 
             byte[] data = JsonSerializer.SerializeToUtf8Bytes(users.Where(x => x.RemoteAddresses.Any()).Select(x => new MisuzuUserBumpInfo(x)));
 
-            using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, MisuzuUrls.BUMP) {
+            using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, MisuzuConstants.BUMP) {
                 Content = new ByteArrayContent(data),
                 Headers = {
                     { @"X-SharpChat-Signature", data.GetSignedHash() },

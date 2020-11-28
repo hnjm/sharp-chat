@@ -1,5 +1,7 @@
 ﻿namespace SharpChat.DataProvider.Misuzu {
-    public static class MisuzuUrls {
+    public static class MisuzuConstants {
+        public const string LOGIN_KEY = @"login_key.txt";
+
         public const string BASE_URL =
 #if DEBUG
             @"https://misuzu.misaka.nl/_sockchat";

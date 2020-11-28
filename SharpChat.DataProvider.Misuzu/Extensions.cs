@@ -9,7 +9,8 @@ namespace SharpChat.DataProvider.Misuzu {
 
         public static string GetSignedHash(this byte[] bytes, string key = null) {
             if(key == null)
-                key = File.Exists(@"login_key.txt") ? File.ReadAllText(@"login_key.txt") : @"woomy";
+                key = File.Exists(MisuzuConstants.LOGIN_KEY)
+                    ? File.ReadAllText(MisuzuConstants.LOGIN_KEY) : @"woomy";
 
             StringBuilder sb = new StringBuilder();
 

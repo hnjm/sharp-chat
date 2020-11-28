@@ -15,7 +15,7 @@ namespace SharpChat.DataProvider.Misuzu.Bans {
         }
 
         public IEnumerable<IBanRecord> GetBanList() {
-            using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, MisuzuUrls.BANS) {
+            using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, MisuzuConstants.BANS) {
                 Headers = {
                     { @"X-SharpChat-Signature", STRING.GetSignedHash() },
                 },
