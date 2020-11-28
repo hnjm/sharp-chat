@@ -10,6 +10,7 @@ using SharpChat.WebSocket.Fleck;
 using System;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Threading;
 
@@ -119,7 +120,24 @@ namespace SharpChat {
                     goto case @"null";
             }
 
-            using IWebSocketServer wss = new FleckWebSocketServer(PORT);
+            IPEndPoint endPoint = new IPEndPoint(IPAddress.Any, PORT);
+
+            string endPointStr = GetFlagArgument(args, @"--ep");
+            if(!string.IsNullOrEmpty(endPointStr)) {
+                string[] epParts = endPointStr.Split(':');
+                if(epParts.ElementAtOrDefault(0).Any(x => x == '.' || x == ':')
+                    && IPAddress.TryParse(epParts.ElementAtOrDefault(0), out IPAddress epAddr)) {
+                    if(!ushort.TryParse(epParts.ElementAtOrDefault(1), out ushort port))
+                        port = PORT;
+                    endPoint = new IPEndPoint(epAddr, port);
+                } else {
+                    if(!ushort.TryParse(epParts.ElementAtOrDefault(0), out ushort port))
+                        port = PORT;
+                    endPoint = new IPEndPoint(IPAddress.Any, port);
+                }
+            }
+
+            using IWebSocketServer wss = new FleckWebSocketServer(endPoint);
             using SockChatServer scs = new SockChatServer(wss, httpClient, dataProvider, db);
 
             if(args.Contains(@"--testmode")) {

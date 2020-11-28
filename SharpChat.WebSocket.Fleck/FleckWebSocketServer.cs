@@ -22,18 +22,17 @@ namespace SharpChat.WebSocket.Fleck {
         public event Action<IWebSocketConnection, Exception> OnError;
         public event Action<IWebSocketConnection, string> OnMessage;
 
-        public ushort Port { get; }
-
         private InternalFleckWebSocketServer Server { get; set; }
+        private IPEndPoint EndPoint { get; }
 
-        public FleckWebSocketServer(ushort port) {
-            Port = port;
+        public FleckWebSocketServer(IPEndPoint endPoint) {
+            EndPoint = endPoint ?? throw new ArgumentNullException(nameof(endPoint));
         }
 
         public void Start() {
             if(Server != null)
                 throw new Exception(@"A server has already been started.");
-            Server = new InternalFleckWebSocketServer($@"ws://0.0.0.0:{Port}");
+            Server = new InternalFleckWebSocketServer(EndPoint);
             Server.Start(rawConn => {
                 FleckWebSocketConnection conn = new FleckWebSocketConnection(rawConn);
                 rawConn.OnOpen += () => OnOpen?.Invoke(conn);
@@ -65,16 +64,19 @@ namespace SharpChat.WebSocket.Fleck {
             private readonly IPAddress _locationIP;
             private Action<IFleckWebSocketConnection> _config;
 
-            public InternalFleckWebSocketServer(string location, bool supportDualStack = true) {
-                Uri uri = new Uri(location);
+            public EndPoint EndPoint { get; }
 
-                Port = uri.Port;
-                Location = location;
-                SupportDualStack = supportDualStack;
+            public InternalFleckWebSocketServer(IPEndPoint endPoint, bool secure = false) {
+                EndPoint = endPoint ?? throw new ArgumentNullException(nameof(endPoint));
+                _scheme = secure ? @"wss" : @"ws";
 
-                _locationIP = ParseIPAddress(uri);
-                _scheme = uri.Scheme;
-                Socket socket = new Socket(_locationIP.AddressFamily, SocketType.Stream, ProtocolType.IP);
+                Port = endPoint.Port;
+                _locationIP = endPoint.Address;
+                Location = string.Format(@"{0}://{1}:{2}/", _scheme, _locationIP, Port);
+
+                SupportDualStack = true;
+
+                Socket socket = new Socket(endPoint.AddressFamily, SocketType.Stream, ProtocolType.IP);
                 socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, 1);
 
                 if(SupportDualStack && Type.GetType(@"Mono.Runtime") == null && RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
@@ -103,27 +105,11 @@ namespace SharpChat.WebSocket.Fleck {
                 GC.SuppressFinalize(this);
             }
 
-            private static IPAddress ParseIPAddress(Uri uri) {
-                string ipStr = uri.Host;
-
-                if(ipStr == "0.0.0.0") {
-                    return IPAddress.Any;
-                } else if(ipStr == "[0000:0000:0000:0000:0000:0000:0000:0000]") {
-                    return IPAddress.IPv6Any;
-                } else {
-                    try {
-                        return IPAddress.Parse(ipStr);
-                    } catch(Exception ex) {
-                        throw new FormatException("Failed to parse the IP address part of the location. Please make sure you specify a valid IP address. Use 0.0.0.0 or [::] to listen on all interfaces.", ex);
-                    }
-                }
-            }
-
             public void Start(Action<IFleckWebSocketConnection> config) {
-                IPEndPoint ipLocal = new IPEndPoint(_locationIP, Port);
-                ListenerSocket.Bind(ipLocal);
+                ListenerSocket.Bind(EndPoint);
                 ListenerSocket.Listen(100);
-                Port = ((IPEndPoint)ListenerSocket.LocalEndPoint).Port;
+                if(ListenerSocket.LocalEndPoint is IPEndPoint ipep)
+                    Port = ipep.Port;
                 FleckLog.Info(string.Format("Server started at {0} (actual port {1})", Location, Port));
                 if(_scheme == "wss") {
                     if(Certificate == null) {
