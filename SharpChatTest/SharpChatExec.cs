@@ -16,8 +16,22 @@ namespace SharpChatTest {
                 UseShellExecute = false,
                 WorkingDirectory = Directory.GetCurrentDirectory(),
                 RedirectStandardInput = true,
+                RedirectStandardError = true,
+                RedirectStandardOutput = true,
             });
+            Process.OutputDataReceived += Process_OutputDataReceived;
+            Process.ErrorDataReceived += Process_ErrorDataReceived;
+            Process.BeginOutputReadLine();
+            Process.BeginErrorReadLine();
             Thread.Sleep(1000);
+        }
+
+        private void Process_OutputDataReceived(object sender, DataReceivedEventArgs e) {
+            Logger.ServerWriteLine(e.Data);
+        }
+
+        private void Process_ErrorDataReceived(object sender, DataReceivedEventArgs e) {
+            Logger.ErrorWriteLine(e.Data);
         }
 
         private static string GetExePath() {

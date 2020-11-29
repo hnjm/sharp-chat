@@ -1,5 +1,7 @@
 ﻿using PureWebSockets;
+using SharpChat;
 using System;
+using System.Collections.Generic;
 using System.Net.WebSockets;
 
 namespace SharpChatTest.SockChat {
@@ -9,6 +11,11 @@ namespace SharpChatTest.SockChat {
 
         public int UserId { get; }
         public bool IsConnected { get; private set; }
+
+        public List<IEnumerable<string>> PingLog { get; } = new List<IEnumerable<string>>();
+        public List<IEnumerable<string>> PacketLog { get; } = new List<IEnumerable<string>>();
+
+        public DateTimeOffset LastPing { get; private set; } = DateTimeOffset.MinValue;
 
         public SockChatClient(ushort port, int userId) {
             UserId = userId;
@@ -28,18 +35,43 @@ namespace SharpChatTest.SockChat {
 
         private void WebSocket_OnOpened(object sender) {
             IsConnected = true;
+            Logger.ClientWriteLine(@$"[{UserId:00000}] Connected");
         }
 
         private void WebSocket_OnClosed(object sender, WebSocketCloseStatus reason) {
             IsConnected = false;
+            Logger.ClientWriteLine(@$"[{UserId:00000}] Disconnected: {reason}");
         }
 
         private void WebSocket_OnError(object sender, Exception ex) {
-            //
+            Logger.ErrorWriteLine(@$"[{UserId:00000}] {ex}");
         }
 
         private void WebSocket_OnMessage(object sender, string message) {
-            //
+            string[] parts = message.Split('\t');
+            (parts[0] == @"0" ? PingLog : PacketLog).Add(parts);
+            Logger.ClientWriteLine($@"[{UserId:00000}] Received packet {parts[0]}");
+        }
+
+        public void ClearPacketLog() {
+            PacketLog.Clear();
+        }
+
+        public void SendPing() {
+            LastPing = DateTimeOffset.Now;
+            WebSocket.Send($"{(int)SockChatClientPacket.Ping}\t{UserId}\t{LastPing.ToUnixTimeSeconds()}");
+        }
+
+        public void SendLogin(string argument = @"soapsoapsoap") {
+            WebSocket.Send($"{(int)SockChatClientPacket.Authenticate}\t{UserId}\t{argument}");
+        }
+
+        public void SendMessage(string message, string channel = @"Lounge") {
+            WebSocket.Send($"{(int)SockChatClientPacket.MessageSend}\t{UserId}\t{message}\t{channel}");
+        }
+
+        public void SendTyping(string channel = @"Lounge") {
+            WebSocket.Send($"{(int)SockChatClientPacket.Typing}\t{UserId}\t{channel}");
         }
 
         private bool IsDisposed;
