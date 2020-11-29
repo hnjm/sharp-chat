@@ -123,9 +123,9 @@ namespace SharpChat {
             string ipArg = GetFlagArgument(args, @"--ip");
             string portArg = GetFlagArgument(args, @"--port");
 
-            if(!string.IsNullOrEmpty(ipArg) || !IPAddress.TryParse(ipArg, out IPAddress ip))
+            if(string.IsNullOrEmpty(ipArg) || !IPAddress.TryParse(ipArg, out IPAddress ip))
                 ip = IPAddress.Any;
-            if(!string.IsNullOrEmpty(portArg) || !ushort.TryParse(portArg, out ushort port))
+            if(string.IsNullOrEmpty(portArg) || !ushort.TryParse(portArg, out ushort port))
                 port = PORT;
 
             IPEndPoint endPoint = new IPEndPoint(ip, port);
