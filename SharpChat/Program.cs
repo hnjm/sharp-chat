@@ -133,17 +133,9 @@ namespace SharpChat {
             using IWebSocketServer wss = new FleckWebSocketServer(endPoint);
             using SockChatServer scs = new SockChatServer(wss, httpClient, dataProvider, db);
 
-            if(args.Contains(@"--testmode")) {
-                for(; ; ) {
-                    char chr = (char)Console.In.Read();
-                    if(chr == '\x3')
-                        break;
-                }
-            } else {
-                using ManualResetEvent mre = new ManualResetEvent(false);
-                Console.CancelKeyPress += (s, e) => { e.Cancel = true; mre.Set(); };
-                mre.WaitOne();
-            }
+            using ManualResetEvent mre = new ManualResetEvent(false);
+            Console.CancelKeyPress += (s, e) => { e.Cancel = true; mre.Set(); };
+            mre.WaitOne();
 
             db.Dispose();
         }

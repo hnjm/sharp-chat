@@ -5,8 +5,6 @@ VisualStudioVersion = 16.0.29025.244
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpChat", "SharpChat\SharpChat.csproj", "{DDB24C19-B802-4C96-AC15-0449C6FC77F2}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpChatTest", "SharpChatTest\SharpChatTest.csproj", "{6CD6DB9D-E0FF-4DEB-8E28-0C3EA6BA26B2}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpChat.Common", "SharpChat.Common\SharpChat.Common.csproj", "{15CA52F0-8883-44BF-8DD8-80224795D78F}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpChat.WebSocket.Fleck", "SharpChat.WebSocket.Fleck\SharpChat.WebSocket.Fleck.csproj", "{505498BC-0DC8-459D-9AA8-BAD1457FEC19}"
@@ -23,7 +21,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpChat.Database.SQLite",
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpChat.DataProvider.Misuzu", "SharpChat.DataProvider.Misuzu\SharpChat.DataProvider.Misuzu.csproj", "{13A7839E-FA19-4C9D-994D-941499DA9763}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MisuzuDataProviderTest", "MisuzuDataProviderTest\MisuzuDataProviderTest.csproj", "{37D6A2A4-2C3B-49C9-90FA-0FA850A15B44}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MisuzuDataProviderTest", "MisuzuDataProviderTest\MisuzuDataProviderTest.csproj", "{37D6A2A4-2C3B-49C9-90FA-0FA850A15B44}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -35,10 +33,6 @@ Global
 		{DDB24C19-B802-4C96-AC15-0449C6FC77F2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DDB24C19-B802-4C96-AC15-0449C6FC77F2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DDB24C19-B802-4C96-AC15-0449C6FC77F2}.Release|Any CPU.Build.0 = Release|Any CPU
-		{6CD6DB9D-E0FF-4DEB-8E28-0C3EA6BA26B2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{6CD6DB9D-E0FF-4DEB-8E28-0C3EA6BA26B2}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{6CD6DB9D-E0FF-4DEB-8E28-0C3EA6BA26B2}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{6CD6DB9D-E0FF-4DEB-8E28-0C3EA6BA26B2}.Release|Any CPU.Build.0 = Release|Any CPU
 		{15CA52F0-8883-44BF-8DD8-80224795D78F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{15CA52F0-8883-44BF-8DD8-80224795D78F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{15CA52F0-8883-44BF-8DD8-80224795D78F}.Release|Any CPU.ActiveCfg = Release|Any CPU
