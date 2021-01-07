@@ -1,15 +1,13 @@
-﻿using SharpChat.Bans;
-using SharpChat.Database;
+﻿using SharpChat.Database;
 using SharpChat.Database.MariaDB;
 using SharpChat.Database.Null;
 using SharpChat.Database.SQLite;
-using SharpChat.Misuzu;
-using SharpChat.Users;
-using SharpChat.Users.Auth;
+using SharpChat.DataProvider;
+using SharpChat.DataProvider.Misuzu;
+using SharpChat.DataProvider.Null;
 using SharpChat.WebSocket;
 using SharpChat.WebSocket.Fleck;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -22,6 +20,11 @@ namespace SharpChat {
         public const string MDB_CONFIG = @"mariadb.txt";
         public const ushort PORT = 6770;
 
+        private static string GetFlagArgument(string[] args, string flag) {
+            int offset = Array.IndexOf(args, flag) + 1;
+            return offset < 1 ? null : args.ElementAtOrDefault(offset);
+        }
+
         public static void Main(string[] args) {
             Console.WriteLine(@"   _____ __                     ________          __ ");
             Console.WriteLine(@"  / ___// /_  ____ __________  / ____/ /_  ____ _/ /_");
@@ -32,110 +35,117 @@ namespace SharpChat {
 
 #if DEBUG
             Console.WriteLine(@"============================================ DEBUG ==");
-
-            Console.Write(@"Press a key to start a test");
-            for(int i = 10; i > 0; --i) {
-                Thread.Sleep(100);
-                Console.Write('.');
-                if(Console.KeyAvailable) {
-                    Console.WriteLine();
-                    switch(Console.ReadKey(true).Key) {
-                        case ConsoleKey.F:
-                            TestMisuzuAuth();
-                            return;
-                        default:
-                            break;
-                    }
-                }
-            }
-            Console.WriteLine();
 #endif
 
-            using ManualResetEvent mre = new ManualResetEvent(false);
+            string databaseBackend = GetFlagArgument(args, @"--dbb");
+            string dataProviderName = GetFlagArgument(args, @"--dpn");
 
-            IDatabaseBackend db = new NullDatabaseBackend();
-
-            // TODO: Make this not suck
-            if(!File.Exists(MDB_CONFIG)) {
-                Console.WriteLine(@"MariaDB configuration is missing. Attempting SQLite...");
-                if(!File.Exists(SQL_CONFIG)) {
-                    Console.WriteLine(@"SQLite configuration is also missing. Skipping database connection...");
-                } else {
-                    string[] config = File.ReadAllLines(SQL_CONFIG);
-                    if(config.Length < 1) {
-                        Console.WriteLine(@"SQLite configuration does not contain sufficient information. Skipping database connection...");
-                    } else {
-                        db.Dispose();
-                        db = new SQLiteDatabaseBackend(config[0]);
+            // TODO: This still sucks
+            IDatabaseBackend db;
+            switch(databaseBackend) {
+                case @"mariadb":
+                    if(!File.Exists(MDB_CONFIG)) {
+                        Console.WriteLine(@"MariaDB configuration is missing.");
+                        return;
                     }
-                }
-            } else {
-                string[] config = File.ReadAllLines(MDB_CONFIG);
-                if(config.Length < 4) {
-                    Console.WriteLine(@"MariaDB configuration does not contain sufficient information. Skipping database connection...");
-                } else {
-                    db.Dispose();
-                    db = new MariaDBDatabaseBackend(config[0], config[1], config[2], config[3]);
-                }
+
+                    string[] mdbCfg = File.ReadAllLines(MDB_CONFIG);
+                    db = new MariaDBDatabaseBackend(mdbCfg[0], mdbCfg[1], mdbCfg[2], mdbCfg[3]);
+                    Console.WriteLine(@"MariaDB database backend created!");
+                    break;
+
+                case @"sqlite":
+                    string dbPath = GetFlagArgument(args, @"--dbpath");
+
+                    if(string.IsNullOrEmpty(dbPath))
+                        if(!File.Exists(SQL_CONFIG)) {
+                            Console.WriteLine(@"SQLite configuration is missing.");
+                            return;
+                        } else
+                            dbPath = File.ReadAllLines(SQL_CONFIG)[0];
+                    else
+                        Console.WriteLine(@"Using database path provided in arguments.");
+
+                    db = new SQLiteDatabaseBackend(dbPath);
+                    Console.WriteLine(@"SQLite database backend created!");
+                    break;
+
+                case @"null":
+                    db = new NullDatabaseBackend();
+                    Console.WriteLine(@"Null database backend created!");
+                    break;
+
+                default:
+                    Console.WriteLine(@"No database flag provided. Checking based on existence of configs...");
+
+                    if(File.Exists(MDB_CONFIG)) {
+                        Console.WriteLine(@"MariaDB configuration found.");
+                        goto case @"mariadb";
+                    }
+
+                    if(File.Exists(SQL_CONFIG)) {
+                        Console.WriteLine(@"SQLite configuration found.");
+                        goto case @"sqlite";
+                    }
+
+                    Console.WriteLine(@"No configurations found, continuing without a database...");
+                    goto case @"null";
             }
 
             using HttpClient httpClient = new HttpClient();
             httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(@"SharpChat");
 
-            using IWebSocketServer wss = new FleckWebSocketServer(PORT);
-            using SockChatServer scs = new SockChatServer(wss, httpClient, new MisuzuDataProvider(httpClient), db);
+            // TODO: see database backend selection process
+            IDataProvider dataProvider;
+            switch(dataProviderName) {
+                case @"misuzu":
+                    dataProvider = new MisuzuDataProvider(httpClient);
+                    Console.WriteLine(@"Misuzu data provider created!");
+                    break;
 
-            Console.CancelKeyPress += (s, e) => { e.Cancel = true; mre.Set(); };
-            mre.WaitOne();
+                case @"null":
+                    dataProvider = new NullDataProvider();
+                    Console.WriteLine(@"Null data provider created!");
+                    break;
+
+                default:
+                    Console.WriteLine(@"No data provider flag provided. Checking based on existence of configs...");
+
+                    if(File.Exists(MisuzuConstants.LOGIN_KEY)) {
+                        Console.WriteLine(@"Misuzu configuration found.");
+                        goto case @"misuzu";
+                    }
+
+                    Console.WriteLine(@"No configurations found, continuing without a data provider...");
+                    goto case @"null";
+            }
+
+            string ipArg = GetFlagArgument(args, @"--ip");
+            string portArg = GetFlagArgument(args, @"--port");
+
+            if(string.IsNullOrEmpty(ipArg) || !IPAddress.TryParse(ipArg, out IPAddress ip))
+                ip = IPAddress.Any;
+            if(string.IsNullOrEmpty(portArg) || !ushort.TryParse(portArg, out ushort port))
+                port = PORT;
+
+            IPEndPoint endPoint = new IPEndPoint(ip, port);
+
+            using IWebSocketServer wss = new FleckWebSocketServer(endPoint);
+            using SockChatServer scs = new SockChatServer(wss, httpClient, dataProvider, db);
+
+            if(args.Contains(@"--testmode")) {
+                for(; ; ) {
+                    char chr = (char)Console.In.Read();
+                    if(chr == '\x3')
+                        break;
+                }
+            } else {
+                using ManualResetEvent mre = new ManualResetEvent(false);
+                Console.CancelKeyPress += (s, e) => { e.Cancel = true; mre.Set(); };
+                mre.WaitOne();
+            }
 
             db.Dispose();
         }
-
-#if DEBUG
-        private static void TestMisuzuAuth() {
-            Console.WriteLine($@"Enter token found on {MisuzuUrls.BASE_URL}/login:");
-            string[] token = Console.ReadLine().Split(new[] { '_' }, 2);
-
-            HttpClient httpClient = new HttpClient();
-            httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(@"SharpChat");
-
-            IDataProvider dataProvider = new MisuzuDataProvider(httpClient);
-
-            long userId = long.Parse(token[0]);
-            IPAddress remoteAddr = IPAddress.Parse(@"1.2.4.8");
-
-            for(int i = 0; i < 100; ++i) {
-                IUserAuthResponse authRes;
-                try {
-                    authRes = dataProvider.UserAuthClient.AttemptAuth(new UserAuthRequest(userId, token[1], remoteAddr));
-
-                    Console.WriteLine(@"Auth success!");
-                    Console.WriteLine($@" User ID:   {authRes.UserId}");
-                    Console.WriteLine($@" Username:  {authRes.Username}");
-                    Console.WriteLine($@" Colour:    {authRes.Colour.Raw:X8}");
-                    Console.WriteLine($@" Hierarchy: {authRes.Rank}");
-                    Console.WriteLine($@" Silenced:  {authRes.SilencedUntil}");
-                    Console.WriteLine($@" Perms:     {authRes.Permissions}");
-                } catch(UserAuthFailedException ex) {
-                    Console.WriteLine($@"Auth failed: {ex.Message}");
-                    return;
-                }
-
-                Console.WriteLine(@"Bumping last seen...");
-                dataProvider.UserBumpClient.SubmitBumpUsers(new[] { new ChatUser(authRes) });
-
-                Console.WriteLine(@"Fetching ban list...");
-                IEnumerable<IBanRecord> bans = dataProvider.BanClient.GetBanList();
-                Console.WriteLine($@"{bans.Count()} BANS");
-                foreach(IBanRecord ban in bans) {
-                    Console.WriteLine($@"BAN INFO");
-                    Console.WriteLine($@" User ID:    {ban.UserId}");
-                    Console.WriteLine($@" Username:   {ban.Username}");
-                    Console.WriteLine($@" IP Address: {ban.UserIP}");
-                    Console.WriteLine($@" Expires:    {ban.Expires}");
-                }
-            }
-        }
-#endif
     }
 }

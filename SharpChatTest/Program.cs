@@ -1,85 +1,36 @@
-﻿using PureWebSockets;
+﻿using SharpChat;
+using SharpChatTest.SockChat;
 using System;
+using System.IO;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace SharpChatTest {
-    class Program {
-        static int UserId = 10000;
+    public static class Program {
+        public static void Main() {
+            Directory.SetCurrentDirectory(AppDomain.CurrentDomain.BaseDirectory);
 
-        static void Main() {
-            PureWebSocket[] socks = new PureWebSocket[500];
+            Logger.WriteLine(@"   _____ __                     ________          __ ______          __ ");
+            Logger.WriteLine(@"  / ___// /_  ____ __________  / ____/ /_  ____ _/ //_  __/__  _____/ /_");
+            Logger.WriteLine(@"  \__ \/ __ \/ __ `/ ___/ __ \/ /   / __ \/ __ `/ __// / / _ \/ ___/ __/");
+            Logger.WriteLine(@" ___/ / / / / /_/ / /  / /_/ / /___/ / / / /_/ / /_ / / /  __(__  ) /_  ");
+            Logger.WriteLine(@"/____/_/ /_/\__,_/_/  / .___/\____/_/ /_/\__,_/\__//_/  \___/____/\__/  ");
+            Logger.WriteLine(@"                     / _/       Sock Chat Protocol Implementation Tester");
 
-            for (int i = 0; i < socks.Length; i++) {
-                socks[i] = new PureWebSocket(@"ws://127.0.0.1:6770/", new PureWebSocketOptions { });
-                socks[i].OnOpened += Program_OnOpened;
-                socks[i].OnClosed += Program_OnClosed;
-                socks[i].OnSendFailed += Program_OnSendFailed;
-                socks[i].OnStateChanged += Program_OnStateChanged;
-                socks[i].OnError += Program_OnError;
-                socks[i].OnFatality += Program_OnFatality;
-                socks[i].OnMessage += Program_OnMessage;
-                socks[i].OnData += Program_OnData;
-            }
+            ushort port = (ushort)RNG.Next(10000, 40000);
+            string dbPath = @"sct-" + DateTimeOffset.UtcNow.ToUnixTimeSeconds() + @".db";
 
-            Parallel.ForEach(socks, sock => sock.Connect());
+            Logger.WriteLine(@"Starting SharpChat server...");
+            using SharpChatExec sc = new SharpChatExec(port, dbPath);
 
-            string msg;
-            while ((msg = Console.ReadLine()) != @";q") {
-                string pack = $"2\t0\t{msg}";
-                Parallel.ForEach(socks, sock => Send(sock, pack));
-            }
+            Thread.Sleep(3000);
 
-            while (!Parallel.ForEach(socks, sock => sock.Dispose()).IsCompleted) ;
+            using SockChatClient client = new SockChatClient(port, 1);
+
+            Thread.Sleep(2000);
+
+            client.SendLogin();
 
             Console.ReadLine();
-        }
-
-        public static void Send(PureWebSocket ws, string message) {
-            Console.WriteLine($@"{ws.InstanceName} > {message}");
-            ws.Send(message);
-        }
-
-        private static void Program_OnData(object sender, byte[] data) {
-            PureWebSocket ws = sender as PureWebSocket;
-            Console.WriteLine($@"{ws.InstanceName} < " + System.Text.Encoding.ASCII.GetString(data));
-        }
-
-        private static void Program_OnMessage(object sender, string message) {
-            PureWebSocket ws = sender as PureWebSocket;
-            Console.WriteLine($@"{ws.InstanceName} < {message}");
-        }
-
-        private static void Program_OnFatality(object sender, string reason) {
-            PureWebSocket ws = sender as PureWebSocket;
-            Console.WriteLine($@"{ws.InstanceName}: Fatality - {reason}");
-        }
-
-        private static void Program_OnError(object sender, Exception ex) {
-            PureWebSocket ws = sender as PureWebSocket;
-            Console.WriteLine($@"{ws.InstanceName}: {ex.GetType().Name} - {ex.Message}");
-        }
-
-        private static void Program_OnStateChanged(object sender, System.Net.WebSockets.WebSocketState newState, System.Net.WebSockets.WebSocketState prevState) {
-            PureWebSocket ws = sender as PureWebSocket;
-            Console.WriteLine($@"{ws.InstanceName}: {prevState} -> {newState}");
-        }
-
-        private static void Program_OnSendFailed(object sender, string data, Exception ex) {
-            PureWebSocket ws = sender as PureWebSocket;
-            Console.WriteLine($@"{ws.InstanceName}: Failed to send ""{data}""");
-        }
-
-        private static void Program_OnClosed(object sender, System.Net.WebSockets.WebSocketCloseStatus reason) {
-            PureWebSocket ws = sender as PureWebSocket;
-            Console.WriteLine($@"{ws.InstanceName}: Closed {reason}");
-        }
-
-        private static void Program_OnOpened(object sender) {
-            PureWebSocket ws = sender as PureWebSocket;
-            Console.WriteLine($@"{ws.InstanceName}: Opened");
-
-            Send(ws, $"1\t{Interlocked.Increment(ref UserId)}\tmewow");
         }
     }
 }

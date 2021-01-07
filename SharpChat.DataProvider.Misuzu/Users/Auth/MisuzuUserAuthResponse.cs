@@ -3,7 +3,7 @@ using SharpChat.Users.Auth;
 using System;
 using System.Text.Json.Serialization;
 
-namespace SharpChat.Misuzu.Users.Auth {
+namespace SharpChat.DataProvider.Misuzu.Users.Auth {
     public class MisuzuUserAuthResponse : IUserAuthResponse {
         [JsonPropertyName(@"success")]
         public bool Success { get; set; }

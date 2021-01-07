@@ -4,7 +4,7 @@ using System;
 using System.Net.Http;
 using System.Text.Json;
 
-namespace SharpChat.Misuzu.Users.Auth {
+namespace SharpChat.DataProvider.Misuzu.Users.Auth {
     public class MisuzuUserAuthClient : IUserAuthClient {
         private HttpClient HttpClient { get; }
 
@@ -30,7 +30,7 @@ namespace SharpChat.Misuzu.Users.Auth {
 #endif
             MisuzuUserAuthRequest mar = new MisuzuUserAuthRequest(request);
 
-            using HttpRequestMessage req = new HttpRequestMessage(HttpMethod.Post, MisuzuUrls.AUTH) {
+            using HttpRequestMessage req = new HttpRequestMessage(HttpMethod.Post, MisuzuConstants.AUTH) {
                 Content = new ByteArrayContent(mar.GetJSON()),
                 Headers = {
                     { @"X-SharpChat-Signature", mar.Hash },

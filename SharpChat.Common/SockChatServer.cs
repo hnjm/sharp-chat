@@ -1,6 +1,7 @@
 ﻿using SharpChat.Channels;
 using SharpChat.Commands;
 using SharpChat.Database;
+using SharpChat.DataProvider;
 using SharpChat.PacketHandlers;
 using SharpChat.Packets;
 using SharpChat.Users;

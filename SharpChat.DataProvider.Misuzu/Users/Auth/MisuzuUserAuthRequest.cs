@@ -3,7 +3,7 @@ using System;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace SharpChat.Misuzu.Users.Auth {
+namespace SharpChat.DataProvider.Misuzu.Users.Auth {
     internal class MisuzuUserAuthRequest {
         [JsonPropertyName(@"user_id")]
         public long UserId => AuthRequest.UserId;

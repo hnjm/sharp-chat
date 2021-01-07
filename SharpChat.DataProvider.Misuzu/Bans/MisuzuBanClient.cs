@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Text.Json;
 
-namespace SharpChat.Misuzu.Bans {
+namespace SharpChat.DataProvider.Misuzu.Bans {
     public class MisuzuBanClient : IBanClient {
         private const string STRING = @"givemethebeans";
 
@@ -15,7 +15,7 @@ namespace SharpChat.Misuzu.Bans {
         }
 
         public IEnumerable<IBanRecord> GetBanList() {
-            using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, MisuzuUrls.BANS) {
+            using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, MisuzuConstants.BANS) {
                 Headers = {
                     { @"X-SharpChat-Signature", STRING.GetSignedHash() },
                 },

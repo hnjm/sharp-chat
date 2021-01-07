@@ -3,7 +3,7 @@ using System;
 using System.Linq;
 using System.Text.Json.Serialization;
 
-namespace SharpChat.Misuzu.Users.Bump {
+namespace SharpChat.DataProvider.Misuzu.Users.Bump {
     public class MisuzuUserBumpInfo {
         [JsonPropertyName(@"id")]
         public long UserId => User.UserId;
