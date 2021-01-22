@@ -10,12 +10,14 @@ namespace SharpChat.Packets {
         public ChatChannel Channel { get; private set; }
         public int ExtensionsVersion { get; private set; }
         public ChatUserSession Session { get; private set; }
+        public int CharacterLimit { get; private set; }
 
-        public AuthSuccessPacket(ChatUser user, ChatChannel channel, int extVersion, ChatUserSession sess) {
+        public AuthSuccessPacket(ChatUser user, ChatChannel channel, int extVersion, ChatUserSession sess, int charLimit) {
             User = user ?? throw new ArgumentNullException(nameof(user));
             Channel = channel ?? throw new ArgumentNullException(nameof(channel));
             ExtensionsVersion = extVersion;
             Session = sess ?? throw new ArgumentNullException(nameof(channel));
+            CharacterLimit = charLimit;
         }
 
         public override IEnumerable<string> Pack() {
@@ -30,6 +32,8 @@ namespace SharpChat.Packets {
             sb.Append(ExtensionsVersion);
             sb.Append('\t');
             sb.Append(Session.Id);
+            sb.Append('\t');
+            sb.Append(CharacterLimit);
 
             return new[] { sb.ToString() };
         }

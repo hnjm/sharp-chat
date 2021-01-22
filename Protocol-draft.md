@@ -189,6 +189,11 @@ Informs the client that authentication has succeeded.
         <td>ID of the currently active session</td>
         <td>Added in Version 2</td>
     </tr>
+    <tr>
+        <td><code>int</code></td>
+        <td>Maximum permitted size of a chat message</td>
+        <td>Added in Version 2</td>
+    </tr>
 </table>
 
 #### Failed authentication response

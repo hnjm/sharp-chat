@@ -14,7 +14,7 @@ using System.Net.Http;
 namespace SharpChat {
     public class SockChatServer : IDisposable {
         public const int EXT_VERSION = 2;
-        public const int MSG_LENGTH_MAX = 5000;
+        public const int MSG_LENGTH_MAX = 2100;
 
 #if DEBUG
         public const int MAX_CONNECTIONS = 9001;
