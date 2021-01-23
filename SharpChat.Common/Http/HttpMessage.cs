@@ -9,6 +9,8 @@ namespace SharpChat.Http {
         public abstract IEnumerable<HttpHeader> Headers { get; }
         public abstract Stream Body { get; }
 
+        public virtual bool HasBody => Body != null;
+
         public virtual IEnumerable<HttpHeader> GetHeader(string header) {
             header = HttpHeader.NormaliseName(header);
             return Headers.Where(h => h.Name == header);

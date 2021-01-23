@@ -23,6 +23,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpChat.DataProvider.Misu
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MisuzuDataProviderTest", "MisuzuDataProviderTest\MisuzuDataProviderTest.csproj", "{37D6A2A4-2C3B-49C9-90FA-0FA850A15B44}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Http", "Http", "{5DA078C6-EF2C-4813-8255-572EE327D19E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HttpClientTest", "HttpClientTest\HttpClientTest.csproj", "{13E15EEC-D79B-444C-BB68-4D989F3A59C2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -57,6 +61,10 @@ Global
 		{37D6A2A4-2C3B-49C9-90FA-0FA850A15B44}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{37D6A2A4-2C3B-49C9-90FA-0FA850A15B44}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{37D6A2A4-2C3B-49C9-90FA-0FA850A15B44}.Release|Any CPU.Build.0 = Release|Any CPU
+		{13E15EEC-D79B-444C-BB68-4D989F3A59C2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{13E15EEC-D79B-444C-BB68-4D989F3A59C2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{13E15EEC-D79B-444C-BB68-4D989F3A59C2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{13E15EEC-D79B-444C-BB68-4D989F3A59C2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -67,6 +75,7 @@ Global
 		{B0873F00-4EB9-465A-8BB3-C1C9000EF395} = {EC70B2EC-31AE-44B3-8259-2E718F224420}
 		{13A7839E-FA19-4C9D-994D-941499DA9763} = {9CF387F1-938F-4B3B-AEB1-992F6686BDD0}
 		{37D6A2A4-2C3B-49C9-90FA-0FA850A15B44} = {9CF387F1-938F-4B3B-AEB1-992F6686BDD0}
+		{13E15EEC-D79B-444C-BB68-4D989F3A59C2} = {5DA078C6-EF2C-4813-8255-572EE327D19E}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {42279FE1-5980-440A-87F8-25338DFE54CF}

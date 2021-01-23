@@ -7,7 +7,10 @@ using System.Text;
 namespace SharpChat.Http {
     public class HttpRequestMessage : HttpMessage {
         public const string GET = @"GET";
+        public const string PUT = @"PUT";
+        public const string HEAD = @"HEAD";
         public const string POST = @"POST";
+        public const string DELETE = @"DELETE";
 
         public override string ProtocolVersion => @"1.1";
 
@@ -17,6 +20,8 @@ namespace SharpChat.Http {
         public bool IsSecure { get; }
 
         public string Host { get; }
+        public ushort Port { get; }
+        public bool IsDefaultPort { get; }
 
         public override IEnumerable<HttpHeader> Headers => HeaderList;
         private List<HttpHeader> HeaderList { get; } = new List<HttpHeader>();
@@ -37,19 +42,25 @@ namespace SharpChat.Http {
             HttpHostHeader.NAME, HttpContentLengthHeader.NAME,
         };
         private static readonly string[] HEADERS_SINGLE = new[] {
-            HttpUserAgentHeader.NAME,
+            HttpUserAgentHeader.NAME, HttpConnectionHeader.NAME,
         };
 
         public HttpRequestMessage(string method, string uri) : this(
             method, new Uri(uri)
         ) {}
 
+        public const ushort HTTP = 80;
+        public const ushort HTTPS = 443;
+
         public HttpRequestMessage(string method, Uri uri) {
             Method = method ?? throw new ArgumentNullException(nameof(method));
             RequestTarget = uri.PathAndQuery;
             IsSecure = uri.Scheme.Equals(@"https", StringComparison.InvariantCultureIgnoreCase);
             Host = uri.Host;
-            HeaderList.Add(new HttpHostHeader(Host));
+            ushort defaultPort = (IsSecure ? HTTPS : HTTP);
+            Port = uri.Port == -1 ? defaultPort : (ushort)uri.Port;
+            IsDefaultPort = Port == defaultPort;
+            HeaderList.Add(new HttpHostHeader(Host, IsDefaultPort ? -1 : Port));
         }
 
         public static bool IsHeaderReadOnly(string name)
@@ -62,7 +73,7 @@ namespace SharpChat.Http {
             if(IsHeaderReadOnly(name))
                 throw new ArgumentException(@"This header is read-only.", nameof(name));
             HeaderList.RemoveAll(x => x.Name == name);
-            AddHeaderInternal(name, value);
+            HeaderList.Add(HttpHeader.Create(name, value));
         }
 
         public void AddHeader(string name, object value) {
@@ -71,16 +82,7 @@ namespace SharpChat.Http {
                 throw new ArgumentException(@"This header is read-only.", nameof(name));
             if(IsHeaderSingleInstance(name))
                 HeaderList.RemoveAll(x => x.Name == name);
-            AddHeaderInternal(name, value);
-        }
-
-        private void AddHeaderInternal(string name, object value) {
-            HttpHeader header = name switch {
-                HttpUserAgentHeader.NAME => new HttpUserAgentHeader(value.ToString()),
-                _ => new HttpCustomHeader(name, value),
-            };
-
-            HeaderList.Add(header);
+            HeaderList.Add(HttpHeader.Create(name, value));
         }
 
         public void RemoveHeader(string name) {
@@ -112,13 +114,21 @@ namespace SharpChat.Http {
             using(StreamWriter sw = new StreamWriter(stream, new ASCIIEncoding(), leaveOpen: true)) {
                 sw.NewLine = "\r\n";
                 sw.Write(Method);
+                Console.Write(Method);
                 sw.Write(' ');
+                Console.Write(' ');
                 sw.Write(RequestTarget);
+                Console.Write(RequestTarget);
                 sw.Write(@" HTTP/");
+                Console.Write(@" HTTP/");
                 sw.WriteLine(ProtocolVersion);
-                foreach(HttpHeader header in Headers)
+                Console.WriteLine(ProtocolVersion);
+                foreach(HttpHeader header in Headers) {
                     sw.WriteLine(header);
+                    Console.WriteLine(header);
+                }
                 sw.WriteLine();
+                Console.WriteLine();
                 sw.Flush();
             }
             BodyStream?.CopyTo(stream);
