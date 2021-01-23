@@ -8,16 +8,20 @@ namespace SharpChat.DataProvider.Misuzu.Bans {
     public class MisuzuBanClient : IBanClient {
         private const string STRING = @"givemethebeans";
 
+        private MisuzuDataProvider DataProvider { get; }
         private HttpClient HttpClient { get; }
 
-        public MisuzuBanClient(HttpClient httpClient) {
+        private const string URL = @"/bans";
+
+        public MisuzuBanClient(MisuzuDataProvider dataProvider, HttpClient httpClient) {
+            DataProvider = dataProvider ?? throw new ArgumentNullException(nameof(dataProvider));
             HttpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
         }
 
         public IEnumerable<IBanRecord> GetBanList() {
-            using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, MisuzuConstants.BANS) {
+            using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, DataProvider.GetURL(URL)) {
                 Headers = {
-                    { @"X-SharpChat-Signature", STRING.GetSignedHash() },
+                    { @"X-SharpChat-Signature", DataProvider.GetSignedHash(STRING) },
                 },
             };
 

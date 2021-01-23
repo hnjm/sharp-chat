@@ -6,7 +6,7 @@ namespace SharpChat.PacketHandlers {
         public SockChatClientPacket PacketId => SockChatClientPacket.Typing;
 
         public void HandlePacket(IPacketHandlerContext ctx) {
-            if(!SockChatServer.ENABLE_TYPING_EVENT || !ctx.HasUser)
+            if(!ctx.HasUser)
                 return;
 
             ChatChannel tChannel = ctx.User.CurrentChannel;

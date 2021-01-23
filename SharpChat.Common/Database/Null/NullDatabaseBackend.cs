@@ -1,7 +1,11 @@
-﻿using System;
+﻿using SharpChat.Configuration;
+using System;
 
 namespace SharpChat.Database.Null {
+    [DatabaseBackend(@"null")]
     public class NullDatabaseBackend : IDatabaseBackend {
+        public NullDatabaseBackend(IConfig _ = null) { }
+
         public IDatabaseConnection CreateConnection() {
             return new NullDatabaseConnection();
         }

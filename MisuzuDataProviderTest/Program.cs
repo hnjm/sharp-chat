@@ -1,13 +1,15 @@
 ﻿using SharpChat.Bans;
+using SharpChat.Configuration;
 using SharpChat.DataProvider;
 using SharpChat.DataProvider.Misuzu;
 using SharpChat.Users;
 using SharpChat.Users.Auth;
-using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Reflection;
 using static System.Console;
 
 namespace MisuzuDataProviderTest {
@@ -15,13 +17,24 @@ namespace MisuzuDataProviderTest {
         public static void Main() {
             WriteLine("Misuzu Authentication Tester");
 
-            WriteLine($@"Enter token found on {MisuzuConstants.BASE_URL}/login:");
-            string[] token = Console.ReadLine().Split(new[] { '_' }, 2);
+            string cfgPath = Path.GetDirectoryName(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location));
+            string buildMode = Path.GetFileName(cfgPath);
+            cfgPath = Path.Combine(
+                Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(cfgPath))),
+                @"SharpChat", @"bin", buildMode, @"net5.0", @"sharpchat.cfg"
+            );
+
+            WriteLine($@"Reading config from {cfgPath}");
+
+            using IConfig config = new StreamConfig(cfgPath);
+
+            WriteLine($@"Enter token found on {config.ReadValue(@"dp:misuzu:endpoint")}/login:");
+            string[] token = ReadLine().Split(new[] { '_' }, 2);
 
             HttpClient httpClient = new HttpClient();
             httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(@"SharpChat");
 
-            IDataProvider dataProvider = new MisuzuDataProvider(httpClient);
+            IDataProvider dataProvider = new MisuzuDataProvider(config.ScopeTo(@"dp:misuzu"), httpClient);
 
             long userId = long.Parse(token[0]);
             IPAddress remoteAddr = IPAddress.Parse(@"1.2.4.8");

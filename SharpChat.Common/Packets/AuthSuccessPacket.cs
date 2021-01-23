@@ -8,14 +8,12 @@ namespace SharpChat.Packets {
     public class AuthSuccessPacket : ServerPacket {
         public ChatUser User { get; private set; }
         public ChatChannel Channel { get; private set; }
-        public int ExtensionsVersion { get; private set; }
         public ChatUserSession Session { get; private set; }
         public int CharacterLimit { get; private set; }
 
-        public AuthSuccessPacket(ChatUser user, ChatChannel channel, int extVersion, ChatUserSession sess, int charLimit) {
+        public AuthSuccessPacket(ChatUser user, ChatChannel channel, ChatUserSession sess, int charLimit) {
             User = user ?? throw new ArgumentNullException(nameof(user));
             Channel = channel ?? throw new ArgumentNullException(nameof(channel));
-            ExtensionsVersion = extVersion;
             Session = sess ?? throw new ArgumentNullException(nameof(channel));
             CharacterLimit = charLimit;
         }
@@ -29,7 +27,7 @@ namespace SharpChat.Packets {
             sb.Append('\t');
             sb.Append(Channel.Name);
             sb.Append('\t');
-            sb.Append(ExtensionsVersion);
+            sb.Append(SockChatServer.EXT_VERSION);
             sb.Append('\t');
             sb.Append(Session.Id);
             sb.Append('\t');

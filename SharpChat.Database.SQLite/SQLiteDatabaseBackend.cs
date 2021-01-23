@@ -1,11 +1,19 @@
-﻿using System;
+﻿using SharpChat.Configuration;
+using System;
 using System.Data.SQLite;
 
 namespace SharpChat.Database.SQLite {
+    [DatabaseBackend(@"sqlite")]
     public class SQLiteDatabaseBackend : IDatabaseBackend {
         private string DSN { get; }
 
-        public SQLiteDatabaseBackend(string path) {
+        private const string DEFAULT_PATH = @"sharpchat.db";
+
+        public SQLiteDatabaseBackend(IConfig config) : this(
+            config.ReadValue(@"path", DEFAULT_PATH)
+        ) { }
+
+        public SQLiteDatabaseBackend(string path = DEFAULT_PATH) {
             DSN = new SQLiteConnectionStringBuilder {
                 DataSource = path,
                 DateTimeFormat = SQLiteDateFormats.UnixEpoch,

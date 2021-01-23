@@ -1,4 +1,5 @@
-﻿using SharpChat.Packets;
+﻿using SharpChat.Configuration;
+using SharpChat.Packets;
 using SharpChat.Users;
 using SharpChat.Users.Auth;
 using System;
@@ -11,6 +12,12 @@ namespace SharpChat.PacketHandlers {
         private const string WELCOME = @"welcome.txt";
 
         public SockChatClientPacket PacketId => SockChatClientPacket.Authenticate;
+
+        private SockChatServer Server { get; }
+
+        public AuthPacketHandler(SockChatServer server) {
+            Server = server ?? throw new ArgumentNullException(nameof(server));
+        }
 
         public void HandlePacket(IPacketHandlerContext ctx) {
             if(ctx.HasUser)
@@ -59,7 +66,7 @@ namespace SharpChat.PacketHandlers {
             }
 
             // Enforce a maximum amount of connections per user
-            if(user.SessionCount >= SockChatServer.MAX_CONNECTIONS) {
+            if(user.SessionCount >= Server.MaxConnections) {
                 ctx.Session.Send(new AuthFailPacket(AuthFailReason.MaxSessions));
                 ctx.Session.Dispose();
                 return;

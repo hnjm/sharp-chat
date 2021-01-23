@@ -1,8 +1,8 @@
 ﻿namespace SharpChat {
-    public struct ChatColour {
+    public readonly struct ChatColour {
         public const int INHERIT = 0x40000000;
 
-        public int Raw { get; set; }
+        public int Raw { get; }
 
         public ChatColour(bool inherit = true) {
             Raw = inherit ? INHERIT : 0;

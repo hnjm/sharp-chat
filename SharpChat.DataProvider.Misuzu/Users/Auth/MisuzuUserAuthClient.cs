@@ -6,9 +6,13 @@ using System.Text.Json;
 
 namespace SharpChat.DataProvider.Misuzu.Users.Auth {
     public class MisuzuUserAuthClient : IUserAuthClient {
+        private MisuzuDataProvider DataProvider { get; }
         private HttpClient HttpClient { get; }
 
-        public MisuzuUserAuthClient(HttpClient httpClient) {
+        private const string URL = @"/verify";
+
+        public MisuzuUserAuthClient(MisuzuDataProvider dataProvider, HttpClient httpClient) {
+            DataProvider = dataProvider ?? throw new ArgumentNullException(nameof(dataProvider));
             HttpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
         }
 
@@ -30,10 +34,10 @@ namespace SharpChat.DataProvider.Misuzu.Users.Auth {
 #endif
             MisuzuUserAuthRequest mar = new MisuzuUserAuthRequest(request);
 
-            using HttpRequestMessage req = new HttpRequestMessage(HttpMethod.Post, MisuzuConstants.AUTH) {
-                Content = new ByteArrayContent(mar.GetJSON()),
+            using HttpRequestMessage req = new HttpRequestMessage(HttpMethod.Post, DataProvider.GetURL(URL)) {
+                Content = new ByteArrayContent(JsonSerializer.SerializeToUtf8Bytes(mar)),
                 Headers = {
-                    { @"X-SharpChat-Signature", mar.Hash },
+                    { @"X-SharpChat-Signature", DataProvider.GetSignedHash(mar) },
                 },
             };
             using HttpResponseMessage response = HttpClient.SendAsync(req).Result;

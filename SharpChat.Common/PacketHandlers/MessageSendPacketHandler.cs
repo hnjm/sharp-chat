@@ -11,9 +11,11 @@ namespace SharpChat.PacketHandlers {
     public class MessageSendPacketHandler : IPacketHandler {
         public SockChatClientPacket PacketId => SockChatClientPacket.MessageSend;
 
+        public ChatContext Context { get; }
         public IEnumerable<IChatCommand> Commands { get; }
 
-        public MessageSendPacketHandler(IEnumerable<IChatCommand> commands) {
+        public MessageSendPacketHandler(ChatContext context, IEnumerable<IChatCommand> commands) {
+            Context = context ?? throw new ArgumentNullException(nameof(context));
             Commands = commands ?? throw new ArgumentNullException(nameof(commands));
         }
 
@@ -40,8 +42,10 @@ namespace SharpChat.PacketHandlers {
                 channel.Send(new UserUpdatePacket(ctx.User));
             }
 
-            if(text.Length > SockChatServer.MSG_LENGTH_MAX)
-                text = text.Substring(0, SockChatServer.MSG_LENGTH_MAX);
+            // there's a very miniscule chance that this will return a different value on second read
+            int maxLength = Context.MessageTextMaxLength;
+            if(text.Length > maxLength)
+                text = text.Substring(0, maxLength);
 
             text = text.Trim();
 

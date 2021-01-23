@@ -1,5 +1,7 @@
 ﻿using SharpChat.Bans;
 using SharpChat.Channels;
+using SharpChat.Configuration;
+using SharpChat.Database;
 using SharpChat.DataProvider;
 using SharpChat.Events;
 using SharpChat.Events.Storage;
@@ -19,20 +21,29 @@ namespace SharpChat {
         public UserManager Users { get; }
         public IChatEventStorage Events { get; }
         public IDataProvider DataProvider { get; }
+        public IConfig Config { get; }
 
         public string TargetName => @"@broadcast";
 
-        public ChatContext(SockChatServer server, IDataProvider dataProvider) {
+        public const int DEFAULT_MSG_LENGTH_MAX = 2100;
+        private CachedValue<int> MessageTextMaxLengthValue { get; }
+        public int MessageTextMaxLength => MessageTextMaxLengthValue;
+
+        public ChatContext(SockChatServer server, IConfig config, DatabaseWrapper database, IDataProvider dataProvider) {
             Server = server;
+            Config = config ?? throw new ArgumentNullException(nameof(config));
             DataProvider = dataProvider ?? throw new ArgumentNullException(nameof(dataProvider));
             Bans = new BanManager(this);
             Users = new UserManager(this);
             Channels = new ChannelManager(this);
-            Events = server.Database.IsNullBackend
+            Events = database.IsNullBackend
                 ? new MemoryChatEventStorage()
-                : new ADOChatEventStorage(server.Database);
+                : new ADOChatEventStorage(database);
+
+            MessageTextMaxLengthValue = Config.ReadCached(@"messages:maxLength", DEFAULT_MSG_LENGTH_MAX);
 
             BumpTimer = new Timer(e => {
+                Logger.Write(@"Bumping last online times...");
                 DataProvider.UserBumpClient.SubmitBumpUsers(Users.WithActiveConnections());
             }, null, TimeSpan.Zero, TimeSpan.FromMinutes(1));
         }
@@ -67,7 +78,7 @@ namespace SharpChat {
                 Events.AddEvent(new UserConnectEvent(DateTimeOffset.UtcNow, user, chan));
             }
 
-            sess.Send(new AuthSuccessPacket(user, chan, SockChatServer.EXT_VERSION, sess, SockChatServer.MSG_LENGTH_MAX));
+            sess.Send(new AuthSuccessPacket(user, chan, sess, MessageTextMaxLength));
             sess.Send(new ContextUsersPacket(chan.GetUsers(new[] { user })));
 
             IEnumerable<IChatEvent> msgs = Events.GetEventsForTarget(chan);
@@ -194,6 +205,7 @@ namespace SharpChat {
             Channels?.Dispose();
             Users?.Dispose();
             Bans?.Dispose();
+            MessageTextMaxLengthValue?.Dispose();
         }
     }
 }

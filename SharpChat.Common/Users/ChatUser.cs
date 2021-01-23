@@ -10,8 +10,6 @@ using System.Text;
 
 namespace SharpChat.Users {
     public class BasicUser : IEquatable<BasicUser> {
-        private const int RANK_NO_FLOOD = 9;
-
         public long UserId { get; set; }
         public string Username { get; set; }
         public ChatColour Colour { get; set; }
@@ -20,9 +18,6 @@ namespace SharpChat.Users {
         public ChatUserPermissions Permissions { get; set; }
         public ChatUserStatus Status { get; set; } = ChatUserStatus.Online;
         public string StatusMessage { get; set; }
-
-        public bool HasFloodProtection
-            => Rank < RANK_NO_FLOOD;
 
         public bool Equals([AllowNull] BasicUser other)
             => UserId == other.UserId;

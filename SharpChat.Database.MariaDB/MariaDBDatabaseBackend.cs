@@ -1,11 +1,23 @@
 ﻿using MySql.Data.MySqlClient;
+using SharpChat.Configuration;
 using System;
 
 namespace SharpChat.Database.MariaDB {
+    [DatabaseBackend(@"mariadb")]
     public class MariaDBDatabaseBackend : IDatabaseBackend {
         private string DSN { get; }
 
-        public MariaDBDatabaseBackend(string host, string username, string password, string database, string charset = @"utf8mb4") {
+        private const string DEFAULT_CHARSET = @"utf8mb4";
+
+        public MariaDBDatabaseBackend(IConfig config) : this(
+            config.ReadValue(@"host", string.Empty),
+            config.ReadValue(@"user", string.Empty),
+            config.ReadValue(@"pass", string.Empty),
+            config.ReadValue(@"db", string.Empty),
+            config.ReadValue(@"charset", DEFAULT_CHARSET)
+        ) {}
+
+        public MariaDBDatabaseBackend(string host, string username, string password, string database, string charset = DEFAULT_CHARSET) {
             DSN = new MySqlConnectionStringBuilder {
                 Server = host,
                 UserID = username,

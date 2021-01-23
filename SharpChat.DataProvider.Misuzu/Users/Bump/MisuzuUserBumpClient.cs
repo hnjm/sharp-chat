@@ -8,9 +8,13 @@ using System.Text.Json;
 
 namespace SharpChat.DataProvider.Misuzu.Users.Bump {
     public class MisuzuUserBumpClient : IUserBumpClient {
+        private MisuzuDataProvider DataProvider { get; }
         private HttpClient HttpClient { get; }
 
-        public MisuzuUserBumpClient(HttpClient httpClient) {
+        private const string URL = @"/bump";
+
+        public MisuzuUserBumpClient(MisuzuDataProvider dataProvider, HttpClient httpClient) {
+            DataProvider = dataProvider ?? throw new ArgumentNullException(nameof(dataProvider));
             HttpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
         }
 
@@ -22,10 +26,10 @@ namespace SharpChat.DataProvider.Misuzu.Users.Bump {
 
             byte[] data = JsonSerializer.SerializeToUtf8Bytes(users.Where(x => x.RemoteAddresses.Any()).Select(x => new MisuzuUserBumpInfo(x)));
 
-            using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, MisuzuConstants.BUMP) {
+            using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, DataProvider.GetURL(URL)) {
                 Content = new ByteArrayContent(data),
                 Headers = {
-                    { @"X-SharpChat-Signature", data.GetSignedHash() },
+                    { @"X-SharpChat-Signature", DataProvider.GetSignedHash(data) },
                 }
             };
 

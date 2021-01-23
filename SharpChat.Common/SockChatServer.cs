@@ -1,5 +1,6 @@
 ﻿using SharpChat.Channels;
 using SharpChat.Commands;
+using SharpChat.Configuration;
 using SharpChat.Database;
 using SharpChat.DataProvider;
 using SharpChat.PacketHandlers;
@@ -14,17 +15,9 @@ using System.Net.Http;
 namespace SharpChat {
     public class SockChatServer : IDisposable {
         public const int EXT_VERSION = 2;
-        public const int MSG_LENGTH_MAX = 2100;
 
-#if DEBUG
-        public const int MAX_CONNECTIONS = 9001;
-        public const int FLOOD_KICK_LENGTH = 5;
-        public const bool ENABLE_TYPING_EVENT = true;
-#else
-        public const int MAX_CONNECTIONS = 5;
-        public const int FLOOD_KICK_LENGTH = 30;
-        public const bool ENABLE_TYPING_EVENT = false;
-#endif
+        public const int DEFAULT_MAX_CONNECTIONS = 5;
+        public const int DEFAULT_FLOOD_BAN_DURATION = 30;
 
         public static ChatUser Bot { get; } = new ChatUser {
             UserId = -1,
@@ -33,40 +26,19 @@ namespace SharpChat {
             Colour = new ChatColour(),
         };
 
-        public IWebSocketServer Server { get; }
-        public DatabaseWrapper Database { get; }
-        public ChatContext Context { get; }
+        private IConfig Config { get; }
+        private IWebSocketServer Server { get; }
+        private ChatContext Context { get; }
+        private DatabaseWrapper Database { get; }
 
         public HttpClient HttpClient { get; }
 
-        private IReadOnlyCollection<IPacketHandler> PacketHandlers { get; } = new IPacketHandler[] {
-            new PingPacketHandler(),
-            new AuthPacketHandler(),
-            new MessageSendPacketHandler(new IChatCommand[] {
-                new JoinCommand(),
-                new AFKCommand(),
-                new WhisperCommand(),
-                new ActionCommand(),
-                new WhoCommand(),
-                new DeleteMessageCommand(),
+        private IReadOnlyCollection<IPacketHandler> PacketHandlers { get; }
+        private CachedValue<int> FloodBanDuration { get; }
+        private CachedValue<int> FloodRankException { get; }
+        private CachedValue<int> MaxConnectionsValue { get; }
 
-                new NickCommand(),
-                new CreateChannelCommand(),
-                new DeleteChannelCommand(),
-                new ChannelPasswordCommand(),
-                new ChannelRankCommand(),
-
-                new BroadcastCommand(),
-                new KickBanUserCommand(),
-                new PardonUserCommand(),
-                new PardonIPCommand(),
-                new BanListCommand(),
-                new WhoIsUserCommand(),
-                new SilenceUserCommand(),
-                new UnsilenceUserCommand(),
-            }),
-            new TypingPacketHandler(),
-        };
+        public int MaxConnections => MaxConnectionsValue;
 
         public List<ChatUserSession> Sessions { get; } = new List<ChatUserSession>();
         private object SessionsLock { get; } = new object();
@@ -76,14 +48,17 @@ namespace SharpChat {
                 return Sessions.FirstOrDefault(x => x.Connection == conn);
         }
 
-        public SockChatServer(IWebSocketServer server, HttpClient httpClient, IDataProvider dataProvider, IDatabaseBackend databaseBackend) {
+        public SockChatServer(IConfig config, IWebSocketServer server, HttpClient httpClient, IDataProvider dataProvider, IDatabaseBackend databaseBackend) {
             Logger.Write("Starting Sock Chat server...");
 
+            Config = config ?? throw new ArgumentNullException(nameof(config));
             Database = new DatabaseWrapper(databaseBackend ?? throw new ArgumentNullException(nameof(databaseBackend)));
-
             HttpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
+            Context = new ChatContext(this, Config.ScopeTo(@"chat"), Database, dataProvider);
 
-            Context = new ChatContext(this, dataProvider);
+            FloodBanDuration = Config.ReadCached(@"chat:flood:banDuration", DEFAULT_FLOOD_BAN_DURATION);
+            FloodRankException = Config.ReadCached(@"chat:flood:exceptRank", 0, TimeSpan.FromSeconds(10));
+            MaxConnectionsValue = config.ReadCached(@"chat:users:maxConnections", DEFAULT_MAX_CONNECTIONS);
 
             Context.Channels.Add(new ChatChannel(@"Lounge"));
 #if DEBUG
@@ -93,6 +68,37 @@ namespace SharpChat {
             Context.Channels.Add(new ChatChannel(@"Password") { Password = @"meow", });
 #endif
             Context.Channels.Add(new ChatChannel(@"Staff") { Rank = 5 });
+
+            PacketHandlers = new IPacketHandler[] {
+                new PingPacketHandler(),
+                new AuthPacketHandler(this),
+                new MessageSendPacketHandler(Context, new IChatCommand[] {
+                    new JoinCommand(),
+                    new AFKCommand(),
+                    new WhisperCommand(),
+                    new ActionCommand(),
+                    new WhoCommand(),
+                    new DeleteMessageCommand(),
+
+                    new NickCommand(),
+                    new CreateChannelCommand(),
+                    new DeleteChannelCommand(),
+                    new ChannelPasswordCommand(),
+                    new ChannelRankCommand(),
+
+                    new BroadcastCommand(),
+                    new KickBanUserCommand(),
+                    new PardonUserCommand(),
+                    new PardonIPCommand(),
+                    new BanListCommand(),
+                    new WhoIsUserCommand(),
+                    new SilenceUserCommand(),
+                    new UnsilenceUserCommand(),
+                }),
+#if DEBUG
+                new TypingPacketHandler(),
+#endif
+            };
 
             Server = server ?? throw new ArgumentNullException(nameof(server));
             Server.OnOpen += OnOpen;
@@ -152,11 +158,12 @@ namespace SharpChat {
                 return;
             }
 
-            if(sess.User is ChatUser && sess.User.HasFloodProtection) {
+            int exceptRank = FloodRankException;
+            if(sess.User is ChatUser && (exceptRank <= 0 || sess.User.Rank < exceptRank)) {
                 sess.User.RateLimiter.AddTimePoint();
 
                 if(sess.User.RateLimiter.State == ChatRateLimitState.Kick) {
-                    Context.BanUser(sess.User, DateTimeOffset.UtcNow.AddSeconds(FLOOD_KICK_LENGTH), false, UserDisconnectReason.Flood);
+                    Context.BanUser(sess.User, DateTimeOffset.UtcNow.AddSeconds(FloodBanDuration), false, UserDisconnectReason.Flood);
                     return;
                 } else if(sess.User.RateLimiter.State == ChatRateLimitState.Warning)
                     sess.User.Send(new FloodWarningPacket()); // make it so this thing only sends once
@@ -192,6 +199,9 @@ namespace SharpChat {
             Context?.Dispose();
             HttpClient?.Dispose();
             Database?.Dispose();
+            FloodBanDuration.Dispose();
+            FloodRankException.Dispose();
+            MaxConnectionsValue.Dispose();
         }
     }
 }

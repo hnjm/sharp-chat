@@ -1,24 +1,25 @@
-﻿using SharpChat.Database;
-using SharpChat.Database.MariaDB;
+﻿using SharpChat.Configuration;
+using SharpChat.Database;
 using SharpChat.Database.Null;
 using SharpChat.Database.SQLite;
 using SharpChat.DataProvider;
-using SharpChat.DataProvider.Misuzu;
 using SharpChat.DataProvider.Null;
 using SharpChat.WebSocket;
 using SharpChat.WebSocket.Fleck;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Reflection;
+using System.Text;
 using System.Threading;
 
 namespace SharpChat {
     public class Program {
-        public const string SQL_CONFIG = @"sqlite.txt";
-        public const string MDB_CONFIG = @"mariadb.txt";
-        public const ushort PORT = 6770;
+        public const string CONFIG = @"sharpchat.cfg";
+        public const ushort DEFAULT_PORT = 6770;
 
         private static string GetFlagArgument(string[] args, string flag) {
             int offset = Array.IndexOf(args, flag) + 1;
@@ -37,107 +38,164 @@ namespace SharpChat {
             Console.WriteLine(@"============================================ DEBUG ==");
 #endif
 
-            string databaseBackend = GetFlagArgument(args, @"--dbb");
-            string dataProviderName = GetFlagArgument(args, @"--dpn");
+            string configFile = GetFlagArgument(args, @"--cfg") ?? CONFIG;
 
-            // TODO: This still sucks
-            IDatabaseBackend db;
-            switch(databaseBackend) {
-                case @"mariadb":
-                    if(!File.Exists(MDB_CONFIG)) {
-                        Console.WriteLine(@"MariaDB configuration is missing.");
-                        return;
-                    }
+            if(!File.Exists(configFile) && configFile == CONFIG)
+                ConvertConfiguration();
 
-                    string[] mdbCfg = File.ReadAllLines(MDB_CONFIG);
-                    db = new MariaDBDatabaseBackend(mdbCfg[0], mdbCfg[1], mdbCfg[2], mdbCfg[3]);
-                    Console.WriteLine(@"MariaDB database backend created!");
-                    break;
+            using IConfig config = new StreamConfig(configFile);
 
-                case @"sqlite":
-                    string dbPath = GetFlagArgument(args, @"--dbpath");
+            // Load database and data provider libraries
+            LoadAssemblies(@"SharpChat.Database.*.dll");
+            LoadAssemblies(@"SharpChat.DataProvider.*.dll");
 
-                    if(string.IsNullOrEmpty(dbPath))
-                        if(!File.Exists(SQL_CONFIG)) {
-                            Console.WriteLine(@"SQLite configuration is missing.");
-                            return;
-                        } else
-                            dbPath = File.ReadAllLines(SQL_CONFIG)[0];
-                    else
-                        Console.WriteLine(@"Using database path provided in arguments.");
+            IDatabaseBackend databaseBackend;
 
-                    db = new SQLiteDatabaseBackend(dbPath);
-                    Console.WriteLine(@"SQLite database backend created!");
-                    break;
-
-                case @"null":
-                    db = new NullDatabaseBackend();
-                    Console.WriteLine(@"Null database backend created!");
-                    break;
-
-                default:
-                    Console.WriteLine(@"No database flag provided. Checking based on existence of configs...");
-
-                    if(File.Exists(MDB_CONFIG)) {
-                        Console.WriteLine(@"MariaDB configuration found.");
-                        goto case @"mariadb";
-                    }
-
-                    if(File.Exists(SQL_CONFIG)) {
-                        Console.WriteLine(@"SQLite configuration found.");
-                        goto case @"sqlite";
-                    }
-
-                    Console.WriteLine(@"No configurations found, continuing without a database...");
-                    goto case @"null";
+            // Allow forcing a sqlite database through console flags
+            string sqliteDbPath = GetFlagArgument(args, @"--dbpath");
+            if(!string.IsNullOrEmpty(sqliteDbPath)) {
+                Logger.Debug($@"Forcing SQLite: {sqliteDbPath}");
+                databaseBackend = new SQLiteDatabaseBackend(sqliteDbPath);
+            } else {
+                string databaseBackendName = GetFlagArgument(args, @"--dbb") ?? config.ReadValue(@"db");
+                Type databaseBackendType = FindDatabaseBackendType(databaseBackendName);
+                Logger.Debug($@"Database Backend: {databaseBackendName} {databaseBackendType}");
+                databaseBackend = (IDatabaseBackend)Activator.CreateInstance(databaseBackendType, config.ScopeTo($@"db:{databaseBackendName}"));
             }
 
+            // TODO: GET RID OF THIS PIECE OF SHIT
             using HttpClient httpClient = new HttpClient();
             httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(@"SharpChat");
 
-            // TODO: see database backend selection process
-            IDataProvider dataProvider;
-            switch(dataProviderName) {
-                case @"misuzu":
-                    dataProvider = new MisuzuDataProvider(httpClient);
-                    Console.WriteLine(@"Misuzu data provider created!");
-                    break;
+            string dataProviderName = GetFlagArgument(args, @"--dpn") ?? config.ReadValue(@"dp");
+            Type dataProviderType = FindDataProviderType(dataProviderName);
+            IDataProvider dataProvider = (IDataProvider)Activator.CreateInstance(dataProviderType, config.ScopeTo($@"dp:{dataProviderName}"), httpClient);
+            Logger.Debug($@"Data Provider: {dataProviderName} {dataProviderType}");
 
-                case @"null":
-                    dataProvider = new NullDataProvider();
-                    Console.WriteLine(@"Null data provider created!");
-                    break;
-
-                default:
-                    Console.WriteLine(@"No data provider flag provided. Checking based on existence of configs...");
-
-                    if(File.Exists(MisuzuConstants.LOGIN_KEY)) {
-                        Console.WriteLine(@"Misuzu configuration found.");
-                        goto case @"misuzu";
-                    }
-
-                    Console.WriteLine(@"No configurations found, continuing without a data provider...");
-                    goto case @"null";
-            }
-
-            string ipArg = GetFlagArgument(args, @"--ip");
-            string portArg = GetFlagArgument(args, @"--port");
-
-            if(string.IsNullOrEmpty(ipArg) || !IPAddress.TryParse(ipArg, out IPAddress ip))
-                ip = IPAddress.Any;
+            string portArg = GetFlagArgument(args, @"--port") ?? config.ReadValue(@"chat:port");
             if(string.IsNullOrEmpty(portArg) || !ushort.TryParse(portArg, out ushort port))
-                port = PORT;
+                port = DEFAULT_PORT;
 
-            IPEndPoint endPoint = new IPEndPoint(ip, port);
-
-            using IWebSocketServer wss = new FleckWebSocketServer(endPoint);
-            using SockChatServer scs = new SockChatServer(wss, httpClient, dataProvider, db);
+            using IWebSocketServer wss = new FleckWebSocketServer(new IPEndPoint(IPAddress.Any, port));
+            using SockChatServer scs = new SockChatServer(config, wss, httpClient, dataProvider, databaseBackend);
 
             using ManualResetEvent mre = new ManualResetEvent(false);
             Console.CancelKeyPress += (s, e) => { e.Cancel = true; mre.Set(); };
             mre.WaitOne();
 
-            db.Dispose();
+            if(dataProvider is IDisposable dpd)
+                dpd.Dispose();
+            databaseBackend.Dispose();
+        }
+
+        private static void LoadAssemblies(string pattern) {
+            IEnumerable<string> files = Directory.GetFiles(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), pattern);
+            foreach(string file in files)
+                Assembly.LoadFile(file);
+        }
+
+        private static Type FindTypeThroughAttribute<T>(Func<T, bool> compare)
+            where T : Attribute {
+            IEnumerable<Assembly> asms = AppDomain.CurrentDomain.GetAssemblies();
+            foreach(Assembly asm in asms) {
+                IEnumerable<Type> types = asm.GetExportedTypes();
+                foreach(Type type in types) {
+                    Attribute attr = type.GetCustomAttribute(typeof(T));
+                    if(attr != null && compare((T)attr))
+                        return type;
+                }
+            }
+            return null;
+        }
+
+        private static Type FindDatabaseBackendType(string name) {
+            return FindTypeThroughAttribute<DatabaseBackendAttribute>(a => a.Name == name) ?? typeof(NullDatabaseBackend);
+        }
+
+        private static Type FindDataProviderType(string name) {
+            return FindTypeThroughAttribute<DataProviderAttribute>(a => a.Name == name) ?? typeof(NullDataProvider);
+        }
+
+        private static void ConvertConfiguration() {
+            using Stream s = new FileStream(CONFIG, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+            s.SetLength(0);
+            s.Flush();
+
+            using StreamWriter sw = new StreamWriter(s, new UTF8Encoding(false));
+
+            const string sql_config = @"sqlite.txt";
+            const string mdb_config = @"mariadb.txt";
+            const string msz_config = @"login_key.txt";
+
+            sw.WriteLine(@"# and ; can be used at the start of a line for comments.");
+            sw.WriteLine();
+
+            sw.WriteLine(@"# General Configuration");
+            sw.WriteLine($@"#chat:port                 {DEFAULT_PORT}");
+            sw.WriteLine($@"#chat:messages:maxLength   {ChatContext.DEFAULT_MSG_LENGTH_MAX}");
+            sw.WriteLine($@"#chat:users:maxConnections {SockChatServer.DEFAULT_MAX_CONNECTIONS}");
+            sw.WriteLine($@"#chat:flood:banDuration    {SockChatServer.DEFAULT_FLOOD_BAN_DURATION}");
+            sw.WriteLine();
+
+            sw.WriteLine(@"# Selected DataProvider (misuzu, null)");
+            if(!File.Exists(msz_config))
+                sw.WriteLine(@"dp null");
+            else {
+                sw.WriteLine(@"dp misuzu");
+                sw.WriteLine();
+                sw.WriteLine(@"# Misuzu DataProvider settings");
+                sw.Write(@"dp:misuzu:secret   ");
+                sw.Write(File.ReadAllText(msz_config).Trim());
+                sw.WriteLine();
+                sw.Write(@"dp:misuzu:endpoint ");
+#if DEBUG
+                sw.Write(@"https://misuzu.misaka.nl/_sockchat");
+#else
+                sw.Write(@"https://flashii.net/_sockchat");
+#endif
+                sw.WriteLine();
+            }
+
+            sw.WriteLine();
+
+            bool hasMDB = File.Exists(mdb_config),
+                 hasSQL = File.Exists(sql_config);
+
+            sw.WriteLine(@"# Selected Database Backend (mariadb, sqlite, null)");
+            if(hasMDB)
+                sw.WriteLine(@"db mariadb");
+            else if(hasSQL)
+                sw.WriteLine(@"db sqlite");
+            else
+                sw.WriteLine(@"db null");
+            sw.WriteLine();
+
+            if(hasMDB) {
+                string[] mdbCfg = File.ReadAllLines(mdb_config);
+                sw.WriteLine(@"# MariaDB configuration");
+                sw.WriteLine($@"db:mariadb:host {mdbCfg[0]}");
+                if(mdbCfg.Length > 1)
+                    sw.WriteLine($@"db:mariadb:user {mdbCfg[1]}");
+                else
+                    sw.WriteLine($@"#db:mariadb:user <username>");
+                if(mdbCfg.Length > 2)
+                    sw.WriteLine($@"db:mariadb:pass {mdbCfg[2]}");
+                else
+                    sw.WriteLine($@"#db:mariadb:pass <password>");
+                if(mdbCfg.Length > 3)
+                    sw.WriteLine($@"db:mariadb:db   {mdbCfg[3]}");
+                else
+                    sw.WriteLine($@"#db:mariadb:db   <database>");
+                sw.WriteLine();
+            }
+
+            if(hasSQL) {
+                string[] sqlCfg = File.ReadAllLines(sql_config);
+                sw.WriteLine(@"# SQLite configuration");
+                sw.WriteLine($@"db:sqlite:path {sqlCfg[0]}");
+            }
+
+            sw.Flush();
         }
     }
 }
