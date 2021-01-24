@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 
-namespace SharpChat.Http {
+namespace SharpChat.Http.Headers {
     public class HttpContentLengthHeader : HttpHeader {
         public const string NAME = @"Content-Length";
 

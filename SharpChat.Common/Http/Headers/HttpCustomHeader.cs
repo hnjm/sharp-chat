@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace SharpChat.Http {
+namespace SharpChat.Http.Headers {
     public class HttpCustomHeader : HttpHeader {
         public override string Name { get; }
         public override object Value { get; }

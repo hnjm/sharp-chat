@@ -1,7 +1,9 @@
-﻿using System;
+﻿using SharpChat.Http.Headers;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Text;
 
@@ -15,6 +17,22 @@ namespace SharpChat.Http {
 
         public override Stream Body { get; }
 
+        public string Connection
+            => Headers.FirstOrDefault(x => x.Name == HttpConnectionHeader.NAME)?.Value.ToString() ?? string.Empty;
+        public string Server
+            => Headers.FirstOrDefault(x => x.Name == HttpServerHeader.NAME)?.Value.ToString() ?? string.Empty;
+        public DateTimeOffset Date
+            => Headers.Where(x => x.Name == HttpDateHeader.NAME).Cast<HttpDateHeader>().FirstOrDefault()?.DateTime ?? DateTimeOffset.MinValue;
+        public HttpMediaType ContentType
+            => Headers.Where(x => x.Name == HttpContentTypeHeader.NAME).Cast<HttpContentTypeHeader>().FirstOrDefault()?.MediaType
+            ?? HttpMediaType.OctetStream;
+        public IEnumerable<string> ContentEncodings
+            => Headers.Where(x => x.Name == HttpContentEncodingHeader.NAME).Cast<HttpContentEncodingHeader>().FirstOrDefault()?.Encodings
+            ?? Enumerable.Empty<string>();
+        public IEnumerable<string> TransferEncodings
+            => Headers.Where(x => x.Name == HttpTransferEncodingHeader.NAME).Cast<HttpTransferEncodingHeader>().FirstOrDefault()?.Encodings
+            ?? Enumerable.Empty<string>();
+
         public HttpResponseMessage(
             int statusCode, string statusMessage, string protocolVersion,
             IEnumerable<HttpHeader> headers, Stream body
@@ -24,6 +42,57 @@ namespace SharpChat.Http {
             StatusMessage = statusMessage ?? string.Empty;
             Headers = (headers ?? throw new ArgumentNullException(nameof(headers))).ToArray();
             Body = body;
+        }
+
+        // there's probably a less stupid way to do this, be my guest and call me an idiot
+        private static void ProcessEncoding(Stack<string> encodings, Stream stream, bool transfer) {
+            using MemoryStream temp = new MemoryStream();
+            bool inTemp = false;
+
+            while(encodings.TryPop(out string encoding)) {
+                Stream target = (inTemp = !inTemp) ? temp : stream,
+                    source = inTemp ? stream : temp;
+
+                target.SetLength(0);
+                source.Seek(0, SeekOrigin.Begin);
+
+                switch(encoding) {
+                    case HttpEncoding.GZIP:
+                    case HttpEncoding.XGZIP:
+                        using(GZipStream gzs = new GZipStream(source, CompressionMode.Decompress, true))
+                            gzs.CopyTo(target);
+                        break;
+
+                    case HttpEncoding.DEFLATE:
+                        using(DeflateStream def = new DeflateStream(source, CompressionMode.Decompress, true))
+                            def.CopyTo(target);
+                        break;
+
+                    case HttpEncoding.BROTLI:
+                        if(transfer)
+                            goto default;
+                        using(BrotliStream br = new BrotliStream(source, CompressionMode.Decompress, true))
+                            br.CopyTo(target);
+                        break;
+
+                    case HttpEncoding.IDENTITY:
+                        break;
+
+                    case HttpEncoding.CHUNKED:
+                        if(!transfer)
+                            goto default;
+                        throw new IOException(@"Invalid use of chunked encoding type in Transfer-Encoding header.");
+
+                    default:
+                        throw new IOException(@"Unsupported encoding supplied.");
+                }
+            }
+
+            if(inTemp) {
+                stream.SetLength(0);
+                temp.Seek(0, SeekOrigin.Begin);
+                temp.CopyTo(stream);
+            }
         }
 
         public static HttpResponseMessage ReadFrom(Stream stream) {
@@ -54,7 +123,8 @@ namespace SharpChat.Http {
             }
             
             long contentLength = -1;
-            Stack<string> encodings = null;
+            Stack<string> transferEncodings = null;
+            Stack<string> contentEncodings = null;
 
             // Read initial header
             string line = readLine();
@@ -90,7 +160,9 @@ namespace SharpChat.Http {
                 if(header is HttpContentLengthHeader hclh)
                     contentLength = (long)hclh.Value;
                 else if(header is HttpTransferEncodingHeader hteh)
-                    encodings = new Stack<string>(hteh.Encodings);
+                    transferEncodings = new Stack<string>(hteh.Encodings);
+                else if(header is HttpContentEncodingHeader hceh)
+                    contentEncodings = new Stack<string>(hceh.Encodings);
                 else if(header is HttpCustomHeader)
                     Console.ForegroundColor = ConsoleColor.Red;
 
@@ -103,9 +175,9 @@ namespace SharpChat.Http {
             Stream body = null;
 
             // Read body
-            if(encodings != null && encodings.Any() && encodings.Peek() == HttpTransferEncodingHeader.CHUNKED) {
+            if(transferEncodings != null && transferEncodings.Any() && transferEncodings.Peek() == HttpEncoding.CHUNKED) {
                 // oh no the poop is chunky
-                encodings.Pop();
+                transferEncodings.Pop();
                 body = new MemoryStream();
 
                 while((line = readLine()) != null) {
@@ -150,14 +222,10 @@ namespace SharpChat.Http {
                     body.Dispose();
                     body = null;
                 } else {
-                    // TODO: implement decoding
-                    if(encodings != null)
-                        while(encodings.TryPop(out string encoding)) {
-                            if(encoding == HttpTransferEncodingHeader.CHUNKED)
-                                throw new IOException(@"Invalid use of chunked encoding type in Transfer-Encoding header.");
-
-                            Logger.Debug($@"Decode {encoding}");
-                        }
+                    if(transferEncodings != null)
+                        ProcessEncoding(transferEncodings, body, true);
+                    if(contentEncodings != null)
+                        ProcessEncoding(contentEncodings, body, false);
 
                     body.Seek(0, SeekOrigin.Begin);
                 }

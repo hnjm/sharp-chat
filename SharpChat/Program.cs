@@ -67,6 +67,8 @@ namespace SharpChat {
             using HttpClient httpClient = new HttpClient();
             httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(@"SharpChat");
 
+            Http.HttpClient.DefaultUserAgent = @"SharpChat/1.0";
+
             string dataProviderName = GetFlagArgument(args, @"--dpn") ?? config.ReadValue(@"dp");
             Type dataProviderType = FindDataProviderType(dataProviderName);
             IDataProvider dataProvider = (IDataProvider)Activator.CreateInstance(dataProviderType, config.ScopeTo($@"dp:{dataProviderName}"), httpClient);

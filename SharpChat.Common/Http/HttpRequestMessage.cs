@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SharpChat.Http.Headers;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -42,8 +43,45 @@ namespace SharpChat.Http {
             HttpHostHeader.NAME, HttpContentLengthHeader.NAME,
         };
         private static readonly string[] HEADERS_SINGLE = new[] {
-            HttpUserAgentHeader.NAME, HttpConnectionHeader.NAME,
+            HttpUserAgentHeader.NAME, HttpConnectionHeader.NAME, HttpAcceptEncodingHeader.NAME,
         };
+
+        public IEnumerable<HttpEncoding> AcceptedEncodings {
+            get => HeaderList.Where(x => x.Name == HttpAcceptEncodingHeader.NAME).Cast<HttpAcceptEncodingHeader>().FirstOrDefault()?.Encodings
+                ?? Enumerable.Empty<HttpEncoding>();
+
+            set {
+                HeaderList.RemoveAll(x => x.Name == HttpAcceptEncodingHeader.NAME);
+                HeaderList.Add(new HttpAcceptEncodingHeader(value));
+            }
+        }
+
+        public string UserAgent {
+            get => HeaderList.FirstOrDefault(x => x.Name == HttpUserAgentHeader.NAME)?.Value.ToString()
+                ?? string.Empty;
+            set {
+                HeaderList.RemoveAll(x => x.Name == HttpUserAgentHeader.NAME);
+                HeaderList.Add(new HttpUserAgentHeader(value));
+            }
+        }
+
+        public string Connection {
+            get => HeaderList.FirstOrDefault(x => x.Name == HttpConnectionHeader.NAME)?.Value.ToString()
+                ?? string.Empty;
+            set {
+                HeaderList.RemoveAll(x => x.Name == HttpConnectionHeader.NAME);
+                HeaderList.Add(new HttpConnectionHeader(value));
+            }
+        }
+
+        public HttpMediaType ContentType {
+            get => HeaderList.Where(x => x.Name == HttpContentTypeHeader.NAME).Cast<HttpContentTypeHeader>().FirstOrDefault()?.MediaType
+                ?? HttpMediaType.OctetStream;
+            set {
+                HeaderList.RemoveAll(x => x.Name == HttpContentTypeHeader.NAME);
+                HeaderList.Add(new HttpContentTypeHeader(value));
+            }
+        }
 
         public HttpRequestMessage(string method, string uri) : this(
             method, new Uri(uri)

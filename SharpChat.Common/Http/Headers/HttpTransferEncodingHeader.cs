@@ -1,14 +1,8 @@
 ﻿using System;
 
-namespace SharpChat.Http {
+namespace SharpChat.Http.Headers {
     public class HttpTransferEncodingHeader : HttpHeader {
         public const string NAME = @"Transfer-Encoding";
-
-        public const string CHUNKED = @"chunked";
-        public const string COMPRESS = @"compress";
-        public const string DEFLATE = @"deflate";
-        public const string GZIP = @"gzip";
-        public const string IDENTITY = @"identity";
 
         public override string Name => NAME;
         public override object Value => string.Join(@", ", Encodings);

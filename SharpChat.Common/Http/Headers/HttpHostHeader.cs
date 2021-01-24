@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Text;
 
-namespace SharpChat.Http {
+namespace SharpChat.Http.Headers {
     public class HttpHostHeader : HttpHeader {
         public const string NAME = @"Host";
 

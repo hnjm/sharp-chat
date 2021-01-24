@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace SharpChat.Http {
+namespace SharpChat.Http.Headers {
     public class HttpConnectionHeader : HttpHeader {
         public const string NAME = @"Connection";
 
