@@ -46,6 +46,13 @@ namespace SharpChat.Configuration {
             Lock = new Mutex();
         }
 
+        public void Refresh() {
+            if(!Lock.WaitOne(LOCK_TIMEOUT))
+                throw new ConfigLockException();
+            LastRead = DateTimeOffset.MinValue;
+            Lock.ReleaseMutex();
+        }
+
         private bool IsDisposed;
         ~CachedValue()
             => DoDispose();
