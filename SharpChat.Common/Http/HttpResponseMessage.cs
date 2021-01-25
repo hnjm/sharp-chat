@@ -41,6 +41,7 @@ namespace SharpChat.Http {
             StatusCode = statusCode;
             StatusMessage = statusMessage ?? string.Empty;
             Headers = (headers ?? throw new ArgumentNullException(nameof(headers))).ToArray();
+            OwnsBodyStream = true;
             Body = body;
         }
 
@@ -95,7 +96,7 @@ namespace SharpChat.Http {
             }
         }
 
-        public static HttpResponseMessage ReadFrom(Stream stream) {
+        public static HttpResponseMessage ReadFrom(Stream stream, Action<long, long> onProgress = null) {
             // ignore this function, it doesn't exist
             string readLine() {
                 const byte cr = 13, lf = 10;
@@ -173,12 +174,18 @@ namespace SharpChat.Http {
             }
 
             Stream body = null;
+            long totalRead = 0;
 
+            int bufferSize = 8192;
+            byte[] buffer = new byte[bufferSize];
+            int read;
             void readBuffer(long length = -1) {
-                int bufferSize = 8192;
-                byte[] buffer = new byte[bufferSize];
-                int read;
+                if(length == 0)
+                    return;
                 long remaining = length;
+
+                if(totalRead < 1)
+                    onProgress?.Invoke(0, contentLength);
 
                 while((read = stream.Read(buffer, 0, bufferSize)) > 0) {
                     body.Write(buffer, 0, read);
@@ -190,6 +197,9 @@ namespace SharpChat.Http {
                         if(bufferSize > remaining)
                             bufferSize = (int)remaining;
                     }
+
+                    totalRead += read;
+                    onProgress?.Invoke(totalRead, contentLength);
                 }
             }
 

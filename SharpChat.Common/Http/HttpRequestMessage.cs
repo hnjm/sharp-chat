@@ -27,7 +27,6 @@ namespace SharpChat.Http {
         public override IEnumerable<HttpHeader> Headers => HeaderList;
         private List<HttpHeader> HeaderList { get; } = new List<HttpHeader>();
 
-        private bool OwnsBodyStream { get; set; }
         private Stream BodyStream { get; set; }
         public override Stream Body {
             get {
@@ -148,7 +147,7 @@ namespace SharpChat.Http {
             }
         }
 
-        public void WriteTo(Stream stream) {
+        public void WriteTo(Stream stream, Action<long, long> onProgress = null) {
             using(StreamWriter sw = new StreamWriter(stream, new ASCIIEncoding(), leaveOpen: true)) {
                 sw.NewLine = "\r\n";
                 sw.Write(Method);
@@ -169,7 +168,22 @@ namespace SharpChat.Http {
                 Console.WriteLine();
                 sw.Flush();
             }
-            BodyStream?.CopyTo(stream);
+
+            if(BodyStream != null) {
+                const int bufferSize = 8192;
+                byte[] buffer = new byte[bufferSize];
+                int read;
+                long totalRead = 0;
+
+                onProgress?.Invoke(totalRead, BodyStream.Length);
+
+                BodyStream.Seek(0, SeekOrigin.Begin);
+                while((read = BodyStream.Read(buffer, 0, bufferSize)) > 0) {
+                    stream.Write(buffer, 0, read);
+                    totalRead += read;
+                    onProgress?.Invoke(totalRead, BodyStream.Length);
+                }
+            }
         }
     }
 }

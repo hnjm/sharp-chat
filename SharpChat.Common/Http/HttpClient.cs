@@ -1,76 +1,112 @@
 ﻿using SharpChat.Http.Headers;
 using System;
-using System.IO;
-using System.Linq;
-using System.Net;
 
 namespace SharpChat.Http {
-    public static class HttpClient {
+    public class HttpClient : IDisposable {
         public const string PRODUCT_STRING = @"HMKZ";
         public const string VERSION_MAJOR = @"1";
         public const string VERSION_MINOR = @"0";
         public const string USER_AGENT = PRODUCT_STRING + @"/" + VERSION_MAJOR + @"." + VERSION_MINOR;
 
-        public static string DefaultUserAgent { get; set; } = USER_AGENT;
+        private static HttpClient InstanceValue { get; set; }
+        public static HttpClient Instance {
+            get {
+                if(InstanceValue == null)
+                    InstanceValue = new HttpClient();
+                return InstanceValue;
+            }
+        }
 
-        // TODO
-        //  - Threading
-        //  - Proper exceptions
-        //  - More
-        public static HttpResponseMessage Send(HttpRequestMessage request) {
-            // PREPARATION STEP
+        private HttpConnectionManager Connections { get; }
+        private HttpTaskManager Tasks { get; }
+
+        public string DefaultUserAgent { get; set; } = USER_AGENT;
+        public bool ReuseConnections { get; set; } = true;
+
+        public HttpClient() {
+            Connections = new HttpConnectionManager();
+            Tasks = new HttpTaskManager();
+        }
+
+        public HttpTask CreateTask(
+            HttpRequestMessage request,
+            Action<HttpTask, HttpResponseMessage> onComplete = null,
+            Action<HttpTask, Exception> onError = null,
+            Action<HttpTask> onCancel = null,
+            Action<HttpTask, long, long> onDownloadProgress = null,
+            Action<HttpTask, long, long> onUploadProgress = null,
+            Action<HttpTask, HttpTask.TaskState> onStateChange = null
+        ) {
+            if(request == null)
+                throw new ArgumentNullException(nameof(request));
             if(string.IsNullOrWhiteSpace(request.UserAgent))
                 request.UserAgent = DefaultUserAgent;
+            request.Connection = ReuseConnections ? HttpConnectionHeader.KEEP_ALIVE : HttpConnectionHeader.CLOSE;
 
-            //request.AcceptedEncodings = new[] { HttpEncoding.GZip };
-            request.Connection = HttpConnectionHeader.CLOSE;
+            HttpTask task = new HttpTask(Connections, request);
 
-            // LOOKUP STEP
-            IPAddress[] addrs = Dns.GetHostAddresses(request.Host);
+            if(onComplete != null)
+                task.OnComplete += onComplete;
+            if(onError != null)
+                task.OnError += onError;
+            if(onCancel != null)
+                task.OnCancel += onCancel;
+            if(onDownloadProgress != null)
+                task.OnDownloadProgress += onDownloadProgress;
+            if(onUploadProgress != null)
+                task.OnUploadProgress += onUploadProgress;
+            if(onStateChange != null)
+                task.OnStateChange += onStateChange;
 
-            if(!addrs.Any())
-                throw new Exception(@"No addresses found for this host.");
+            return task;
+        }
 
-            // REQUEST STEP
-            Exception exception = null;
-            HttpClientConnection conn = null;
+        public void RunTask(HttpTask task) {
+            Tasks.RunTask(task);
+        }
 
-            foreach(IPAddress addr in addrs) {
-                IPEndPoint endPoint = new IPEndPoint(addr, request.Port);
+        public static void RunTaskSync(HttpTask task) {
+            while(task.NextStep());
+        }
 
-                Logger.Debug($@"Attempting {endPoint}...");
+        public void SendRequest(
+            HttpRequestMessage request,
+            Action<HttpTask, HttpResponseMessage> onComplete = null,
+            Action<HttpTask, Exception> onError = null,
+            Action<HttpTask> onCancel = null,
+            Action<HttpTask, long, long> onDownloadProgress = null,
+            Action<HttpTask, long, long> onUploadProgress = null,
+            Action<HttpTask, HttpTask.TaskState> onStateChange = null
+        ) {
+            RunTask(CreateTask(request, onComplete, onError, onCancel, onDownloadProgress, onUploadProgress, onStateChange));
+        }
 
-                exception = null;
-                conn = new HttpClientConnection(request.Host, endPoint, request.IsSecure);
-                conn.Acquire();
+        public static void Send(
+            HttpRequestMessage request,
+            Action<HttpTask, HttpResponseMessage> onComplete = null,
+            Action<HttpTask, Exception> onError = null,
+            Action<HttpTask> onCancel = null,
+            Action<HttpTask, long, long> onDownloadProgress = null,
+            Action<HttpTask, long, long> onUploadProgress = null,
+            Action<HttpTask, HttpTask.TaskState> onStateChange = null
+        ) {
+            Instance.SendRequest(request, onComplete, onError, onCancel, onDownloadProgress, onUploadProgress, onStateChange);
+        }
 
-                try {
-                    request.WriteTo(conn.Stream);
-                    break;
-                } catch(IOException ex) {
-                    Logger.Debug(ex);
-                    exception = ex;
-                    conn?.Dispose(); // temp
-                    continue;
-                } finally {
-                    conn.Release();
-                }
-            }
+        private bool IsDisposed;
+        ~HttpClient()
+            => DoDispose();
+        public void Dispose() {
+            DoDispose();
+            GC.SuppressFinalize(this);
+        }
+        private void DoDispose() {
+            if(IsDisposed)
+                return;
+            IsDisposed = true;
 
-            if(conn == null)
-                throw new Exception(@"No connection.");
-
-            // RESPONSE STEP
-            HttpResponseMessage response = HttpResponseMessage.ReadFrom(conn.Stream);
-
-            conn.Dispose(); // temp
-
-            // FINISHING STEP
-            if(exception != null)
-                throw exception;
-            if(response == null)
-                throw new Exception(@"Request failed.");
-            return response;
+            Tasks.Dispose();
+            Connections.Dispose();
         }
     }
 }

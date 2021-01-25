@@ -1,13 +1,17 @@
 ﻿using SharpChat;
 using SharpChat.Http;
+using System;
 using System.IO;
 using System.Text;
+using System.Threading;
 using static System.Console;
 
 namespace HttpClientTest {
     public static class Program {
         public static void Main(string[] args) {
-            HttpClient.DefaultUserAgent = @"SharpChat/1.0";
+            ResetColor();
+
+            HttpClient.Instance.DefaultUserAgent = @"SharpChat/1.0";
 
             /*string[] commonMediaTypes = new[] {
                 @"application/x-executable",
@@ -67,24 +71,65 @@ namespace HttpClientTest {
             WriteLine($@"ContentType: {req.ContentType}");
             WriteLine();
 
-            HttpResponseMessage res = HttpClient.Send(req);
-            WriteLine($@"Connection: {res.Connection}");
-            WriteLine($@"ContentEncodings: {string.Join(@", ", res.ContentEncodings)}");
-            WriteLine($@"TransferEncodings: {string.Join(@", ", res.TransferEncodings)}");
-            WriteLine($@"Date: {res.Date}");
-            WriteLine($@"Server: {res.Server}");
-            WriteLine($@"ContentType: {res.ContentType}");
-            WriteLine();
-
-            if(res.HasBody) {
-                string line;
-                using StreamWriter sw = new StreamWriter(@"out.html", false, new UTF8Encoding(false));
-                using StreamReader sr = new StreamReader(res.Body, new UTF8Encoding(false), false, leaveOpen: true);
-                while((line = sr.ReadLine()) != null) {
-                    //Logger.Debug(line);
-                    sw.WriteLine(line);
-                }
+            void setForeground(ConsoleColor color) {
+                ResetColor();
+                ForegroundColor = color;
             }
+
+            using ManualResetEvent mre = new ManualResetEvent(false);
+            bool kill = false;
+
+            HttpClient.Send(
+                req,
+                onComplete: (task, res) => {
+                    setForeground(ConsoleColor.Green);
+
+                    WriteLine($@"Connection: {res.Connection}");
+                    WriteLine($@"ContentEncodings: {string.Join(@", ", res.ContentEncodings)}");
+                    WriteLine($@"TransferEncodings: {string.Join(@", ", res.TransferEncodings)}");
+                    WriteLine($@"Date: {res.Date}");
+                    WriteLine($@"Server: {res.Server}");
+                    WriteLine($@"ContentType: {res.ContentType}");
+                    WriteLine();
+
+                    if(res.HasBody) {
+                        string line;
+                        using StreamWriter sw = new StreamWriter(@"out.html", false, new UTF8Encoding(false));
+                        using StreamReader sr = new StreamReader(res.Body, new UTF8Encoding(false), false, leaveOpen: true);
+                        while((line = sr.ReadLine()) != null) {
+                            //Logger.Debug(line);
+                            sw.WriteLine(line);
+                        }
+                    }
+                },
+                onError: (task, ex) => {
+                    setForeground(ConsoleColor.Red);
+                    WriteLine(ex);
+                },
+                onCancel: task => {
+                    setForeground(ConsoleColor.Yellow);
+                    WriteLine(@"Cancelled.");
+                },
+                onDownloadProgress: (task, p, t) => {
+                    setForeground(ConsoleColor.Blue);
+                    WriteLine($@"Downloaded {p} bytes of {t} bytes.");
+                },
+                onUploadProgress: (task, p, t) => {
+                    setForeground(ConsoleColor.Magenta);
+                    WriteLine($@"Uploaded {p} bytes of {t} bytes.");
+                },
+                onStateChange: (task, s) => {
+                    setForeground(ConsoleColor.White);
+                    WriteLine($@"State changed: {s}");
+
+                    if(!kill && (task.IsFinished || task.IsCancelled)) {
+                        kill = true;
+                        mre?.Set();
+                    }
+                }
+            );
+
+            mre.WaitOne();
         }
     }
 }

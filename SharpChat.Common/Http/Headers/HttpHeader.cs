@@ -27,6 +27,7 @@ namespace SharpChat.Http.Headers {
                 HttpHostHeader.NAME => new HttpHostHeader(value.ToString()),
                 HttpServerHeader.NAME => new HttpServerHeader(value.ToString()),
                 HttpUserAgentHeader.NAME => new HttpUserAgentHeader(value.ToString()),
+                HttpKeepAliveHeader.NAME => new HttpKeepAliveHeader(value.ToString()),
                 HttpConnectionHeader.NAME => new HttpConnectionHeader(value.ToString()),
                 HttpContentTypeHeader.NAME => new HttpContentTypeHeader(value.ToString()),
                 HttpContentLengthHeader.NAME => new HttpContentLengthHeader(value.ToString()),

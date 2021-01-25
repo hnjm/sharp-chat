@@ -12,6 +12,8 @@ namespace SharpChat.Http {
 
         public virtual bool HasBody => Body != null;
 
+        protected bool OwnsBodyStream { get; set; }
+
         public virtual IEnumerable<HttpHeader> GetHeader(string header) {
             header = HttpHeader.NormaliseName(header);
             return Headers.Where(h => h.Name == header);
@@ -37,7 +39,8 @@ namespace SharpChat.Http {
             if(IsDisposed)
                 return;
             IsDisposed = true;
-            Body?.Dispose();
+            if(OwnsBodyStream && Body != null)
+                Body.Dispose();
         }
     }
 }

@@ -7,7 +7,7 @@ using System.Security.Authentication;
 using System.Threading;
 
 namespace SharpChat.Http {
-    public class HttpClientConnection : IDisposable {
+    public class HttpConnection : IDisposable {
         public IPEndPoint EndPoint { get; }
         public Stream Stream { get; }
         private Mutex Lock { get; }
@@ -19,7 +19,13 @@ namespace SharpChat.Http {
         public string Host { get; }
         public bool IsSecure { get; }
 
-        public HttpClientConnection(string host, IPEndPoint endPoint, bool secure) {
+        public bool HasTimedOut => MaxRequests == 0 || (DateTimeOffset.Now - LastOperation) > MaxIdle;
+
+        public int MaxRequests { get; set; } = -1;
+        public TimeSpan MaxIdle { get; set; } = TimeSpan.MaxValue;
+        public DateTimeOffset LastOperation { get; private set; } = DateTimeOffset.Now;
+
+        public HttpConnection(string host, IPEndPoint endPoint, bool secure) {
             Host = host ?? throw new ArgumentNullException(nameof(host));
             EndPoint = endPoint ?? throw new ArgumentNullException(nameof(endPoint));
             IsSecure = secure;
@@ -46,6 +52,12 @@ namespace SharpChat.Http {
             Lock = new Mutex();
         }
 
+        public void MarkUsed() {
+            LastOperation = DateTimeOffset.Now;
+            if(MaxRequests > 0)
+                --MaxRequests;
+        }
+
         public bool Acquire() {
             return Lock.WaitOne(0);
         }
@@ -55,7 +67,7 @@ namespace SharpChat.Http {
         }
 
         private bool IsDisposed;
-        ~HttpClientConnection()
+        ~HttpConnection()
             => DoDispose();
         public void Dispose() {
             DoDispose();
