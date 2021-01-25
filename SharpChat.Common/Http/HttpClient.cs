@@ -22,7 +22,7 @@ namespace SharpChat.Http {
             if(string.IsNullOrWhiteSpace(request.UserAgent))
                 request.UserAgent = DefaultUserAgent;
 
-            request.AcceptedEncodings = new[] { HttpEncoding.GZip };
+            //request.AcceptedEncodings = new[] { HttpEncoding.GZip };
             request.Connection = HttpConnectionHeader.CLOSE;
 
             // LOOKUP STEP

@@ -174,6 +174,25 @@ namespace SharpChat.Http {
 
             Stream body = null;
 
+            void readBuffer(long length = -1) {
+                int bufferSize = 8192;
+                byte[] buffer = new byte[bufferSize];
+                int read;
+                long remaining = length;
+
+                while((read = stream.Read(buffer, 0, bufferSize)) > 0) {
+                    body.Write(buffer, 0, read);
+
+                    if(length >= 0) {
+                        remaining -= read;
+                        if(remaining < 1)
+                            break;
+                        if(bufferSize > remaining)
+                            bufferSize = (int)remaining;
+                    }
+                }
+            }
+
             // Read body
             if(transferEncodings != null && transferEncodings.Any() && transferEncodings.Peek() == HttpEncoding.CHUNKED) {
                 // oh no the poop is chunky
@@ -181,39 +200,18 @@ namespace SharpChat.Http {
                 body = new MemoryStream();
 
                 while((line = readLine()) != null) {
-                    Logger.Debug(line);
                     if(string.IsNullOrWhiteSpace(line))
                         break;
                     if(!int.TryParse(line, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out int chunkLength))
                         throw new IOException(@"Failed to decode chunk length.");
-                    Logger.Debug($@"Chunk size: {chunkLength}");
                     if(chunkLength == 0) // final chunk
                         break;
-                    byte[] buffer = new byte[chunkLength]; // lets blindly trust the server, that's never gone wrong
-                    // the comment above is probably on to something, rework this to use a fixed size buffer
-                    Logger.Debug(@"Reading...");
-                    stream.Read(buffer, 0, chunkLength);
-                    Logger.Debug(@"Writing...");
-                    body.Write(buffer, 0, chunkLength);
+                    readBuffer(chunkLength);
                     readLine();
                 }
             } else if(contentLength != 0) {
                 body = new MemoryStream();
-                int readSize = 8192;
-                byte[] buffer = new byte[readSize];
-                int read; long contentRemaining = contentLength;
-
-                while((read = stream.Read(buffer, 0, readSize)) > 0) {
-                    body.Write(buffer, 0, read);
-
-                    if(contentLength >= 0) {
-                        contentRemaining -= read;
-                        if(contentRemaining < 1)
-                            break;
-                        if(readSize > contentRemaining)
-                            readSize = (int)contentRemaining;
-                    }
-                }
+                readBuffer();
             }
 
             if(body != null)
