@@ -5,8 +5,6 @@ using System.IO;
 using System.Linq;
 using System.Net;
 
-// TODO
-//  - Proper exceptions
 namespace SharpChat.Http {
     public class HttpTask {
         public TaskState State { get; private set; } = TaskState.Initial;
@@ -41,9 +39,10 @@ namespace SharpChat.Http {
             Request = request ?? throw new ArgumentNullException(nameof(request));
         }
 
-        public void Start() {
+        public void Run() {
             if(IsStarted)
-                throw new Exception(@"already started");
+                throw new HttpTaskAlreadyStartedException();
+            while(NextStep());
         }
 
         public void Cancel() {
@@ -84,7 +83,7 @@ namespace SharpChat.Http {
                     OnComplete?.Invoke(this, Response);
                     return false;
                 default:
-                    Error(new Exception(@"Invalid state."));
+                    Error(new HttpTaskInvalidStateException());
                     return false;
             }
 
@@ -100,7 +99,7 @@ namespace SharpChat.Http {
             }
 
             if(!Addresses.Any())
-                Error(new Exception(@"No addresses found for this host."));
+                Error(new HttpTaskNoAddressesException());
         }
 
         private void DoRequest() {
@@ -110,7 +109,6 @@ namespace SharpChat.Http {
                 foreach(IPAddress addr in Addresses) {
                     int tries = 0;
                     IPEndPoint endPoint = new IPEndPoint(addr, Request.Port);
-                    Logger.Debug($@"Attempting {endPoint}...");
 
                     exception = null;
                     Connection = Connections.GetConnection(Request.Host, endPoint, Request.IsSecure);
@@ -122,9 +120,6 @@ namespace SharpChat.Http {
                         Request.WriteTo(Connection.Stream, (p, t) => OnUploadProgress?.Invoke(this, p, t));
                         break;
                     } catch(IOException ex) {
-                        Logger.Debug(ex);
-
-                        Logger.Debug($@"Attempting {endPoint} again with a fresh connection...");
                         Connection.Dispose();
                         Connection = Connections.GetConnection(Request.Host, endPoint, Request.IsSecure);
                         Connection.Acquire();
@@ -146,7 +141,7 @@ namespace SharpChat.Http {
             if(exception != null)
                 Error(exception);
             else if(Connection == null)
-                Error(new Exception(@"No connection."));
+                Error(new HttpTaskNoConnectionException());
         }
 
         private void DoResponse() {
@@ -160,7 +155,7 @@ namespace SharpChat.Http {
             if(Response.Connection == HttpConnectionHeader.CLOSE)
                 Connection.Dispose();
             if(Response == null)
-                Error(new Exception(@"Request failed."));
+                Error(new HttpTaskRequestFailedException());
 
             HttpKeepAliveHeader hkah = Response.Headers.Where(x => x.Name == HttpKeepAliveHeader.NAME).Cast<HttpKeepAliveHeader>().FirstOrDefault();
             if(hkah != null) {

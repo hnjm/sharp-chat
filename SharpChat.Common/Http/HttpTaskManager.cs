@@ -13,10 +13,10 @@ namespace SharpChat.Http {
             if(task == null)
                 throw new ArgumentNullException(nameof(task));
             if(!Lock.WaitOne())
-                throw new Exception(@"Unable to acquire lock.");
+                throw new HttpTaskManagerLockException();
             new Thread(() => {
                 try {
-                    while(task.NextStep());
+                    task.Run();
                 } finally {
                     Lock.Release();
                 }

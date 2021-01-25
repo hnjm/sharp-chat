@@ -14,7 +14,7 @@ namespace SharpChat.Http {
 
         private void AcquireLock() {
             if(!Lock.WaitOne(10000))
-                throw new Exception(@"Failed to acquire mutex after 10 seconds.");
+                throw new HttpConnectionManagerLockException();
         }
 
         private void ReleaseLock() {

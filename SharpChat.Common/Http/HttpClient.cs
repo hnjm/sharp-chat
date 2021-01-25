@@ -65,10 +65,6 @@ namespace SharpChat.Http {
             Tasks.RunTask(task);
         }
 
-        public static void RunTaskSync(HttpTask task) {
-            while(task.NextStep());
-        }
-
         public void SendRequest(
             HttpRequestMessage request,
             Action<HttpTask, HttpResponseMessage> onComplete = null,
