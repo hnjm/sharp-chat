@@ -1,8 +1,6 @@
 ﻿using Hamakaze.Headers;
 using System;
-
-// TODO
-// Niceties for reading the body would also be Nice
+using System.Collections.Generic;
 
 namespace Hamakaze {
     public class HttpClient : IDisposable {
@@ -25,6 +23,7 @@ namespace Hamakaze {
 
         public string DefaultUserAgent { get; set; } = USER_AGENT;
         public bool ReuseConnections { get; set; } = true;
+        public IEnumerable<HttpEncoding> AcceptedEncodings { get; set; } = new[] { HttpEncoding.GZip, HttpEncoding.Deflate, HttpEncoding.Brotli };
 
         public HttpClient() {
             Connections = new HttpConnectionManager();
@@ -46,6 +45,8 @@ namespace Hamakaze {
                 throw new ArgumentNullException(nameof(request));
             if(string.IsNullOrWhiteSpace(request.UserAgent))
                 request.UserAgent = DefaultUserAgent;
+            if(!request.HasHeader(HttpAcceptEncodingHeader.NAME))
+                request.AcceptedEncodings = AcceptedEncodings;
             request.Connection = ReuseConnections ? HttpConnectionHeader.KEEP_ALIVE : HttpConnectionHeader.CLOSE;
 
             HttpTask task = new HttpTask(Connections, request, disposeRequest, disposeResponse);

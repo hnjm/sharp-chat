@@ -61,16 +61,9 @@ namespace HttpClientTest {
 
             return;*/
 
-            HttpRequestMessage req = new HttpRequestMessage(HttpRequestMessage.GET, @"https://flashii.net/");
-            WriteLine($@"Connection: {req.Connection}");
-            WriteLine($@"AcceptEncodings: {string.Join(@", ", req.AcceptedEncodings)}");
-            WriteLine($@"IsSecure: {req.IsSecure}");
-            WriteLine($@"RequestTarget: {req.RequestTarget}");
-            WriteLine($@"UserAgent: {req.UserAgent}");
-            WriteLine($@"ContentType: {req.ContentType}");
-            WriteLine();
+            HttpRequestMessage req = new HttpRequestMessage(HttpRequestMessage.GET, @"https://mii.flashii.net/metadata?url=https://twitter.com/smugwave/status/527973842137141249");
 
-            void setForeground(ConsoleColor color) {
+            static void setForeground(ConsoleColor color) {
                 ResetColor();
                 ForegroundColor = color;
             }
@@ -81,8 +74,18 @@ namespace HttpClientTest {
             HttpClient.Send(
                 req,
                 onComplete: (task, res) => {
+                    WriteLine($@"Connection: {req.Connection}");
+                    WriteLine($@"AcceptEncodings: {string.Join(@", ", req.AcceptedEncodings)}");
+                    WriteLine($@"IsSecure: {req.IsSecure}");
+                    WriteLine($@"RequestTarget: {req.RequestTarget}");
+                    WriteLine($@"UserAgent: {req.UserAgent}");
+                    WriteLine($@"ContentType: {req.ContentType}");
+                    WriteLine();
+
                     setForeground(ConsoleColor.Green);
 
+                    WriteLine($@"Connection: {res.StatusCode}");
+                    WriteLine($@"Connection: {res.StatusMessage}");
                     WriteLine($@"Connection: {res.Connection}");
                     WriteLine($@"ContentEncodings: {string.Join(@", ", res.ContentEncodings)}");
                     WriteLine($@"TransferEncodings: {string.Join(@", ", res.TransferEncodings)}");

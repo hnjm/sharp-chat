@@ -45,6 +45,18 @@ namespace Hamakaze {
             Body = body;
         }
 
+        public byte[] GetBodyBytes() {
+            if(Body == null)
+                return null;
+            if(Body is MemoryStream msBody)
+                return msBody.ToArray();
+            using MemoryStream ms = new MemoryStream();
+            if(Body.CanSeek)
+                Body.Seek(0, SeekOrigin.Begin);
+            Body.CopyTo(ms);
+            return ms.ToArray();
+        }
+
         // there's probably a less stupid way to do this, be my guest and call me an idiot
         private static void ProcessEncoding(Stack<string> encodings, Stream stream, bool transfer) {
             using MemoryStream temp = new MemoryStream();

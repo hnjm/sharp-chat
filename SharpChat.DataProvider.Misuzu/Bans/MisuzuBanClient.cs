@@ -2,7 +2,6 @@
 using SharpChat.Bans;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Text.Json;
 
 namespace SharpChat.DataProvider.Misuzu.Bans {
@@ -25,11 +24,7 @@ namespace SharpChat.DataProvider.Misuzu.Bans {
 
             HttpClient.SendRequest(
                 req,
-                onComplete: (t, r) => {
-                    using MemoryStream ms = new MemoryStream();
-                    r.Body.CopyTo(ms);
-                    onSuccess.Invoke(JsonSerializer.Deserialize<IEnumerable<MisuzuBanRecord>>(ms.ToArray()));
-                },
+                onComplete: (t, r) => onSuccess.Invoke(JsonSerializer.Deserialize<IEnumerable<MisuzuBanRecord>>(r.GetBodyBytes())),
                 onError: (t, e) => onFailure?.Invoke(e)
             );
         }

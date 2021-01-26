@@ -54,12 +54,11 @@ namespace SharpChat {
             // Allow forcing a sqlite database through console flags
             string sqliteDbPath = GetFlagArgument(args, @"--dbpath");
             if(!string.IsNullOrEmpty(sqliteDbPath)) {
-                Logger.Debug($@"Forcing SQLite: {sqliteDbPath}");
+                Logger.Write($@"Forcing SQLite: {sqliteDbPath}");
                 databaseBackend = new SQLiteDatabaseBackend(sqliteDbPath);
             } else {
                 string databaseBackendName = GetFlagArgument(args, @"--dbb") ?? config.ReadValue(@"db");
                 Type databaseBackendType = FindDatabaseBackendType(databaseBackendName);
-                Logger.Debug($@"Database Backend: {databaseBackendName} {databaseBackendType}");
                 databaseBackend = (IDatabaseBackend)Activator.CreateInstance(databaseBackendType, config.ScopeTo($@"db:{databaseBackendName}"));
             }
 
@@ -68,7 +67,6 @@ namespace SharpChat {
             string dataProviderName = GetFlagArgument(args, @"--dpn") ?? config.ReadValue(@"dp");
             Type dataProviderType = FindDataProviderType(dataProviderName);
             IDataProvider dataProvider = (IDataProvider)Activator.CreateInstance(dataProviderType, config.ScopeTo($@"dp:{dataProviderName}"), HttpClient.Instance);
-            Logger.Debug($@"Data Provider: {dataProviderName} {dataProviderType}");
 
             string portArg = GetFlagArgument(args, @"--port") ?? config.ReadValue(@"chat:port");
             if(string.IsNullOrEmpty(portArg) || !ushort.TryParse(portArg, out ushort port))

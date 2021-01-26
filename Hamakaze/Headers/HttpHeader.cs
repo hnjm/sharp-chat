@@ -31,6 +31,7 @@ namespace Hamakaze.Headers {
                 HttpConnectionHeader.NAME => new HttpConnectionHeader(value.ToString()),
                 HttpContentTypeHeader.NAME => new HttpContentTypeHeader(value.ToString()),
                 HttpContentLengthHeader.NAME => new HttpContentLengthHeader(value.ToString()),
+                HttpAcceptEncodingHeader.NAME => new HttpAcceptEncodingHeader(value.ToString()),
                 HttpContentEncodingHeader.NAME => new HttpContentEncodingHeader(value.ToString()),
                 HttpTransferEncodingHeader.NAME => new HttpTransferEncodingHeader(value.ToString()),
                 _ => new HttpCustomHeader(name, value),
