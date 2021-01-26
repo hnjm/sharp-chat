@@ -5,7 +5,6 @@ using System.Globalization;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
-using System.Net.Sockets;
 using System.Text;
 
 namespace Hamakaze {
@@ -101,27 +100,27 @@ namespace Hamakaze {
             // ignore this function, it doesn't exist
             string readLine() {
                 const ushort crlf = 0x0D0A;
-                StringBuilder sb = new StringBuilder();
+                using MemoryStream ms = new MemoryStream();
                 int byt; ushort lastTwo = 0;
 
                 for(; ; ) {
                     byt = stream.ReadByte();
-                    if(byt == -1 && sb.Length == 0)
+                    if(byt == -1 && ms.Length == 0)
                         return null;
 
-                    sb.Append((char)byt);
+                    ms.WriteByte((byte)byt);
 
                     lastTwo <<= 8;
                     lastTwo |= (byte)byt;
                     if(lastTwo == crlf) {
-                        sb.Length -= 2;
+                        ms.SetLength(ms.Length - 2);
                         break;
                     }
                 }
 
-                return sb.ToString();
+                return Encoding.ASCII.GetString(ms.ToArray());
             }
-            
+
             long contentLength = -1;
             Stack<string> transferEncodings = null;
             Stack<string> contentEncodings = null;
@@ -168,19 +167,22 @@ namespace Hamakaze {
 
             Stream body = null;
             long totalRead = 0;
-
-            int bufferSize = 8192;
-            byte[] buffer = new byte[bufferSize];
+            const int buffer_size = 8192;
+            byte[] buffer = new byte[buffer_size];
             int read;
+
             void readBuffer(long length = -1) {
                 if(length == 0)
                     return;
                 long remaining = length;
+                int bufferRead = buffer_size;
+                if(bufferRead > length)
+                    bufferRead = (int)length;
 
                 if(totalRead < 1)
                     onProgress?.Invoke(0, contentLength);
 
-                while((read = stream.Read(buffer, 0, bufferSize)) > 0) {
+                while((read = stream.Read(buffer, 0, bufferRead)) > 0) {
                     body.Write(buffer, 0, read);
 
                     totalRead += read;
@@ -190,8 +192,8 @@ namespace Hamakaze {
                         remaining -= read;
                         if(remaining < 1)
                             break;
-                        if(bufferSize > remaining)
-                            bufferSize = (int)remaining;
+                        if(bufferRead > remaining)
+                            bufferRead = (int)remaining;
                     }
                 }
             }
@@ -210,13 +212,13 @@ namespace Hamakaze {
                     if(chunkLength == 0) // final chunk
                         break;
                     readBuffer(chunkLength);
-                    Console.WriteLine($@">>>>>>>>>>>> {chunkLength} <<<<<<<<<<<<<<<");
                     readLine();
-                    Console.WriteLine($@">>>>>>>>>>>> {chunkLength} <<<<<<<<<<<<<<<");
                 }
+
+                readLine();
             } else if(contentLength != 0) {
                 body = new MemoryStream();
-                readBuffer();
+                readBuffer(contentLength);
             }
 
             if(body != null)

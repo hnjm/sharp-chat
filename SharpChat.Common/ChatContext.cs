@@ -15,13 +15,15 @@ using System.Threading;
 namespace SharpChat {
     public class ChatContext : IDisposable, IPacketTarget {
         public SockChatServer Server { get; }
-        public Timer BumpTimer { get; }
         public BanManager Bans { get; }
         public ChannelManager Channels { get; }
         public UserManager Users { get; }
         public IChatEventStorage Events { get; }
         public IDataProvider DataProvider { get; }
         public IConfig Config { get; }
+
+        private Timer BumpTimer { get; }
+        private Timer BansTimer { get; }
 
         public string TargetName => @"@broadcast";
 
@@ -42,10 +44,14 @@ namespace SharpChat {
 
             MessageTextMaxLengthValue = Config.ReadCached(@"messages:maxLength", DEFAULT_MSG_LENGTH_MAX);
 
+            // Should probably not rely on Timers in the future
             BumpTimer = new Timer(e => {
                 Logger.Write(@"Bumping last online times...");
                 DataProvider.UserBumpClient.SubmitBumpUsers(Users.WithActiveConnections());
             }, null, TimeSpan.Zero, TimeSpan.FromMinutes(1));
+            BansTimer = new Timer(e => {
+                Bans.RefreshRemoteBans();
+            }, null, TimeSpan.Zero, TimeSpan.FromMinutes(15));
         }
 
         public void Update() {
@@ -200,6 +206,7 @@ namespace SharpChat {
                 return;
             IsDisposed = true;
 
+            BansTimer?.Dispose();
             BumpTimer?.Dispose();
             Events?.Dispose();
             Channels?.Dispose();

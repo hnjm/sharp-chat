@@ -2,7 +2,6 @@
 using System;
 
 // TODO
-// Figure out disposal behaviour of HttpMessages
 // Niceties for reading the body would also be Nice
 
 namespace Hamakaze {
@@ -39,7 +38,9 @@ namespace Hamakaze {
             Action<HttpTask> onCancel = null,
             Action<HttpTask, long, long> onDownloadProgress = null,
             Action<HttpTask, long, long> onUploadProgress = null,
-            Action<HttpTask, HttpTask.TaskState> onStateChange = null
+            Action<HttpTask, HttpTask.TaskState> onStateChange = null,
+            bool disposeRequest = true,
+            bool disposeResponse = true
         ) {
             if(request == null)
                 throw new ArgumentNullException(nameof(request));
@@ -47,7 +48,7 @@ namespace Hamakaze {
                 request.UserAgent = DefaultUserAgent;
             request.Connection = ReuseConnections ? HttpConnectionHeader.KEEP_ALIVE : HttpConnectionHeader.CLOSE;
 
-            HttpTask task = new HttpTask(Connections, request);
+            HttpTask task = new HttpTask(Connections, request, disposeRequest, disposeResponse);
 
             if(onComplete != null)
                 task.OnComplete += onComplete;
@@ -76,9 +77,11 @@ namespace Hamakaze {
             Action<HttpTask> onCancel = null,
             Action<HttpTask, long, long> onDownloadProgress = null,
             Action<HttpTask, long, long> onUploadProgress = null,
-            Action<HttpTask, HttpTask.TaskState> onStateChange = null
+            Action<HttpTask, HttpTask.TaskState> onStateChange = null,
+            bool disposeRequest = true,
+            bool disposeResponse = true
         ) {
-            RunTask(CreateTask(request, onComplete, onError, onCancel, onDownloadProgress, onUploadProgress, onStateChange));
+            RunTask(CreateTask(request, onComplete, onError, onCancel, onDownloadProgress, onUploadProgress, onStateChange, disposeRequest, disposeResponse));
         }
 
         public static void Send(
@@ -88,9 +91,11 @@ namespace Hamakaze {
             Action<HttpTask> onCancel = null,
             Action<HttpTask, long, long> onDownloadProgress = null,
             Action<HttpTask, long, long> onUploadProgress = null,
-            Action<HttpTask, HttpTask.TaskState> onStateChange = null
+            Action<HttpTask, HttpTask.TaskState> onStateChange = null,
+            bool disposeRequest = true,
+            bool disposeResponse = true
         ) {
-            Instance.SendRequest(request, onComplete, onError, onCancel, onDownloadProgress, onUploadProgress, onStateChange);
+            Instance.SendRequest(request, onComplete, onError, onCancel, onDownloadProgress, onUploadProgress, onStateChange, disposeRequest, disposeResponse);
         }
 
         private bool IsDisposed;

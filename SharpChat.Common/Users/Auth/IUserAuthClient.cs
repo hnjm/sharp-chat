@@ -1,5 +1,7 @@
-﻿namespace SharpChat.Users.Auth {
+﻿using System;
+
+namespace SharpChat.Users.Auth {
     public interface IUserAuthClient {
-        IUserAuthResponse AttemptAuth(UserAuthRequest request);
+        void AttemptAuth(UserAuthRequest request, Action<IUserAuthResponse> onSuccess, Action<Exception> onFailure);
     }
 }

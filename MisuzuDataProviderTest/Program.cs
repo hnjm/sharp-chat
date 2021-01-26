@@ -10,12 +10,15 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Reflection;
+using System.Threading;
 using static System.Console;
 
 namespace MisuzuDataProviderTest {
     public static class Program {
         public static void Main() {
             WriteLine("Misuzu Authentication Tester");
+
+            using ManualResetEvent mre = new ManualResetEvent(false);
 
             string cfgPath = Path.GetDirectoryName(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location));
             string buildMode = Path.GetFileName(cfgPath);
@@ -38,27 +41,50 @@ namespace MisuzuDataProviderTest {
             long userId = long.Parse(token[0]);
             IPAddress remoteAddr = IPAddress.Parse(@"1.2.4.8");
 
-            IUserAuthResponse authRes;
-            try {
-                authRes = dataProvider.UserAuthClient.AttemptAuth(new UserAuthRequest(userId, token[1], remoteAddr));
+            IUserAuthResponse authRes = null;
+            mre.Reset();
+            dataProvider.UserAuthClient.AttemptAuth(
+                new UserAuthRequest(userId, token[1], remoteAddr),
+                onSuccess: res => {
+                    authRes = res;
+                    WriteLine(@"Auth success!");
+                    WriteLine($@" User ID:   {authRes.UserId}");
+                    WriteLine($@" Username:  {authRes.Username}");
+                    WriteLine($@" Colour:    {authRes.Colour.Raw:X8}");
+                    WriteLine($@" Hierarchy: {authRes.Rank}");
+                    WriteLine($@" Silenced:  {authRes.SilencedUntil}");
+                    WriteLine($@" Perms:     {authRes.Permissions}");
+                    mre.Set();
+                },
+                onFailure: ex => {
+                    WriteLine($@"Auth failed: {ex.Message}");
+                    mre.Set();
+                }
+            );
+            mre.WaitOne();
 
-                WriteLine(@"Auth success!");
-                WriteLine($@" User ID:   {authRes.UserId}");
-                WriteLine($@" Username:  {authRes.Username}");
-                WriteLine($@" Colour:    {authRes.Colour.Raw:X8}");
-                WriteLine($@" Hierarchy: {authRes.Rank}");
-                WriteLine($@" Silenced:  {authRes.SilencedUntil}");
-                WriteLine($@" Perms:     {authRes.Permissions}");
-            } catch(UserAuthFailedException ex) {
-                WriteLine($@"Auth failed: {ex.Message}");
+            if(authRes == null)
                 return;
-            }
 
             WriteLine(@"Bumping last seen...");
-            dataProvider.UserBumpClient.SubmitBumpUsers(new[] { new ChatUser(authRes) });
+            mre.Reset();
+            dataProvider.UserBumpClient.SubmitBumpUsers(
+                new[] { new ChatUser(authRes) },
+                onSuccess: () => mre.Set(),
+                onFailure: ex => {
+                    WriteLine($@"Bump failed: {ex.Message}");
+                    mre.Set();
+                }
+            );
+            mre.WaitOne();
 
             WriteLine(@"Fetching ban list...");
-            IEnumerable<IBanRecord> bans = dataProvider.BanClient.GetBanList();
+            IEnumerable<IBanRecord> bans = Enumerable.Empty<IBanRecord>();
+
+            mre.Reset();
+            dataProvider.BanClient.GetBanList(x => { bans = x; mre.Set(); }, e => { WriteLine(e); mre.Set(); });
+            mre.WaitOne();
+
             WriteLine($@"{bans.Count()} BANS");
             foreach(IBanRecord ban in bans) {
                 WriteLine($@"BAN INFO");

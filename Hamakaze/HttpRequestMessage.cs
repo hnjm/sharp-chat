@@ -137,7 +137,7 @@ namespace Hamakaze {
                 BodyStream = null;
                 HeaderList.RemoveAll(x => x.Name == HttpContentLengthHeader.NAME);
             } else {
-                if(!BodyStream.CanRead || !BodyStream.CanSeek)
+                if(!stream.CanRead || !stream.CanSeek)
                     throw new ArgumentException(@"Body must readable and seekable.", nameof(stream));
                 if(OwnsBodyStream)
                     BodyStream?.Dispose();

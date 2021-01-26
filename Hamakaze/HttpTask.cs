@@ -27,6 +27,9 @@ namespace Hamakaze {
         private IEnumerable<IPAddress> Addresses { get; set; }
         private HttpConnection Connection { get; set; }
 
+        public bool DisposeRequest { get; set; }
+        public bool DisposeResponse { get; set; }
+
         public event Action<HttpTask, HttpResponseMessage> OnComplete;
         public event Action<HttpTask, Exception> OnError;
         public event Action<HttpTask> OnCancel;
@@ -34,9 +37,11 @@ namespace Hamakaze {
         public event Action<HttpTask, long, long> OnDownloadProgress;
         public event Action<HttpTask, TaskState> OnStateChange;
 
-        public HttpTask(HttpConnectionManager conns, HttpRequestMessage request) {
+        public HttpTask(HttpConnectionManager conns, HttpRequestMessage request, bool disposeRequest, bool disposeResponse) {
             Connections = conns ?? throw new ArgumentNullException(nameof(conns));
             Request = request ?? throw new ArgumentNullException(nameof(request));
+            DisposeRequest = disposeRequest;
+            DisposeResponse = disposeResponse;
         }
 
         public void Run() {
@@ -49,12 +54,16 @@ namespace Hamakaze {
             State = TaskState.Cancelled;
             OnStateChange?.Invoke(this, State);
             OnCancel?.Invoke(this);
+            if(DisposeResponse)
+                Response?.Dispose();
+            if(DisposeRequest)
+                Request?.Dispose();
         }
 
         private void Error(Exception ex) {
             Exception = ex;
-            Cancel();
             OnError?.Invoke(this, ex);
+            Cancel();
         }
 
         public bool NextStep() {
@@ -81,6 +90,10 @@ namespace Hamakaze {
                     State = TaskState.Finished;
                     OnStateChange?.Invoke(this, State);
                     OnComplete?.Invoke(this, Response);
+                    if(DisposeResponse)
+                        Response?.Dispose();
+                    if(DisposeRequest)
+                        Request?.Dispose();
                     return false;
                 default:
                     Error(new HttpTaskInvalidStateException());
@@ -112,7 +125,6 @@ namespace Hamakaze {
 
                     exception = null;
                     Connection = Connections.GetConnection(Request.Host, endPoint, Request.IsSecure);
-                    Connection.Acquire();
 
                 retry:
                     ++tries;
@@ -122,7 +134,6 @@ namespace Hamakaze {
                     } catch(IOException ex) {
                         Connection.Dispose();
                         Connection = Connections.GetConnection(Request.Host, endPoint, Request.IsSecure);
-                        Connection.Acquire();
 
                         if(tries < 2)
                             goto retry;
@@ -130,7 +141,6 @@ namespace Hamakaze {
                         exception = ex;
                         continue;
                     } finally {
-                        Connection.Release();
                         Connection.MarkUsed();
                     }
                 }
@@ -162,6 +172,8 @@ namespace Hamakaze {
                 Connection.MaxIdle = hkah.MaxIdle;
                 Connection.MaxRequests = hkah.MaxRequests;
             }
+
+            Connection.Release();
         }
 
         public enum TaskState {

@@ -4,7 +4,6 @@ using SharpChat.Users.Auth;
 using System;
 using System.IO;
 using System.Text.Json;
-using System.Threading;
 
 namespace SharpChat.DataProvider.Misuzu.Users.Auth {
     public class MisuzuUserAuthClient : IUserAuthClient {
@@ -18,13 +17,13 @@ namespace SharpChat.DataProvider.Misuzu.Users.Auth {
             HttpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
         }
 
-        public IUserAuthResponse AttemptAuth(UserAuthRequest request) {
+        public void AttemptAuth(UserAuthRequest request, Action<IUserAuthResponse> onSuccess, Action<Exception> onFailure) {
             if(request == null)
                 throw new ArgumentNullException(nameof(request));
 
 #if DEBUG
-            if(request.UserId >= 10000)
-                return new MisuzuUserAuthResponse {
+            if(request.UserId >= 10000) {
+                onSuccess.Invoke(new MisuzuUserAuthResponse {
                     Success = true,
                     UserId = request.UserId,
                     Username = @"Misaka-" + (request.UserId - 10000),
@@ -32,40 +31,33 @@ namespace SharpChat.DataProvider.Misuzu.Users.Auth {
                     Rank = 0,
                     SilencedUntil = DateTimeOffset.MinValue,
                     Permissions = ChatUserPermissions.SendMessage | ChatUserPermissions.EditOwnMessage | ChatUserPermissions.DeleteOwnMessage,
-                };
+                });
+                return;
+            }
 #endif
             MisuzuUserAuthRequest mar = new MisuzuUserAuthRequest(request);
 
-            // auth needs a bit of a structural rewrite to use callbacks instead of not
-            using ManualResetEvent mre = new ManualResetEvent(false);
-
-            using HttpRequestMessage req = new HttpRequestMessage(HttpRequestMessage.POST, DataProvider.GetURL(URL));
+            HttpRequestMessage req = new HttpRequestMessage(HttpRequestMessage.POST, DataProvider.GetURL(URL));
             req.SetHeader(@"X-SharpChat-Signature", DataProvider.GetSignedHash(mar));
             req.SetBody(JsonSerializer.SerializeToUtf8Bytes(mar));
-
-            MisuzuUserAuthResponse muar = null;
 
             HttpClient.SendRequest(
                 req,
                 onComplete: (t, r) => {
                     using MemoryStream ms = new MemoryStream();
                     r.Body.CopyTo(ms);
-                    muar = JsonSerializer.Deserialize<MisuzuUserAuthResponse>(ms.ToArray());
-                    mre.Set();
+                    MisuzuUserAuthResponse res = JsonSerializer.Deserialize<MisuzuUserAuthResponse>(ms.ToArray());
+                    if(res.Success)
+                        onSuccess.Invoke(res);
+                    else
+                        onFailure.Invoke(new UserAuthFailedException(res.Reason));
                 },
-                onCancel: (t) => mre.Set(),
                 onError: (t, e) => {
                     Logger.Write(@"An error occurred during authentication.");
                     Logger.Debug(e);
+                    onFailure.Invoke(e);
                 }
             );
-
-            mre.WaitOne();
-
-            if(muar?.Success != true)
-                throw new UserAuthFailedException(muar.Reason);
-
-            return muar;
         }
     }
 }

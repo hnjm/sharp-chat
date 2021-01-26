@@ -10,7 +10,6 @@ namespace Hamakaze {
     public class HttpConnection : IDisposable {
         public IPEndPoint EndPoint { get; }
         public Stream Stream { get; }
-        private Mutex Lock { get; }
 
         public Socket Socket { get; }
         public NetworkStream NetworkStream { get; }
@@ -24,6 +23,8 @@ namespace Hamakaze {
         public int MaxRequests { get; set; } = -1;
         public TimeSpan MaxIdle { get; set; } = TimeSpan.MaxValue;
         public DateTimeOffset LastOperation { get; private set; } = DateTimeOffset.Now;
+
+        public bool InUse { get; private set; }
 
         public HttpConnection(string host, IPEndPoint endPoint, bool secure) {
             Host = host ?? throw new ArgumentNullException(nameof(host));
@@ -48,8 +49,6 @@ namespace Hamakaze {
                 SslStream.AuthenticateAsClient(Host, null, SslProtocols.Tls11 | SslProtocols.Tls12 | SslProtocols.Tls13, true);
             } else
                 Stream = NetworkStream;
-
-            Lock = new Mutex();
         }
 
         public void MarkUsed() {
@@ -59,11 +58,13 @@ namespace Hamakaze {
         }
 
         public bool Acquire() {
-            return Lock.WaitOne(0);
+            if(InUse)
+                return false;
+            return InUse = true;
         }
 
         public void Release() {
-            Lock.ReleaseMutex();
+            InUse = false;
         }
 
         private bool IsDisposed;
@@ -78,7 +79,6 @@ namespace Hamakaze {
                 return;
             IsDisposed = true;
             Stream.Dispose();
-            Lock.Dispose();
         }
     }
 }

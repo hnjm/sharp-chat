@@ -18,7 +18,7 @@ namespace SharpChat.DataProvider.Misuzu.Users.Bump {
             HttpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
         }
 
-        public void SubmitBumpUsers(IEnumerable<ChatUser> users) {
+        public void SubmitBumpUsers(IEnumerable<ChatUser> users, Action onSuccess = null, Action<Exception> onFailure = null) {
             if(users == null)
                 throw new ArgumentNullException(nameof(users));
             if(!users.Any())
@@ -32,7 +32,8 @@ namespace SharpChat.DataProvider.Misuzu.Users.Bump {
 
             HttpClient.SendRequest(
                 request,
-                onComplete: (t, r) => request.Dispose(),
+                disposeRequest: false,
+                onComplete: (t, r) => { request.Dispose(); onSuccess?.Invoke(); },
                 onError: (t, e) => {
                     Logger.Write(@"User bump request failed. Retrying once...");
                     Logger.Debug(e);
@@ -41,12 +42,12 @@ namespace SharpChat.DataProvider.Misuzu.Users.Bump {
                         request,
                         onComplete: (t, r) => {
                             Logger.Write(@"Second user bump attempt succeeded!");
-                            request.Dispose();
+                            onSuccess?.Invoke();
                         },
                         onError: (t, e) => {
                             Logger.Write(@"User bump request failed again.");
                             Logger.Debug(e);
-                            request.Dispose();
+                            onFailure?.Invoke(e);
                         }
                     );
                 }

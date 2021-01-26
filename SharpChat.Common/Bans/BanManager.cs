@@ -42,6 +42,10 @@ namespace SharpChat.Bans {
         public override string ToString() => Address.ToString();
     }
 
+    // This should be completely in sync with the site bans. In the future this should;
+    //  - Report new bans back to the site
+    //  - Accept new bans from the site using an API of sorts (periodic sync should still happen, on an hourly basis probably)
+    //  - more?
     public class BanManager : IDisposable {
         private readonly List<IBan> BanList = new List<IBan>();
 
@@ -49,7 +53,7 @@ namespace SharpChat.Bans {
 
         public BanManager(ChatContext context) {
             Context = context;
-            RefreshFlashiiBans();
+            RefreshRemoteBans();
         }
 
         public void Add(ChatUser user, DateTimeOffset expires) {
@@ -141,27 +145,28 @@ namespace SharpChat.Bans {
                 BanList.RemoveAll(x => x.Expires <= DateTimeOffset.UtcNow);
         }
 
-        public void RefreshFlashiiBans() {
-            IEnumerable<IBanRecord> bans;
-            try {
-                bans = Context.DataProvider.BanClient.GetBanList();
-            } catch(Exception ex) {
-                Logger.Write($@"Ban Refresh: {ex.Message}");
-                Logger.Write(ex);
-                return;
-            }
+        public void RefreshRemoteBans() {
+            Logger.Write(@"Refreshing remote bans...");
 
-            if(!bans.Any())
-                return;
+            Context.DataProvider.BanClient.GetBanList(
+                bans => {
+                    if(!bans.Any())
+                        return;
 
-            lock(BanList) {
-                foreach(IBanRecord br in bans) {
-                    if(!BanList.OfType<BannedUser>().Any(x => x.UserId == br.UserId))
-                        Add(new BannedUser(br));
-                    if(!BanList.OfType<BannedIPAddress>().Any(x => x.Address == br.UserIP))
-                        Add(new BannedIPAddress(br));
+                    lock(BanList) {
+                        foreach(IBanRecord br in bans) {
+                            if(!BanList.OfType<BannedUser>().Any(x => x.UserId == br.UserId))
+                                Add(new BannedUser(br));
+                            if(!BanList.OfType<BannedIPAddress>().Any(x => x.Address == br.UserIP))
+                                Add(new BannedIPAddress(br));
+                        }
+                    }
+                },
+                ex => {
+                    Logger.Write($@"Error during remote ban refresh: {ex.Message}");
+                    Logger.Write(ex);
                 }
-            }
+            );
         }
 
         public IEnumerable<IBan> All() {

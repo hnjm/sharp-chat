@@ -1,7 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace SharpChat.Bans {
     public interface IBanClient {
-        IEnumerable<IBanRecord> GetBanList();
+        void GetBanList(Action<IEnumerable<IBanRecord>> onSuccess, Action<Exception> onFailure = null);
     }
 }

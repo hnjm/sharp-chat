@@ -34,60 +34,60 @@ namespace SharpChat.PacketHandlers {
             if(!long.TryParse(ctx.Args.ElementAtOrDefault(1), out long userId) || userId < 1)
                 return;
 
-            string authToken = ctx.Args.ElementAtOrDefault(2);
-            if(string.IsNullOrEmpty(authToken))
+            string token = ctx.Args.ElementAtOrDefault(2);
+            if(string.IsNullOrEmpty(token))
                 return;
 
-            IUserAuthResponse authResponse;
-            try {
-                authResponse = ctx.Chat.DataProvider.UserAuthClient.AttemptAuth(new UserAuthRequest(userId, authToken, ctx.Session.RemoteAddress));
-            } catch(Exception ex) {
-                Logger.Debug($@"<{ctx.Session.Id}> Auth fail: {ex.Message}");
-                ctx.Session.Send(new AuthFailPacket(AuthFailReason.AuthInvalid));
-                ctx.Session.Dispose();
-                return;
-            }
+            ctx.Chat.DataProvider.UserAuthClient.AttemptAuth(
+                new UserAuthRequest(userId, token, ctx.Session.RemoteAddress),
+                onSuccess: res => {
+                    ChatUser user = ctx.Chat.Users.Get(res.UserId);
 
-            ChatUser user = ctx.Chat.Users.Get(authResponse.UserId);
+                    if(user == null)
+                        user = new ChatUser(res);
+                    else {
+                        user.ApplyAuth(res);
+                        user.Channel?.Send(new UserUpdatePacket(user));
+                    }
 
-            if(user == null)
-                user = new ChatUser(authResponse);
-            else {
-                user.ApplyAuth(authResponse);
-                user.Channel?.Send(new UserUpdatePacket(user));
-            }
+                    banDuration = ctx.Chat.Bans.Check(user);
 
-            banDuration = ctx.Chat.Bans.Check(user);
+                    if(banDuration > DateTimeOffset.UtcNow) {
+                        ctx.Session.Send(new AuthFailPacket(AuthFailReason.Banned, banDuration));
+                        ctx.Session.Dispose();
+                        return;
+                    }
 
-            if(banDuration > DateTimeOffset.UtcNow) {
-                ctx.Session.Send(new AuthFailPacket(AuthFailReason.Banned, banDuration));
-                ctx.Session.Dispose();
-                return;
-            }
+                    // Enforce a maximum amount of connections per user
+                    if(user.SessionCount >= Server.MaxConnections) {
+                        ctx.Session.Send(new AuthFailPacket(AuthFailReason.MaxSessions));
+                        ctx.Session.Dispose();
+                        return;
+                    }
 
-            // Enforce a maximum amount of connections per user
-            if(user.SessionCount >= Server.MaxConnections) {
-                ctx.Session.Send(new AuthFailPacket(AuthFailReason.MaxSessions));
-                ctx.Session.Dispose();
-                return;
-            }
+                    // Bumping the ping to prevent upgrading
+                    ctx.Session.BumpPing();
 
-            // Bumping the ping to prevent upgrading
-            ctx.Session.BumpPing();
+                    user.AddSession(ctx.Session);
 
-            user.AddSession(ctx.Session);
+                    ctx.Session.Send(new LegacyCommandResponse(LCR.WELCOME, false, $@"Welcome to Flashii Chat, {user.Username}!"));
 
-            ctx.Session.Send(new LegacyCommandResponse(LCR.WELCOME, false, $@"Welcome to Flashii Chat, {user.Username}!"));
+                    if(File.Exists(WELCOME)) {
+                        IEnumerable<string> lines = File.ReadAllLines(WELCOME).Where(x => !string.IsNullOrWhiteSpace(x));
+                        string line = lines.ElementAtOrDefault(RNG.Next(lines.Count()));
 
-            if(File.Exists(WELCOME)) {
-                IEnumerable<string> lines = File.ReadAllLines(WELCOME).Where(x => !string.IsNullOrWhiteSpace(x));
-                string line = lines.ElementAtOrDefault(RNG.Next(lines.Count()));
+                        if(!string.IsNullOrWhiteSpace(line))
+                            ctx.Session.Send(new LegacyCommandResponse(LCR.WELCOME, false, line));
+                    }
 
-                if(!string.IsNullOrWhiteSpace(line))
-                    ctx.Session.Send(new LegacyCommandResponse(LCR.WELCOME, false, line));
-            }
-
-            ctx.Chat.HandleJoin(user, ctx.Chat.Channels.DefaultChannel, ctx.Session);
+                    ctx.Chat.HandleJoin(user, ctx.Chat.Channels.DefaultChannel, ctx.Session);
+                },
+                onFailure: ex => {
+                    Logger.Debug($@"<{ctx.Session.Id}> Auth fail: {ex.Message}");
+                    ctx.Session.Send(new AuthFailPacket(AuthFailReason.AuthInvalid));
+                    ctx.Session.Dispose();
+                }
+            );
         }
     }
 }

@@ -37,6 +37,7 @@ namespace Hamakaze {
         }
 
         private HttpConnection CreateConnectionInternal(string host, IPEndPoint endPoint, bool secure) {
+            Console.WriteLine($@"[HMKZ] Creating {(secure ? @"secure " : string.Empty)}new connection for {host} on {endPoint}");
             HttpConnection conn = new HttpConnection(host, endPoint, secure);
             Connections.Add(conn);
             return conn;
@@ -60,9 +61,10 @@ namespace Hamakaze {
         private HttpConnection GetConnectionInternal(string host, IPEndPoint endPoint, bool secure) {
             CleanConnectionsInternal();
             HttpConnection conn = Connections.FirstOrDefault(c => host.Equals(c.Host) && endPoint.Equals(c.EndPoint) && c.IsSecure == secure && c.Acquire());
-            if(conn == null)
+            if(conn == null) {
                 conn = CreateConnectionInternal(host, endPoint, secure);
-            else conn.Release();
+                conn.Acquire();
+            }
             return conn;
         }
 
