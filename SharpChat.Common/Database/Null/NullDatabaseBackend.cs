@@ -22,6 +22,7 @@ namespace SharpChat.Database.Null {
             => string.Empty;
         public string BlobType
             => string.Empty;
+
         public string VarCharType(int size)
             => string.Empty;
         public string VarBinaryType(int size)
@@ -45,5 +46,10 @@ namespace SharpChat.Database.Null {
             => string.Empty;
         public string DateTimeNow()
             => string.Empty;
+
+        public bool SupportsAlterTableCollate => true;
+
+        public string AsciiCollation => string.Empty;
+        public string UnicodeCollation => string.Empty;
     }
 }

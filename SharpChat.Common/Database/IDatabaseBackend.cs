@@ -19,5 +19,10 @@ namespace SharpChat.Database {
         string FromUnixTime(string param);
         string ToUnixTime(string param);
         string DateTimeNow();
+
+        bool SupportsAlterTableCollate { get; }
+
+        string AsciiCollation { get; }
+        string UnicodeCollation { get; }
     }
 }

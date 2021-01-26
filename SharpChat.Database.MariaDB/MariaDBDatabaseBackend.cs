@@ -65,6 +65,11 @@ namespace SharpChat.Database.MariaDB {
         public string DateTimeNow()
             => @"NOW()";
 
+        public bool SupportsAlterTableCollate => true;
+
+        public string AsciiCollation => @"'ascii_general_ci'";
+        public string UnicodeCollation => @"'utf8mb4_unicode_520_ci'";
+
         public void Dispose() {
             GC.SuppressFinalize(this);
         }

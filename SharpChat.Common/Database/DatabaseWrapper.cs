@@ -43,6 +43,14 @@ namespace SharpChat.Database {
         public string DateTimeNow()
             => Backend.DateTimeNow();
 
+        public bool SupportsAlterTableCollate
+            => Backend.SupportsAlterTableCollate;
+
+        public string AsciiCollation
+            => Backend.AsciiCollation;
+        public string UnicodeCollation
+            => Backend.UnicodeCollation;
+
         public void RunCommand(object query, Action<IDatabaseCommand> action, params IDatabaseParameter[] @params) {
             Logger.Debug(query);
             using IDatabaseConnection conn = Backend.CreateConnection();
