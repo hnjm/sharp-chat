@@ -37,7 +37,6 @@ namespace Hamakaze {
         }
 
         private HttpConnection CreateConnectionInternal(string host, IPEndPoint endPoint, bool secure) {
-            Console.WriteLine($@"[HMKZ] Creating {(secure ? @"secure " : string.Empty)}new connection for {host} on {endPoint}");
             HttpConnection conn = new HttpConnection(host, endPoint, secure);
             Connections.Add(conn);
             return conn;
