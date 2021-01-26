@@ -59,15 +59,33 @@ namespace SharpChat.Configuration {
             object value = ReadValue(name);
             if(value == null)
                 return fallback;
+
             Type type = typeof(T);
-            if(type == typeof(bool) && value is string strVal)
-                value = !string.Equals(strVal, @"0", StringComparison.InvariantCultureIgnoreCase)
-                    && !string.Equals(strVal, @"false", StringComparison.InvariantCultureIgnoreCase);
-            return (T)Convert.ChangeType(value, type);
+            if(value is string strVal) {
+                if(type == typeof(bool))
+                    value = !string.Equals(strVal, @"0", StringComparison.InvariantCultureIgnoreCase)
+                        && !string.Equals(strVal, @"false", StringComparison.InvariantCultureIgnoreCase);
+                else if(type == typeof(string[]))
+                    value = strVal.Split(' ');
+            }
+
+            try {
+                return (T)Convert.ChangeType(value, type);
+            } catch(InvalidCastException ex) {
+                throw new ConfigTypeException(ex);
+            }
         }
 
-        public IConfig ScopeTo(string name) {
-            return new ScopedConfig(this, name);
+        public T SafeReadValue<T>(string name, T fallback) {
+            try {
+                return ReadValue(name, fallback);
+            } catch(ConfigTypeException) {
+                return fallback;
+            }
+        }
+
+        public IConfig ScopeTo(string prefix) {
+            return new ScopedConfig(this, prefix);
         }
         
         public CachedValue<T> ReadCached<T>(string name, T fallback = default, TimeSpan? lifetime = null) {

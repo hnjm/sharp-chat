@@ -133,6 +133,18 @@ namespace SharpChat {
             sw.WriteLine($@"#chat:flood:banDuration    {SockChatServer.DEFAULT_FLOOD_BAN_DURATION}");
             sw.WriteLine();
 
+            sw.WriteLine(@"# Channels");
+            sw.WriteLine(@"chat:channels lounge staff");
+            sw.WriteLine();
+
+            sw.WriteLine(@"# Lounge channel settings");
+            sw.WriteLine(@"chat:channels:lounge:autoJoin true");
+            sw.WriteLine();
+
+            sw.WriteLine(@"# Staff channel settings");
+            sw.WriteLine(@"chat:channels:staff:minRank 5");
+            sw.WriteLine();
+
             sw.WriteLine(@"# Selected DataProvider (misuzu, null)");
             if(!File.Exists(msz_config))
                 sw.WriteLine(@"dp null");

@@ -60,15 +60,6 @@ namespace SharpChat {
             FloodRankException = Config.ReadCached(@"chat:flood:exceptRank", 0, TimeSpan.FromSeconds(10));
             MaxConnectionsValue = config.ReadCached(@"chat:users:maxConnections", DEFAULT_MAX_CONNECTIONS);
 
-            Context.Channels.Add(new ChatChannel(@"Lounge"));
-#if DEBUG
-            Context.Channels.Add(new ChatChannel(@"Programming"));
-            Context.Channels.Add(new ChatChannel(@"Games"));
-            Context.Channels.Add(new ChatChannel(@"Splatoon"));
-            Context.Channels.Add(new ChatChannel(@"Password") { Password = @"meow", });
-#endif
-            Context.Channels.Add(new ChatChannel(@"Staff") { Rank = 5 });
-
             PacketHandlers = new IPacketHandler[] {
                 new PingPacketHandler(),
                 new AuthPacketHandler(this),

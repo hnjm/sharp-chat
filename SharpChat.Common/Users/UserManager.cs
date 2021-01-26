@@ -1,15 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 
 namespace SharpChat.Users {
     public class UserManager : IDisposable {
-        private readonly List<ChatUser> Users = new List<ChatUser>();
+        private List<ChatUser> Users { get; } = new List<ChatUser>();
 
-        public readonly ChatContext Context;
+        private ChatContext Context { get; }
+        private Mutex Sync { get; }
 
         public UserManager(ChatContext context) {
             Context = context;
+            Sync = new Mutex();
         }
 
         public void Add(ChatUser user) {
@@ -83,6 +86,7 @@ namespace SharpChat.Users {
                 return;
             IsDisposed = true;
             Users.Clear();
+            Sync.Dispose();
         }
     }
 }

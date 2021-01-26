@@ -82,7 +82,7 @@ namespace SharpChat.Users {
 
         public string TargetName => @"@log";
 
-        [Obsolete]
+        [Obsolete(@"Don't rely on this anymore, keep multi-channel in mind.")]
         public ChatChannel Channel {
             get {
                 lock(Channels)

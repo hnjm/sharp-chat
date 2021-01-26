@@ -26,8 +26,12 @@ namespace SharpChat.Configuration {
             return Config.ReadValue(GetName(name), fallback);
         }
 
-        public IConfig ScopeTo(string name) {
-            return Config.ScopeTo(GetName(name));
+        public T SafeReadValue<T>(string name, T fallback) {
+            return Config.SafeReadValue(GetName(name), fallback);
+        }
+
+        public IConfig ScopeTo(string prefix) {
+            return Config.ScopeTo(GetName(prefix));
         }
 
         public CachedValue<T> ReadCached<T>(string name, T fallback = default, TimeSpan? lifetime = null) {

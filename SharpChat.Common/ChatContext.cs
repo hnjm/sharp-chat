@@ -12,6 +12,8 @@ using System.Collections.Generic;
 using System.Net;
 using System.Threading;
 
+// A lot of actions done by this class need to be relocated
+
 namespace SharpChat {
     public class ChatContext : IDisposable, IPacketTarget {
         public SockChatServer Server { get; }
@@ -37,7 +39,7 @@ namespace SharpChat {
             DataProvider = dataProvider ?? throw new ArgumentNullException(nameof(dataProvider));
             Bans = new BanManager(this);
             Users = new UserManager(this);
-            Channels = new ChannelManager(this);
+            Channels = new ChannelManager(this, config);
             Events = database.IsNullBackend
                 ? new MemoryChatEventStorage()
                 : new ADOChatEventStorage(database);
@@ -127,7 +129,7 @@ namespace SharpChat {
             }
 
             if (!user.Can(ChatUserPermissions.JoinAnyChannel) && chan.Owner != user) {
-                if (chan.Rank > user.Rank) {
+                if (chan.MinimumRank > user.Rank) {
                     user.Send(new LegacyCommandResponse(LCR.CHANNEL_INSUFFICIENT_HIERARCHY, true, chan.Name));
                     user.ForceChannel();
                     return;

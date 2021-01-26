@@ -8,7 +8,9 @@ namespace SharpChat.Channels {
         public string Name { get; set; }
         public string Password { get; set; } = string.Empty;
         public bool IsTemporary { get; set; } = false;
-        public int Rank { get; set; } = 0;
+        public int MinimumRank { get; set; } = 0;
+        public bool AutoJoin { get; set; } = false;
+        public uint MaxCapacity { get; set; } = 0;
         public ChatUser Owner { get; set; } = null;
 
         private List<ChatUser> Users { get; } = new List<ChatUser>();
@@ -16,6 +18,9 @@ namespace SharpChat.Channels {
 
         public bool HasPassword
             => !string.IsNullOrWhiteSpace(Password);
+
+        public bool HasMaxCapacity
+            => MaxCapacity > 0;
 
         public string TargetName => Name;
 

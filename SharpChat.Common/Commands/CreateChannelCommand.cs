@@ -29,7 +29,7 @@ namespace SharpChat.Commands {
             ChatChannel createChan = new ChatChannel {
                 Name = createChanName,
                 IsTemporary = !ctx.User.Can(ChatUserPermissions.SetChannelPermanent),
-                Rank = rank,
+                MinimumRank = rank,
                 Owner = ctx.User,
             };
 
