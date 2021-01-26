@@ -1,9 +1,9 @@
-﻿using SharpChat.Users;
+﻿using Hamakaze;
+using SharpChat.Users;
 using SharpChat.Users.Bump;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http;
 using System.Text.Json;
 
 namespace SharpChat.DataProvider.Misuzu.Users.Bump {
@@ -26,14 +26,31 @@ namespace SharpChat.DataProvider.Misuzu.Users.Bump {
 
             byte[] data = JsonSerializer.SerializeToUtf8Bytes(users.Where(x => x.RemoteAddresses.Any()).Select(x => new MisuzuUserBumpInfo(x)));
 
-            using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, DataProvider.GetURL(URL)) {
-                Content = new ByteArrayContent(data),
-                Headers = {
-                    { @"X-SharpChat-Signature", DataProvider.GetSignedHash(data) },
-                }
-            };
+            HttpRequestMessage request = new HttpRequestMessage(HttpRequestMessage.POST, DataProvider.GetURL(URL));
+            request.SetHeader(@"X-SharpChat-Signature", DataProvider.GetSignedHash(data));
+            request.SetBody(data);
 
-            HttpClient.SendAsync(request).Wait();
+            HttpClient.SendRequest(
+                request,
+                onComplete: (t, r) => request.Dispose(),
+                onError: (t, e) => {
+                    Logger.Write(@"User bump request failed. Retrying once...");
+                    Logger.Debug(e);
+
+                    HttpClient.SendRequest(
+                        request,
+                        onComplete: (t, r) => {
+                            Logger.Write(@"Second user bump attempt succeeded!");
+                            request.Dispose();
+                        },
+                        onError: (t, e) => {
+                            Logger.Write(@"User bump request failed again.");
+                            Logger.Debug(e);
+                            request.Dispose();
+                        }
+                    );
+                }
+            );
         }
     }
 }

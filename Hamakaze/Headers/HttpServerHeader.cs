@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace SharpChat.Http.Headers {
+namespace Hamakaze.Headers {
     public class HttpServerHeader : HttpHeader {
         public const string NAME = @"Server";
 

@@ -1,4 +1,5 @@
-﻿using SharpChat.Configuration;
+﻿using Hamakaze;
+using SharpChat.Configuration;
 using SharpChat.Database;
 using SharpChat.Database.Null;
 using SharpChat.Database.SQLite;
@@ -11,7 +12,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Net.Http;
 using System.Reflection;
 using System.Text;
 using System.Threading;
@@ -63,15 +63,11 @@ namespace SharpChat {
                 databaseBackend = (IDatabaseBackend)Activator.CreateInstance(databaseBackendType, config.ScopeTo($@"db:{databaseBackendName}"));
             }
 
-            // TODO: GET RID OF THIS PIECE OF SHIT
-            using HttpClient httpClient = new HttpClient();
-            httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(@"SharpChat");
-
-            Http.HttpClient.DefaultUserAgent = @"SharpChat/1.0";
+            HttpClient.Instance.DefaultUserAgent = @"SharpChat/1.0";
 
             string dataProviderName = GetFlagArgument(args, @"--dpn") ?? config.ReadValue(@"dp");
             Type dataProviderType = FindDataProviderType(dataProviderName);
-            IDataProvider dataProvider = (IDataProvider)Activator.CreateInstance(dataProviderType, config.ScopeTo($@"dp:{dataProviderName}"), httpClient);
+            IDataProvider dataProvider = (IDataProvider)Activator.CreateInstance(dataProviderType, config.ScopeTo($@"dp:{dataProviderName}"), HttpClient.Instance);
             Logger.Debug($@"Data Provider: {dataProviderName} {dataProviderType}");
 
             string portArg = GetFlagArgument(args, @"--port") ?? config.ReadValue(@"chat:port");
@@ -79,7 +75,7 @@ namespace SharpChat {
                 port = DEFAULT_PORT;
 
             using IWebSocketServer wss = new FleckWebSocketServer(new IPEndPoint(IPAddress.Any, port));
-            using SockChatServer scs = new SockChatServer(config, wss, httpClient, dataProvider, databaseBackend);
+            using SockChatServer scs = new SockChatServer(config, wss, HttpClient.Instance, dataProvider, databaseBackend);
 
             using ManualResetEvent mre = new ManualResetEvent(false);
             Console.CancelKeyPress += (s, e) => { e.Cancel = true; mre.Set(); };

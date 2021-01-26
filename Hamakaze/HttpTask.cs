@@ -1,11 +1,11 @@
-﻿using SharpChat.Http.Headers;
+﻿using Hamakaze.Headers;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
 
-namespace SharpChat.Http {
+namespace Hamakaze {
     public class HttpTask {
         public TaskState State { get; private set; } = TaskState.Initial;
 

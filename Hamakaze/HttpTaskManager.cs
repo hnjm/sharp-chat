@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading;
 
-namespace SharpChat.Http {
+namespace Hamakaze {
     public class HttpTaskManager : IDisposable {
         private Semaphore Lock { get; }
 

@@ -1,13 +1,14 @@
-﻿using SharpChat.Http.Headers;
+﻿using Hamakaze.Headers;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Net.Sockets;
 using System.Text;
 
-namespace SharpChat.Http {
+namespace Hamakaze {
     public class HttpResponseMessage : HttpMessage {
         public override string ProtocolVersion { get; }
         public int StatusCode { get; }
@@ -99,25 +100,23 @@ namespace SharpChat.Http {
         public static HttpResponseMessage ReadFrom(Stream stream, Action<long, long> onProgress = null) {
             // ignore this function, it doesn't exist
             string readLine() {
-                const byte cr = 13, lf = 10;
+                const ushort crlf = 0x0D0A;
                 StringBuilder sb = new StringBuilder();
-                int byt;
-                bool gotCR = false;
+                int byt; ushort lastTwo = 0;
 
                 for(; ; ) {
                     byt = stream.ReadByte();
                     if(byt == -1 && sb.Length == 0)
                         return null;
 
-                    if(gotCR) {
-                        if(byt == lf)
-                            break;
-                        sb.Append('\r');
-                    }
+                    sb.Append((char)byt);
 
-                    gotCR = byt == cr;
-                    if(!gotCR)
-                        sb.Append((char)byt);
+                    lastTwo <<= 8;
+                    lastTwo |= (byte)byt;
+                    if(lastTwo == crlf) {
+                        sb.Length -= 2;
+                        break;
+                    }
                 }
 
                 return sb.ToString();
@@ -157,18 +156,12 @@ namespace SharpChat.Http {
 
                 HttpHeader header = HttpHeader.Create(hName, hValue);
 
-                Console.ForegroundColor = ConsoleColor.Green;
                 if(header is HttpContentLengthHeader hclh)
                     contentLength = (long)hclh.Value;
                 else if(header is HttpTransferEncodingHeader hteh)
                     transferEncodings = new Stack<string>(hteh.Encodings);
                 else if(header is HttpContentEncodingHeader hceh)
                     contentEncodings = new Stack<string>(hceh.Encodings);
-                else if(header is HttpCustomHeader)
-                    Console.ForegroundColor = ConsoleColor.Red;
-
-                Logger.Debug(header);
-                Console.ResetColor();
 
                 headers.Add(header);
             }
@@ -190,6 +183,9 @@ namespace SharpChat.Http {
                 while((read = stream.Read(buffer, 0, bufferSize)) > 0) {
                     body.Write(buffer, 0, read);
 
+                    totalRead += read;
+                    onProgress?.Invoke(totalRead, contentLength);
+
                     if(length >= 0) {
                         remaining -= read;
                         if(remaining < 1)
@@ -197,9 +193,6 @@ namespace SharpChat.Http {
                         if(bufferSize > remaining)
                             bufferSize = (int)remaining;
                     }
-
-                    totalRead += read;
-                    onProgress?.Invoke(totalRead, contentLength);
                 }
             }
 
@@ -217,7 +210,9 @@ namespace SharpChat.Http {
                     if(chunkLength == 0) // final chunk
                         break;
                     readBuffer(chunkLength);
+                    Console.WriteLine($@">>>>>>>>>>>> {chunkLength} <<<<<<<<<<<<<<<");
                     readLine();
+                    Console.WriteLine($@">>>>>>>>>>>> {chunkLength} <<<<<<<<<<<<<<<");
                 }
             } else if(contentLength != 0) {
                 body = new MemoryStream();

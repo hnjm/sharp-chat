@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace SharpChat.Http.Headers {
+namespace Hamakaze.Headers {
     public class HttpTransferEncodingHeader : HttpHeader {
         public const string NAME = @"Transfer-Encoding";
 

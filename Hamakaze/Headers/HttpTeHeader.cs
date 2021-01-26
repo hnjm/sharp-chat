@@ -2,24 +2,24 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace SharpChat.Http.Headers {
-    public class HttpAcceptEncodingHeader : HttpHeader {
-        public const string NAME = @"Accept-Encoding";
+namespace Hamakaze.Headers {
+    public class HttpTeHeader : HttpHeader {
+        public const string NAME = @"TE";
 
         public override string Name => NAME;
         public override object Value => string.Join(@", ", Encodings);
 
         public HttpEncoding[] Encodings { get; }
 
-        public HttpAcceptEncodingHeader(string encodings) : this(
+        public HttpTeHeader(string encodings) : this(
             (encodings ?? throw new ArgumentNullException(nameof(encodings))).Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
         ) { }
 
-        public HttpAcceptEncodingHeader(string[] encodings) : this(
+        public HttpTeHeader(string[] encodings) : this(
             (encodings ?? throw new ArgumentNullException(nameof(encodings))).Select(HttpEncoding.Parse)
-        ) {}
+        ) { }
 
-        public HttpAcceptEncodingHeader(IEnumerable<HttpEncoding> encodings) {
+        public HttpTeHeader(IEnumerable<HttpEncoding> encodings) {
             Encodings = (encodings ?? throw new ArgumentNullException(nameof(encodings))).ToArray();
         }
     }

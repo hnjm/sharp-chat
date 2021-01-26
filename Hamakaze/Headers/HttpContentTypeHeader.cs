@@ -1,10 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace SharpChat.Http.Headers {
+namespace Hamakaze.Headers {
     public class HttpContentTypeHeader : HttpHeader {
         public const string NAME = @"Content-Type";
 

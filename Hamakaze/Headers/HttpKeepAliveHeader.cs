@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace SharpChat.Http.Headers {
+namespace Hamakaze.Headers {
     public class HttpKeepAliveHeader : HttpHeader {
         public const string NAME = @"Keep-Alive";
 

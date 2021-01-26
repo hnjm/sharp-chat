@@ -1,4 +1,5 @@
-﻿using SharpChat.Bans;
+﻿using Hamakaze;
+using SharpChat.Bans;
 using SharpChat.Configuration;
 using SharpChat.DataProvider;
 using SharpChat.DataProvider.Misuzu;
@@ -8,7 +9,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Net.Http;
 using System.Reflection;
 using static System.Console;
 
@@ -31,10 +31,9 @@ namespace MisuzuDataProviderTest {
             WriteLine($@"Enter token found on {config.ReadValue(@"dp:misuzu:endpoint")}/login:");
             string[] token = ReadLine().Split(new[] { '_' }, 2);
 
-            HttpClient httpClient = new HttpClient();
-            httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(@"SharpChat");
+            HttpClient.Instance.DefaultUserAgent = @"SharpChat/1.0";
 
-            IDataProvider dataProvider = new MisuzuDataProvider(config.ScopeTo(@"dp:misuzu"), httpClient);
+            IDataProvider dataProvider = new MisuzuDataProvider(config.ScopeTo(@"dp:misuzu"), HttpClient.Instance);
 
             long userId = long.Parse(token[0]);
             IPAddress remoteAddr = IPAddress.Parse(@"1.2.4.8");

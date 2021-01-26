@@ -1,4 +1,5 @@
-﻿using SharpChat.Bans;
+﻿using Hamakaze;
+using SharpChat.Bans;
 using SharpChat.Configuration;
 using SharpChat.DataProvider.Misuzu.Bans;
 using SharpChat.DataProvider.Misuzu.Users.Auth;
@@ -6,7 +7,6 @@ using SharpChat.DataProvider.Misuzu.Users.Bump;
 using SharpChat.Users.Auth;
 using SharpChat.Users.Bump;
 using System;
-using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
 

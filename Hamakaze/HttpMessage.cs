@@ -1,10 +1,10 @@
-﻿using SharpChat.Http.Headers;
+﻿using Hamakaze.Headers;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace SharpChat.Http {
+namespace Hamakaze {
     public abstract class HttpMessage : IDisposable {
         public abstract string ProtocolVersion { get; }
         public abstract IEnumerable<HttpHeader> Headers { get; }

@@ -1,11 +1,11 @@
-﻿using SharpChat.Http.Headers;
+﻿using Hamakaze.Headers;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 
-namespace SharpChat.Http {
+namespace Hamakaze {
     public class HttpRequestMessage : HttpMessage {
         public const string GET = @"GET";
         public const string PUT = @"PUT";
@@ -147,25 +147,22 @@ namespace SharpChat.Http {
             }
         }
 
+        public void SetBody(byte[] buffer) {
+            SetBody(new MemoryStream(buffer));
+            OwnsBodyStream = true;
+        }
+
         public void WriteTo(Stream stream, Action<long, long> onProgress = null) {
             using(StreamWriter sw = new StreamWriter(stream, new ASCIIEncoding(), leaveOpen: true)) {
                 sw.NewLine = "\r\n";
                 sw.Write(Method);
-                Console.Write(Method);
                 sw.Write(' ');
-                Console.Write(' ');
                 sw.Write(RequestTarget);
-                Console.Write(RequestTarget);
                 sw.Write(@" HTTP/");
-                Console.Write(@" HTTP/");
                 sw.WriteLine(ProtocolVersion);
-                Console.WriteLine(ProtocolVersion);
-                foreach(HttpHeader header in Headers) {
+                foreach(HttpHeader header in Headers)
                     sw.WriteLine(header);
-                    Console.WriteLine(header);
-                }
                 sw.WriteLine();
-                Console.WriteLine();
                 sw.Flush();
             }
 

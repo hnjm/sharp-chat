@@ -1,8 +1,10 @@
-﻿using SharpChat.Users;
+﻿using Hamakaze;
+using SharpChat.Users;
 using SharpChat.Users.Auth;
 using System;
-using System.Net.Http;
+using System.IO;
 using System.Text.Json;
+using System.Threading;
 
 namespace SharpChat.DataProvider.Misuzu.Users.Auth {
     public class MisuzuUserAuthClient : IUserAuthClient {
@@ -34,19 +36,33 @@ namespace SharpChat.DataProvider.Misuzu.Users.Auth {
 #endif
             MisuzuUserAuthRequest mar = new MisuzuUserAuthRequest(request);
 
-            using HttpRequestMessage req = new HttpRequestMessage(HttpMethod.Post, DataProvider.GetURL(URL)) {
-                Content = new ByteArrayContent(JsonSerializer.SerializeToUtf8Bytes(mar)),
-                Headers = {
-                    { @"X-SharpChat-Signature", DataProvider.GetSignedHash(mar) },
-                },
-            };
-            using HttpResponseMessage response = HttpClient.SendAsync(req).Result;
+            // auth needs a bit of a structural rewrite to use callbacks instead of not
+            using ManualResetEvent mre = new ManualResetEvent(false);
 
-            MisuzuUserAuthResponse muar = JsonSerializer.Deserialize<MisuzuUserAuthResponse>(
-                response.Content.ReadAsByteArrayAsync().Result
+            using HttpRequestMessage req = new HttpRequestMessage(HttpRequestMessage.POST, DataProvider.GetURL(URL));
+            req.SetHeader(@"X-SharpChat-Signature", DataProvider.GetSignedHash(mar));
+            req.SetBody(JsonSerializer.SerializeToUtf8Bytes(mar));
+
+            MisuzuUserAuthResponse muar = null;
+
+            HttpClient.SendRequest(
+                req,
+                onComplete: (t, r) => {
+                    using MemoryStream ms = new MemoryStream();
+                    r.Body.CopyTo(ms);
+                    muar = JsonSerializer.Deserialize<MisuzuUserAuthResponse>(ms.ToArray());
+                    mre.Set();
+                },
+                onCancel: (t) => mre.Set(),
+                onError: (t, e) => {
+                    Logger.Write(@"An error occurred during authentication.");
+                    Logger.Debug(e);
+                }
             );
 
-            if(!muar.Success)
+            mre.WaitOne();
+
+            if(muar?.Success != true)
                 throw new UserAuthFailedException(muar.Reason);
 
             return muar;

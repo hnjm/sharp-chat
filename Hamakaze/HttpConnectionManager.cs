@@ -4,7 +4,7 @@ using System.Linq;
 using System.Net;
 using System.Threading;
 
-namespace SharpChat.Http {
+namespace Hamakaze {
     public class HttpConnectionManager : IDisposable {
         private List<HttpConnection> Connections { get; } = new List<HttpConnection>();
         private Mutex Lock { get; } = new Mutex();

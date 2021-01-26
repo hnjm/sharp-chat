@@ -2,7 +2,7 @@
 using System.Globalization;
 using System.Text;
 
-namespace SharpChat.Http {
+namespace Hamakaze {
     public readonly struct HttpEncoding : IComparable<HttpEncoding?>, IEquatable<HttpEncoding?> {
         public const string DEFLATE = @"deflate";
         public const string GZIP = @"gzip";

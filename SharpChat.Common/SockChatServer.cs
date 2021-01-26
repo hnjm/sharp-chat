@@ -1,4 +1,5 @@
-﻿using SharpChat.Channels;
+﻿using Hamakaze;
+using SharpChat.Channels;
 using SharpChat.Commands;
 using SharpChat.Configuration;
 using SharpChat.Database;
@@ -10,7 +11,6 @@ using SharpChat.WebSocket;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http;
 
 namespace SharpChat {
     public class SockChatServer : IDisposable {

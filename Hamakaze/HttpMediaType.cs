@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace SharpChat.Http {
+namespace Hamakaze {
     public readonly struct HttpMediaType : IComparable<HttpMediaType?>, IEquatable<HttpMediaType?> {
         public const string TYPE_APPLICATION = @"application";
         public const string TYPE_AUDIO = @"audio";

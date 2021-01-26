@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace SharpChat.Http.Headers {
+namespace Hamakaze.Headers {
     public class HttpCustomHeader : HttpHeader {
         public override string Name { get; }
         public override object Value { get; }

@@ -1,5 +1,4 @@
-﻿using SharpChat;
-using SharpChat.Http;
+﻿using Hamakaze;
 using System;
 using System.IO;
 using System.Text;
@@ -130,6 +129,7 @@ namespace HttpClientTest {
             );
 
             mre.WaitOne();
+            ResetColor();
         }
     }
 }

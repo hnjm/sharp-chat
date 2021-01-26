@@ -1,7 +1,11 @@
-﻿using SharpChat.Http.Headers;
+﻿using Hamakaze.Headers;
 using System;
 
-namespace SharpChat.Http {
+// TODO
+// Figure out disposal behaviour of HttpMessages
+// Niceties for reading the body would also be Nice
+
+namespace Hamakaze {
     public class HttpClient : IDisposable {
         public const string PRODUCT_STRING = @"HMKZ";
         public const string VERSION_MAJOR = @"1";

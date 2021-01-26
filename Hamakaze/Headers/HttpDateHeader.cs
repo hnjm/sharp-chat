@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Globalization;
 
-namespace SharpChat.Http.Headers {
+namespace Hamakaze.Headers {
     public class HttpDateHeader : HttpHeader {
         public const string NAME = @"Date";
 

@@ -6,7 +6,7 @@ using System.Net.Sockets;
 using System.Security.Authentication;
 using System.Threading;
 
-namespace SharpChat.Http {
+namespace Hamakaze {
     public class HttpConnection : IDisposable {
         public IPEndPoint EndPoint { get; }
         public Stream Stream { get; }

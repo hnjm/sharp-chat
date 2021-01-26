@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Globalization;
 
-namespace SharpChat.Http.Headers {
+namespace Hamakaze.Headers {
     public abstract class HttpHeader {
         public abstract string Name { get; }
         public abstract object Value { get; }

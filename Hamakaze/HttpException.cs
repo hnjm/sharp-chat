@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace SharpChat.Http {
+namespace Hamakaze {
     public class HttpException : Exception {
         public HttpException(string message) : base(message) { }
     }
