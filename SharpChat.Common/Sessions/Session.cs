@@ -1,23 +1,20 @@
-﻿using SharpChat.WebSocket;
+﻿using SharpChat.Users;
+using SharpChat.WebSocket;
 using System;
 using System.Collections.Generic;
 using System.Net;
 
-namespace SharpChat.Users {
-    public class ChatUserSession : IDisposable, IPacketTarget {
+namespace SharpChat.Sessions {
+    public class Session : IDisposable, IPacketTarget {
         public const int ID_LENGTH = 32;
-
-#if DEBUG
-        public static TimeSpan SessionTimeOut { get; } = TimeSpan.FromMinutes(1);
-#else
-        public static TimeSpan SessionTimeOut { get; } = TimeSpan.FromMinutes(5);
-#endif
 
         public IWebSocketConnection Connection { get; }
 
         public string Id { get; private set; }
-        public DateTimeOffset LastPing { get; set; } = DateTimeOffset.MinValue;
+        public DateTimeOffset LastPing { get; set; }
         public ChatUser User { get; set; }
+
+        public TimeSpan IdleTime => DateTimeOffset.Now - LastPing;
 
         public string TargetName => @"@log";
 
@@ -27,15 +24,10 @@ namespace SharpChat.Users {
         public IPAddress RemoteAddress
             => Connection.RemoteAddress;
 
-        public ChatUserSession(IWebSocketConnection ws) {
+        public Session(IWebSocketConnection ws) {
             Connection = ws;
-            Id = GenerateId();
-        }
-
-        private static string GenerateId() {
-            byte[] buffer = new byte[ID_LENGTH];
-            RNG.NextBytes(buffer);
-            return buffer.GetIdString();
+            Id = RNG.NextIdString(ID_LENGTH);
+            BumpPing();
         }
 
         public void Send(IServerPacket packet) {
@@ -51,29 +43,23 @@ namespace SharpChat.Users {
         }
 
         public void BumpPing()
-            => LastPing = DateTimeOffset.UtcNow;
-
-        public bool HasTimedOut
-            => DateTimeOffset.UtcNow - LastPing > SessionTimeOut;
-
-        public bool IsAlive
-            => !HasTimedOut && !IsDisposed;
+            => LastPing = DateTimeOffset.Now;
 
         private bool IsDisposed;
-
-        ~ChatUserSession()
+        ~Session()
             => DoDispose();
-
         public void Dispose() {
             DoDispose();
             GC.SuppressFinalize(this);
         }
-
         private void DoDispose() {
             if (IsDisposed)
                 return;
             IsDisposed = true;
+            if(HasUser)
+                User.RemoveSession(this);
             Connection.Dispose();
+            LastPing = DateTimeOffset.MinValue;
         }
     }
 }

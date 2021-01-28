@@ -36,12 +36,12 @@ namespace SharpChat.Commands {
         }
 
         private static void WhoChannel(IChatCommandContext ctx, string channelName) {
-            ChatChannel whoChan = ctx.Chat.Channels.Get(channelName);
+            Channel whoChan = ctx.Chat.Channels.Get(channelName);
 
             if(whoChan == null)
                 throw new CommandException(LCR.CHANNEL_NOT_FOUND, channelName);
 
-            if(whoChan.MinimumRank > ctx.User.Rank || (whoChan.HasPassword && !ctx.User.Can(ChatUserPermissions.JoinAnyChannel)))
+            if(whoChan.MinimumRank > ctx.User.Rank || (whoChan.HasPassword && !ctx.User.Can(UserPermissions.JoinAnyChannel)))
                 throw new CommandException(LCR.USERS_LISTING_ERROR, channelName);
 
             ctx.User.Send(new LegacyCommandResponse(LCR.USERS_LISTING_CHANNEL, false, whoChan.Name, MakeUserList(ctx.User, whoChan.GetUsers())));

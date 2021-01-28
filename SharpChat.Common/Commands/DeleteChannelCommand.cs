@@ -16,11 +16,11 @@ namespace SharpChat.Commands {
             if(string.IsNullOrWhiteSpace(channelName))
                 throw new CommandException(LCR.COMMAND_FORMAT_ERROR);
 
-            ChatChannel channel = ctx.Chat.Channels.Get(channelName);
+            Channel channel = ctx.Chat.Channels.Get(channelName);
             if(channel == null)
                 throw new CommandException(LCR.CHANNEL_NOT_FOUND, channelName);
 
-            if(!ctx.User.Can(ChatUserPermissions.DeleteChannel) && channel.Owner != ctx.User)
+            if(!ctx.User.Can(UserPermissions.DeleteChannel) && channel.Owner != ctx.User)
                 throw new CommandException(LCR.CHANNEL_DELETE_FAILED, channel.Name);
 
             ctx.Chat.Channels.Remove(channel);

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Security.Cryptography;
+using System.Text;
 
 namespace SharpChat {
     public static class RNG {
@@ -25,6 +26,16 @@ namespace SharpChat {
         public static void NextBytes(byte[] buffer) {
             lock(Lock)
                 SecureRandom.GetBytes(buffer);
+        }
+
+        public const string ID_CHARS = @"abcdefghijklmnopqrstuvwxyz0123456789-_ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+        public static string NextIdString(int length, string chars = ID_CHARS) {
+            StringBuilder sb = new StringBuilder();
+            byte[] buffer = new byte[length];
+            foreach(byte b in buffer)
+                sb.Append(chars[b % chars.Length]);
+            return sb.ToString();
         }
     }
 }

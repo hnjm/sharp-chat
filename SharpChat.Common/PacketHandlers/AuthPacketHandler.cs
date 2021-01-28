@@ -1,5 +1,5 @@
-﻿using SharpChat.Configuration;
-using SharpChat.Packets;
+﻿using SharpChat.Packets;
+using SharpChat.Sessions;
 using SharpChat.Users;
 using SharpChat.Users.Auth;
 using System;
@@ -13,10 +13,10 @@ namespace SharpChat.PacketHandlers {
 
         public SockChatClientPacket PacketId => SockChatClientPacket.Authenticate;
 
-        private SockChatServer Server { get; }
+        private SessionManager Sessions { get; }
 
-        public AuthPacketHandler(SockChatServer server) {
-            Server = server ?? throw new ArgumentNullException(nameof(server));
+        public AuthPacketHandler(SessionManager sessions) {
+            Sessions = sessions ?? throw new ArgumentNullException(nameof(sessions));
         }
 
         public void HandlePacket(IPacketHandlerContext ctx) {
@@ -25,7 +25,7 @@ namespace SharpChat.PacketHandlers {
 
             DateTimeOffset banDuration = ctx.Chat.Bans.Check(ctx.Session.RemoteAddress);
 
-            if(banDuration > DateTimeOffset.UtcNow) {
+            if(banDuration > DateTimeOffset.Now) {
                 ctx.Session.Send(new AuthFailPacket(AuthFailReason.Banned, banDuration));
                 ctx.Session.Dispose();
                 return;
@@ -52,14 +52,14 @@ namespace SharpChat.PacketHandlers {
 
                     banDuration = ctx.Chat.Bans.Check(user);
 
-                    if(banDuration > DateTimeOffset.UtcNow) {
+                    if(banDuration > DateTimeOffset.Now) {
                         ctx.Session.Send(new AuthFailPacket(AuthFailReason.Banned, banDuration));
                         ctx.Session.Dispose();
                         return;
                     }
 
                     // Enforce a maximum amount of connections per user
-                    if(user.SessionCount >= Server.MaxConnections) {
+                    if(Sessions.GetAvailableSessionCount(user) < 1) {
                         ctx.Session.Send(new AuthFailPacket(AuthFailReason.MaxSessions));
                         ctx.Session.Dispose();
                         return;

@@ -13,7 +13,7 @@ namespace SharpChat.Events {
 
     public interface IChatEvent {
         DateTimeOffset DateTime { get; set; }
-        BasicUser Sender { get; set; }
+        User Sender { get; set; }
         IPacketTarget Target { get; set; }
         string TargetName { get; set; }
         ChatEventFlags Flags { get; set; }

@@ -8,7 +8,7 @@ namespace SharpChat.DataProvider.Null {
         public string Username { get; }
         public int Rank { get; }
         public ChatColour Colour { get; }
-        public ChatUserPermissions Permissions { get; }
+        public UserPermissions Permissions { get; }
         public DateTimeOffset SilencedUntil => DateTimeOffset.MinValue;
 
         public NullUserAuthResponse(UserAuthRequest uar) {
@@ -17,7 +17,7 @@ namespace SharpChat.DataProvider.Null {
             Rank = (int)(uar.UserId % 10);
             Random rng = new Random((int)uar.UserId);
             Colour = new ChatColour(rng.Next());
-            Permissions = (ChatUserPermissions)rng.Next();
+            Permissions = (UserPermissions)rng.Next();
         }
     }
 }

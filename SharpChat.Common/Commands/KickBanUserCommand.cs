@@ -14,7 +14,7 @@ namespace SharpChat.Commands {
             string commandName = ctx.Args.First();
             bool isBan = commandName == @"ban";
 
-            if(!ctx.User.Can(isBan ? ChatUserPermissions.BanUser : ChatUserPermissions.KickUser))
+            if(!ctx.User.Can(isBan ? UserPermissions.BanUser : UserPermissions.KickUser))
                 throw new CommandException(LCR.COMMAND_NOT_ALLOWED, $@"/{commandName}");
 
             string userName = ctx.Args.ElementAtOrDefault(1);
@@ -22,7 +22,7 @@ namespace SharpChat.Commands {
             if(userName == null || (user = ctx.Chat.Users.Get(userName)) == null)
                 throw new CommandException(LCR.USER_NOT_FOUND, userName ?? @"User");
 
-            if(user == ctx.User || user.Rank >= ctx.User.Rank || ctx.Chat.Bans.Check(user) > DateTimeOffset.UtcNow)
+            if(user == ctx.User || user.Rank >= ctx.User.Rank || ctx.Chat.Bans.Check(user) > DateTimeOffset.Now)
                 throw new CommandException(LCR.KICK_NOT_ALLOWED, user.Username);
 
             string durationArg = ctx.Args.ElementAtOrDefault(2);
@@ -31,7 +31,7 @@ namespace SharpChat.Commands {
             if(!string.IsNullOrEmpty(durationArg)) {
                 if(!double.TryParse(durationArg, out double durationRaw))
                     throw new CommandException(LCR.COMMAND_FORMAT_ERROR);
-                duration = DateTimeOffset.UtcNow.AddSeconds(durationRaw);
+                duration = DateTimeOffset.Now.AddSeconds(durationRaw);
             }
 
             ctx.Chat.BanUser(user, duration, isBan);

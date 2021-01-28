@@ -11,7 +11,7 @@ namespace SharpChat.Commands {
             => name == @"silence";
 
         public IChatMessageEvent DispatchCommand(IChatCommandContext ctx) {
-            if(!ctx.User.Can(ChatUserPermissions.SilenceUser))
+            if(!ctx.User.Can(UserPermissions.SilenceUser))
                 throw new CommandException(LCR.COMMAND_NOT_ALLOWED, $@"/{ctx.Args.First()}");
 
             string userName = ctx.Args.ElementAtOrDefault(1);
@@ -33,7 +33,7 @@ namespace SharpChat.Commands {
             if(string.IsNullOrEmpty(durationArg)) {
                 if(!double.TryParse(durationArg, out double durationRaw))
                     throw new CommandException(LCR.COMMAND_FORMAT_ERROR);
-                duration = DateTimeOffset.UtcNow.AddSeconds(durationRaw);
+                duration = DateTimeOffset.Now.AddSeconds(durationRaw);
             }
 
             user.SilencedUntil = duration;

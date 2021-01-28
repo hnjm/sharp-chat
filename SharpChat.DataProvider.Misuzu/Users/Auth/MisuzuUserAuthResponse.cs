@@ -30,6 +30,6 @@ namespace SharpChat.DataProvider.Misuzu.Users.Auth {
         public DateTimeOffset SilencedUntil { get; set; }
 
         [JsonPropertyName(@"perms")]
-        public ChatUserPermissions Permissions { get; set; }
+        public UserPermissions Permissions { get; set; }
     }
 }

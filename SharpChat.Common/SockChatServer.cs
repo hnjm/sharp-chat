@@ -1,11 +1,11 @@
 ﻿using Hamakaze;
-using SharpChat.Channels;
 using SharpChat.Commands;
 using SharpChat.Configuration;
 using SharpChat.Database;
 using SharpChat.DataProvider;
 using SharpChat.PacketHandlers;
 using SharpChat.Packets;
+using SharpChat.Sessions;
 using SharpChat.Users;
 using SharpChat.WebSocket;
 using System;
@@ -14,7 +14,12 @@ using System.Linq;
 
 namespace SharpChat {
     public class SockChatServer : IDisposable {
-        public const int EXT_VERSION = 2;
+        public const int EXT_VERSION =
+#if DEBUG
+            2;
+#else
+            1;
+#endif
 
         public const int DEFAULT_MAX_CONNECTIONS = 5;
         public const int DEFAULT_FLOOD_BAN_DURATION = 30;
@@ -36,17 +41,8 @@ namespace SharpChat {
         private IReadOnlyCollection<IPacketHandler> PacketHandlers { get; }
         private CachedValue<int> FloodBanDuration { get; }
         private CachedValue<int> FloodRankException { get; }
-        private CachedValue<int> MaxConnectionsValue { get; }
 
-        public int MaxConnections => MaxConnectionsValue;
-
-        public List<ChatUserSession> Sessions { get; } = new List<ChatUserSession>();
-        private object SessionsLock { get; } = new object();
-
-        public ChatUserSession GetSession(IWebSocketConnection conn) {
-            lock(SessionsLock)
-                return Sessions.FirstOrDefault(x => x.Connection == conn);
-        }
+        public bool AcceptingConnections { get; private set; }
 
         public SockChatServer(IConfig config, IWebSocketServer server, HttpClient httpClient, IDataProvider dataProvider, IDatabaseBackend databaseBackend) {
             Logger.Write("Starting Sock Chat server...");
@@ -54,15 +50,14 @@ namespace SharpChat {
             Config = config ?? throw new ArgumentNullException(nameof(config));
             Database = new DatabaseWrapper(databaseBackend ?? throw new ArgumentNullException(nameof(databaseBackend)));
             HttpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
-            Context = new ChatContext(this, Config.ScopeTo(@"chat"), Database, dataProvider);
+            Context = new ChatContext(Config.ScopeTo(@"chat"), Database, dataProvider);
 
             FloodBanDuration = Config.ReadCached(@"chat:flood:banDuration", DEFAULT_FLOOD_BAN_DURATION);
             FloodRankException = Config.ReadCached(@"chat:flood:exceptRank", 0, TimeSpan.FromSeconds(10));
-            MaxConnectionsValue = config.ReadCached(@"chat:users:maxConnections", DEFAULT_MAX_CONNECTIONS);
 
-            PacketHandlers = new IPacketHandler[] {
+            List<IPacketHandler> handlers = new List<IPacketHandler> {
                 new PingPacketHandler(),
-                new AuthPacketHandler(this),
+                new AuthPacketHandler(Context.Sessions),
                 new MessageSendPacketHandler(Context, new IChatCommand[] {
                     new JoinCommand(),
                     new AFKCommand(),
@@ -86,10 +81,12 @@ namespace SharpChat {
                     new SilenceUserCommand(),
                     new UnsilenceUserCommand(),
                 }),
-#if DEBUG
-                new TypingPacketHandler(),
-#endif
             };
+
+            if(EXT_VERSION >= 2)
+                handlers.Add(new TypingPacketHandler());
+
+            PacketHandlers = handlers.ToArray();
 
             Server = server ?? throw new ArgumentNullException(nameof(server));
             Server.OnOpen += OnOpen;
@@ -97,44 +94,47 @@ namespace SharpChat {
             Server.OnError += OnError;
             Server.OnMessage += OnMessage;
             Server.Start();
+
+            AcceptingConnections = true;
         }
 
         private void OnOpen(IWebSocketConnection conn) {
-            lock(SessionsLock) {
-                if(!Sessions.Any(x => x.Connection == conn))
-                    Sessions.Add(new ChatUserSession(conn));
+            if(!AcceptingConnections) {
+                conn.Dispose();
+                return;
             }
+
+            // Recreation of old behaviour, should be altered for resumable sessions (as in not be here)
+            Context.Sessions.FindMany(s => s.Connection == conn, sessions => {
+                if(!sessions.Any())
+                    Context.Sessions.Add(new Session(conn));
+            });
 
             Context.Update();
         }
 
         private void OnClose(IWebSocketConnection conn) {
-            ChatUserSession sess = GetSession(conn);
+            Session sess = Context.Sessions.ByConnection(conn);
 
-            // Remove connection from user
-            if(sess?.User != null) {
-                // RemoveConnection sets conn.User to null so we must grab a local copy.
-                ChatUser user = sess.User;
+            if(sess != null) {
+                // Remove connection from user
+                if(sess.HasUser) {
+                    // RemoveConnection sets conn.User to null so we must grab a local copy.
+                    ChatUser user = sess.User;
 
-                user.RemoveSession(sess);
+                    user.RemoveSession(sess);
 
-                if(!user.HasSessions)
-                    Context.UserLeave(null, user);
+                    if(Context.Sessions.GetSessionCount(user) < 1)
+                        Context.UserLeave(null, user);
+                }
+
+                Context.Update();
             }
-
-            // Update context
-            Context.Update();
-
-            // Remove connection from server
-            lock(SessionsLock)
-                Sessions.Remove(sess);
-
-            sess?.Dispose();
         }
 
         private void OnError(IWebSocketConnection conn, Exception ex) {
-            ChatUserSession sess = GetSession(conn);
-            string sessId = sess?.Id ?? new string('0', ChatUserSession.ID_LENGTH);
+            Session sess = Context.Sessions.ByConnection(conn);
+            string sessId = sess?.Id ?? new string('0', Session.ID_LENGTH);
             Logger.Write($@"[{sessId} {conn.RemoteAddress}] {ex}");
             Context.Update();
         }
@@ -142,8 +142,7 @@ namespace SharpChat {
         private void OnMessage(IWebSocketConnection conn, string msg) {
             Context.Update();
 
-            ChatUserSession sess = GetSession(conn);
-
+            Session sess = Context.Sessions.ByConnection(conn);
             if(sess == null) {
                 conn.Dispose();
                 return;
@@ -154,7 +153,7 @@ namespace SharpChat {
                 sess.User.RateLimiter.AddTimePoint();
 
                 if(sess.User.RateLimiter.State == ChatRateLimitState.Kick) {
-                    Context.BanUser(sess.User, DateTimeOffset.UtcNow.AddSeconds(FloodBanDuration), false, UserDisconnectReason.Flood);
+                    Context.BanUser(sess.User, DateTimeOffset.Now.AddSeconds(FloodBanDuration), false, UserDisconnectReason.Flood);
                     return;
                 } else if(sess.User.RateLimiter.State == ChatRateLimitState.Warning)
                     sess.User.Send(new FloodWarningPacket()); // make it so this thing only sends once
@@ -171,28 +170,24 @@ namespace SharpChat {
         }
 
         private bool IsDisposed;
-
         ~SockChatServer()
             => DoDispose();
-
         public void Dispose() { 
             DoDispose();
             GC.SuppressFinalize(this);
         }
-
         private void DoDispose() {
             if(IsDisposed)
                 return;
             IsDisposed = true;
 
-            Sessions?.Clear();
-            Server?.Dispose();
-            Context?.Dispose();
-            HttpClient?.Dispose();
-            Database?.Dispose();
+            AcceptingConnections = false;
+
+            Context.Dispose();
+            Server.Dispose();
+
             FloodBanDuration.Dispose();
             FloodRankException.Dispose();
-            MaxConnectionsValue.Dispose();
         }
     }
 }

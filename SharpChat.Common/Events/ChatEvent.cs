@@ -8,7 +8,7 @@ namespace SharpChat.Events {
         public DateTimeOffset DateTime { get; set; }
 
         [JsonIgnore]
-        public BasicUser Sender { get; set; }
+        public User Sender { get; set; }
 
         [JsonIgnore]
         public IPacketTarget Target { get; set; }
@@ -29,13 +29,13 @@ namespace SharpChat.Events {
             if(SequenceIdCounter > 200)
                 SequenceIdCounter = 0;
             long id = 0;
-            id |= (DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - SEQ_ID_EPOCH) << 8;
+            id |= (DateTimeOffset.Now.ToUnixTimeMilliseconds() - SEQ_ID_EPOCH) << 8;
             id |= (ushort)(++SequenceIdCounter);
             return id;
         }
 
         public ChatEvent() { }
-        public ChatEvent(DateTimeOffset dateTime, BasicUser user, IPacketTarget target, ChatEventFlags flags) {
+        public ChatEvent(DateTimeOffset dateTime, User user, IPacketTarget target, ChatEventFlags flags) {
             SequenceId = GenerateSequenceId();
             DateTime = dateTime;
             Sender = user;

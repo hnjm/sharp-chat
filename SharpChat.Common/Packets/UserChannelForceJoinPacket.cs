@@ -5,9 +5,9 @@ using System.Text;
 
 namespace SharpChat.Packets {
     public class UserChannelForceJoinPacket : ServerPacket {
-        public ChatChannel Channel { get; private set; }
+        public Channel Channel { get; private set; }
 
-        public UserChannelForceJoinPacket(ChatChannel channel) {
+        public UserChannelForceJoinPacket(Channel channel) {
             Channel = channel ?? throw new ArgumentNullException(nameof(channel));
         }
 

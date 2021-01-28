@@ -13,14 +13,14 @@ namespace SharpChat.Commands {
             => name == @"pardonip" || name == @"unbanip";
 
         public IChatMessageEvent DispatchCommand(IChatCommandContext ctx) {
-            if(!ctx.User.Can(ChatUserPermissions.BanUser | ChatUserPermissions.KickUser))
+            if(!ctx.User.Can(UserPermissions.BanUser | UserPermissions.KickUser))
                 throw new CommandException(LCR.COMMAND_NOT_ALLOWED, $@"/{ctx.Args.First()}");
 
             string ipAddress = ctx.Args.ElementAtOrDefault(1);
             BannedIPAddress banRecord = null;
             if(!IPAddress.TryParse(ipAddress, out IPAddress unbanIP)
                 || (banRecord = ctx.Chat.Bans.GetIPAddress(unbanIP)) == null
-                || banRecord.Expires <= DateTimeOffset.UtcNow)
+                || banRecord.Expires <= DateTimeOffset.Now)
                 throw new CommandException(LCR.USER_NOT_BANNED, banRecord?.Address.ToString() ?? ipAddress ?? @"::");
 
             ctx.Chat.Bans.Remove(banRecord.Address);

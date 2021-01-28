@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 
 namespace SharpChat.Channels {
-    public class ChatChannel : IPacketTarget {
+    public class Channel : IPacketTarget {
         public string Name { get; set; }
         public string Password { get; set; } = string.Empty;
         public bool IsTemporary { get; set; } = false;
@@ -14,7 +14,7 @@ namespace SharpChat.Channels {
         public ChatUser Owner { get; set; } = null;
 
         private List<ChatUser> Users { get; } = new List<ChatUser>();
-        private List<ChatChannelTyping> Typing { get; } = new List<ChatChannelTyping>();
+        private List<ChannelTyping> Typing { get; } = new List<ChannelTyping>();
 
         public bool HasPassword
             => !string.IsNullOrWhiteSpace(Password);
@@ -24,10 +24,10 @@ namespace SharpChat.Channels {
 
         public string TargetName => Name;
 
-        public ChatChannel() {
+        public Channel() {
         }
 
-        public ChatChannel(string name) {
+        public Channel(string name) {
             Name = name;
         }
 
@@ -86,10 +86,10 @@ namespace SharpChat.Channels {
                 return false;
             return !IsTyping(user);
         }
-        public ChatChannelTyping RegisterTyping(ChatUser user) {
+        public ChannelTyping RegisterTyping(ChatUser user) {
             if(user == null || !HasUser(user))
                 return null;
-            ChatChannelTyping typing = new ChatChannelTyping(user);
+            ChannelTyping typing = new ChannelTyping(user);
             lock(Typing) {
                 Typing.RemoveAll(x => x.HasExpired);
                 Typing.Add(typing);

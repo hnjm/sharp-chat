@@ -2,7 +2,7 @@
 
 namespace SharpChat.Users {
     [Flags]
-    public enum ChatUserPermissions : int {
+    public enum UserPermissions : int {
         KickUser            = 0x00000001,
         BanUser             = 0x00000002,
         SilenceUser         = 0x00000004,

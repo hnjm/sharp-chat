@@ -5,10 +5,10 @@ using System.Text;
 
 namespace SharpChat.Packets {
     public class TypingPacket : ServerPacket {
-        public ChatChannel Channel { get; }
-        public ChatChannelTyping TypingInfo { get; }
+        public Channel Channel { get; }
+        public ChannelTyping TypingInfo { get; }
 
-        public TypingPacket(ChatChannel channel, ChatChannelTyping typingInfo) {
+        public TypingPacket(Channel channel, ChannelTyping typingInfo) {
             Channel = channel;
             TypingInfo = typingInfo ?? throw new ArgumentNullException(nameof(typingInfo));
         }

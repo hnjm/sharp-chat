@@ -11,8 +11,8 @@ namespace SharpChat.Events {
             => type.ToString() + '\f' + id + '\f' + string.Join('\f', parts);
 
         public ChatMessageEvent() : base() {}
-        public ChatMessageEvent(BasicUser sender, IPacketTarget target, string text, ChatEventFlags flags = ChatEventFlags.None, DateTimeOffset? dateTime = null)
-            : base(dateTime ?? DateTimeOffset.UtcNow, sender, target, flags) {
+        public ChatMessageEvent(User sender, IPacketTarget target, string text, ChatEventFlags flags = ChatEventFlags.None, DateTimeOffset? dateTime = null)
+            : base(dateTime ?? DateTimeOffset.Now, sender, target, flags) {
             Text = text ?? throw new ArgumentNullException(nameof(text));
         }
     }

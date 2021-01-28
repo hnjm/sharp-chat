@@ -10,7 +10,7 @@ namespace SharpChat.Commands {
             => name == @"bans" || name == @"banned";
 
         public IChatMessageEvent DispatchCommand(IChatCommandContext ctx) {
-            if(!ctx.User.Can(ChatUserPermissions.BanUser | ChatUserPermissions.KickUser))
+            if(!ctx.User.Can(UserPermissions.BanUser | UserPermissions.KickUser))
                 throw new CommandException(LCR.COMMAND_NOT_ALLOWED, $@"/{ctx.Args.First()}");
             ctx.User.Send(new BanListPacket(ctx.Chat.Bans.All()));
             return null;

@@ -5,9 +5,9 @@ using System.Text;
 
 namespace SharpChat.Packets {
     public class ChannelDeletePacket : ServerPacket {
-        public ChatChannel Channel { get; private set; }
+        public Channel Channel { get; private set; }
 
-        public ChannelDeletePacket(ChatChannel channel) {
+        public ChannelDeletePacket(Channel channel) {
             Channel = channel ?? throw new ArgumentNullException(nameof(channel));
         }
 

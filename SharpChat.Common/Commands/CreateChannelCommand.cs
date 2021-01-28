@@ -11,7 +11,7 @@ namespace SharpChat.Commands {
             => name == @"create";
 
         public IChatMessageEvent DispatchCommand(IChatCommandContext ctx) {
-            if(!ctx.User.Can(ChatUserPermissions.CreateChannel))
+            if(!ctx.User.Can(UserPermissions.CreateChannel))
                 throw new CommandException(LCR.COMMAND_NOT_ALLOWED, @"/create");
 
             bool hasRank;
@@ -26,9 +26,9 @@ namespace SharpChat.Commands {
                 throw new CommandException(LCR.INSUFFICIENT_RANK);
 
             string createChanName = string.Join('_', ctx.Args.Skip(hasRank ? 2 : 1));
-            ChatChannel createChan = new ChatChannel {
+            Channel createChan = new Channel {
                 Name = createChanName,
-                IsTemporary = !ctx.User.Can(ChatUserPermissions.SetChannelPermanent),
+                IsTemporary = !ctx.User.Can(UserPermissions.SetChannelPermanent),
                 MinimumRank = rank,
                 Owner = ctx.User,
             };

@@ -33,7 +33,7 @@ namespace SharpChat {
 
         public void AddTimePoint(DateTimeOffset? dto = null) {
             if (!dto.HasValue)
-                dto = DateTimeOffset.UtcNow;
+                dto = DateTimeOffset.Now;
 
             lock (TimePoints) {
                 if (TimePoints.Count >= FLOOD_PROTECTION_AMOUNT)

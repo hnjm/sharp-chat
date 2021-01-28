@@ -6,6 +6,7 @@ using SharpChat.DataProvider;
 using SharpChat.Events;
 using SharpChat.Events.Storage;
 using SharpChat.Packets;
+using SharpChat.Sessions;
 using SharpChat.Users;
 using System;
 using System.Collections.Generic;
@@ -16,10 +17,11 @@ using System.Threading;
 
 namespace SharpChat {
     public class ChatContext : IDisposable, IPacketTarget {
-        public SockChatServer Server { get; }
         public BanManager Bans { get; }
         public ChannelManager Channels { get; }
         public UserManager Users { get; }
+        public SessionManager Sessions { get; }
+
         public IChatEventStorage Events { get; }
         public IDataProvider DataProvider { get; }
         public IConfig Config { get; }
@@ -33,13 +35,13 @@ namespace SharpChat {
         private CachedValue<int> MessageTextMaxLengthValue { get; }
         public int MessageTextMaxLength => MessageTextMaxLengthValue;
 
-        public ChatContext(SockChatServer server, IConfig config, DatabaseWrapper database, IDataProvider dataProvider) {
-            Server = server;
+        public ChatContext(IConfig config, DatabaseWrapper database, IDataProvider dataProvider) {
             Config = config ?? throw new ArgumentNullException(nameof(config));
             DataProvider = dataProvider ?? throw new ArgumentNullException(nameof(dataProvider));
             Bans = new BanManager(this);
             Users = new UserManager(this);
             Channels = new ChannelManager(this, config);
+            Sessions = new SessionManager(config.ScopeTo(@"sessions"));
             Events = database.IsNullBackend
                 ? new MemoryChatEventStorage()
                 : new ADOChatEventStorage(database);
@@ -58,11 +60,12 @@ namespace SharpChat {
 
         public void Update() {
             Bans.RemoveExpired();
-            CheckPings();
+            PruneSessionlessUsers();
+            Sessions.DisposeTimedOut();
         }
 
         public void BanUser(ChatUser user, DateTimeOffset? until = null, bool banIPs = false, UserDisconnectReason reason = UserDisconnectReason.Kicked) {
-            if (until.HasValue && until.Value <= DateTimeOffset.UtcNow)
+            if (until.HasValue && until.Value <= DateTimeOffset.Now)
                 until = null;
 
             if (until.HasValue) {
@@ -80,10 +83,10 @@ namespace SharpChat {
             UserLeave(user.Channel, user, reason);
         }
 
-        public void HandleJoin(ChatUser user, ChatChannel chan, ChatUserSession sess) {
+        public void HandleJoin(ChatUser user, Channel chan, Session sess) {
             if (!chan.HasUser(user)) {
-                chan.Send(new UserConnectPacket(DateTimeOffset.UtcNow, user));
-                Events.AddEvent(new UserConnectEvent(DateTimeOffset.UtcNow, user, chan));
+                chan.Send(new UserConnectPacket(DateTimeOffset.Now, user));
+                Events.AddEvent(new UserConnectEvent(DateTimeOffset.Now, user, chan));
             }
 
             sess.Send(new AuthSuccessPacket(user, chan, sess, MessageTextMaxLength));
@@ -103,11 +106,11 @@ namespace SharpChat {
                 Users.Add(user);
         }
 
-        public void UserLeave(ChatChannel chan, ChatUser user, UserDisconnectReason reason = UserDisconnectReason.Leave) {
-            user.Status = ChatUserStatus.Offline;
+        public void UserLeave(Channel chan, ChatUser user, UserDisconnectReason reason = UserDisconnectReason.Leave) {
+            user.Status = UserStatus.Offline;
 
             if (chan == null) {
-                foreach(ChatChannel channel in user.GetChannels()) {
+                foreach(Channel channel in user.GetChannels()) {
                     UserLeave(channel, user, reason);
                 }
                 return;
@@ -117,18 +120,18 @@ namespace SharpChat {
                 Channels.Remove(chan);
 
             chan.UserLeave(user);
-            chan.Send(new UserDisconnectPacket(DateTimeOffset.UtcNow, user, reason));
-            Events.AddEvent(new UserDisconnectEvent(DateTimeOffset.UtcNow, user, chan, reason));
+            chan.Send(new UserDisconnectPacket(DateTimeOffset.Now, user, reason));
+            Events.AddEvent(new UserDisconnectEvent(DateTimeOffset.Now, user, chan, reason));
         }
 
-        public void SwitchChannel(ChatUser user, ChatChannel chan, string password) {
+        public void SwitchChannel(ChatUser user, Channel chan, string password) {
             if (user.CurrentChannel == chan) {
                 //user.Send(true, @"samechan", chan.Name);
                 user.ForceChannel();
                 return;
             }
 
-            if (!user.Can(ChatUserPermissions.JoinAnyChannel) && chan.Owner != user) {
+            if (!user.Can(UserPermissions.JoinAnyChannel) && chan.Owner != user) {
                 if (chan.MinimumRank > user.Rank) {
                     user.Send(new LegacyCommandResponse(LCR.CHANNEL_INSUFFICIENT_HIERARCHY, true, chan.Name));
                     user.ForceChannel();
@@ -145,16 +148,16 @@ namespace SharpChat {
             ForceChannelSwitch(user, chan);
         }
 
-        public void ForceChannelSwitch(ChatUser user, ChatChannel chan) {
+        public void ForceChannelSwitch(ChatUser user, Channel chan) {
             if (!Channels.Contains(chan))
                 return;
 
-            ChatChannel oldChan = user.CurrentChannel;
+            Channel oldChan = user.CurrentChannel;
 
             oldChan.Send(new UserChannelLeavePacket(user));
-            Events.AddEvent(new UserChannelLeaveEvent(DateTimeOffset.UtcNow, user, oldChan));
+            Events.AddEvent(new UserChannelLeaveEvent(DateTimeOffset.Now, user, oldChan));
             chan.Send(new UserChannelJoinPacket(user));
-            Events.AddEvent(new UserChannelJoinEvent(DateTimeOffset.UtcNow, user, chan));
+            Events.AddEvent(new UserChannelJoinEvent(DateTimeOffset.Now, user, chan));
 
             user.Send(new ContextClearPacket(chan, ContextClearMode.MessagesUsers));
             user.Send(new ContextUsersPacket(chan.GetUsers(new[] { user })));
@@ -172,18 +175,10 @@ namespace SharpChat {
                 Channels.Remove(oldChan);
         }
 
-        public void CheckPings() {
+        public void PruneSessionlessUsers() {
             lock(Users)
                 foreach (ChatUser user in Users.All()) {
-                    IEnumerable<ChatUserSession> timedOut = user.GetDeadSessions();
-
-                    foreach(ChatUserSession sess in timedOut) {
-                        user.RemoveSession(sess);
-                        sess.Dispose();
-                        Logger.Write($@"Nuked session {sess.Id} from {user.Username} (timeout)");
-                    }
-
-                    if(!user.HasSessions)
+                    if(Sessions.GetSessionCount(user) < 1)
                         UserLeave(null, user, UserDisconnectReason.TimeOut);
                 }
         }
@@ -208,13 +203,16 @@ namespace SharpChat {
                 return;
             IsDisposed = true;
 
-            BansTimer?.Dispose();
-            BumpTimer?.Dispose();
-            Events?.Dispose();
-            Channels?.Dispose();
-            Users?.Dispose();
-            Bans?.Dispose();
-            MessageTextMaxLengthValue?.Dispose();
+            BansTimer.Dispose();
+            BumpTimer.Dispose();
+
+            Sessions.Dispose();
+            Events.Dispose();
+            Channels.Dispose();
+            Users.Dispose();
+            Bans.Dispose();
+
+            MessageTextMaxLengthValue.Dispose();
         }
     }
 }

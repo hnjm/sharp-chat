@@ -20,7 +20,7 @@ namespace SharpChat.PacketHandlers {
         }
 
         public void HandlePacket(IPacketHandlerContext ctx) {
-            if(ctx.Args.Count() < 3 || !ctx.HasUser || !ctx.User.Can(ChatUserPermissions.SendMessage))
+            if(ctx.Args.Count() < 3 || !ctx.HasUser || !ctx.User.Can(UserPermissions.SendMessage))
                 return;
 
             if(!long.TryParse(ctx.Args.ElementAtOrDefault(1), out long userId) || ctx.User.UserId != userId)
@@ -31,14 +31,14 @@ namespace SharpChat.PacketHandlers {
             if(string.IsNullOrWhiteSpace(text))
                 return;
 
-            ChatChannel channel = ctx.User.CurrentChannel;
+            Channel channel = ctx.User.CurrentChannel;
             if(channel == null
                 || !ctx.User.InChannel(channel)
-                || (ctx.User.IsSilenced && !ctx.User.Can(ChatUserPermissions.SilenceUser)))
+                || (ctx.User.IsSilenced && !ctx.User.Can(UserPermissions.SilenceUser)))
                 return;
 
-            if(ctx.User.Status != ChatUserStatus.Online) {
-                ctx.User.Status = ChatUserStatus.Online;
+            if(ctx.User.Status != UserStatus.Online) {
+                ctx.User.Status = UserStatus.Online;
                 channel.Send(new UserUpdatePacket(ctx.User));
             }
 
@@ -68,7 +68,7 @@ namespace SharpChat.PacketHandlers {
             channel.Send(new ChatMessageAddPacket(message));
         }
 
-        public IChatMessageEvent HandleCommand(string message, ChatContext context, ChatUser user, ChatChannel channel) {
+        public IChatMessageEvent HandleCommand(string message, ChatContext context, ChatUser user, Channel channel) {
             string[] parts = message[1..].Split(' ');
             string commandName = parts[0].Replace(@".", string.Empty).ToLowerInvariant();
 

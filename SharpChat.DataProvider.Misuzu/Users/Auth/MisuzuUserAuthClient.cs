@@ -30,7 +30,7 @@ namespace SharpChat.DataProvider.Misuzu.Users.Auth {
                     ColourRaw = (RNG.Next(0, 255) << 16) | (RNG.Next(0, 255) << 8) | RNG.Next(0, 255),
                     Rank = 0,
                     SilencedUntil = DateTimeOffset.MinValue,
-                    Permissions = ChatUserPermissions.SendMessage | ChatUserPermissions.EditOwnMessage | ChatUserPermissions.DeleteOwnMessage,
+                    Permissions = UserPermissions.SendMessage | UserPermissions.EditOwnMessage | UserPermissions.DeleteOwnMessage,
                 });
                 return;
             }

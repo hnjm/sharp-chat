@@ -10,7 +10,7 @@ namespace SharpChat.Commands {
             => name == @"password" || name == @"pwd";
 
         public IChatMessageEvent DispatchCommand(IChatCommandContext ctx) {
-            if(!ctx.User.Can(ChatUserPermissions.SetChannelPassword) || ctx.Channel.Owner != ctx.User)
+            if(!ctx.User.Can(UserPermissions.SetChannelPassword) || ctx.Channel.Owner != ctx.User)
                 throw new CommandException(LCR.COMMAND_NOT_ALLOWED, $@"/{ctx.Args.First()}");
 
             string password = string.Join(' ', ctx.Args.Skip(1)).Trim();

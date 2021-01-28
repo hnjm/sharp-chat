@@ -9,11 +9,11 @@ namespace SharpChat.PacketHandlers {
             if(!ctx.HasUser)
                 return;
 
-            ChatChannel tChannel = ctx.User.CurrentChannel;
+            Channel tChannel = ctx.User.CurrentChannel;
             if(tChannel == null || !tChannel.CanType(ctx.User))
                 return;
 
-            ChatChannelTyping tInfo = tChannel.RegisterTyping(ctx.User);
+            ChannelTyping tInfo = tChannel.RegisterTyping(ctx.User);
             if(tInfo == null)
                 return;
 

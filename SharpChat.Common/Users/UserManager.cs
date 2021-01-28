@@ -63,7 +63,7 @@ namespace SharpChat.Users {
 
         public IEnumerable<ChatUser> WithActiveConnections() {
             lock (Users)
-                return Users.Where(u => u.HasSessions).ToList();
+                return Users.Where(u => Context.Sessions.GetSessionCount(u) > 0).ToList();
         }
 
         public IEnumerable<ChatUser> All() {

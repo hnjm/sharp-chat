@@ -16,7 +16,7 @@ namespace SharpChat.Commands {
             if(string.IsNullOrWhiteSpace(channelName))
                 return null;
 
-            ChatChannel channel = ctx.Chat.Channels.Get(channelName);
+            Channel channel = ctx.Chat.Channels.Get(channelName);
 
             if(channel == null) {
                 ctx.User.Send(new LegacyCommandResponse(LCR.CHANNEL_NOT_FOUND, true, channelName));

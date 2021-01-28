@@ -10,7 +10,7 @@ namespace SharpChat.Commands {
             => name == @"rank" || name == @"hierarchy" || name == @"priv";
 
         public IChatMessageEvent DispatchCommand(IChatCommandContext ctx) {
-            if(!ctx.User.Can(ChatUserPermissions.SetChannelHierarchy) || ctx.Channel.Owner != ctx.User)
+            if(!ctx.User.Can(UserPermissions.SetChannelHierarchy) || ctx.Channel.Owner != ctx.User)
                 throw new CommandException(LCR.COMMAND_NOT_ALLOWED, $@"/{ctx.Args.First()}");
 
             if(!int.TryParse(ctx.Args.ElementAtOrDefault(1), out int rank) || rank > ctx.User.Rank)

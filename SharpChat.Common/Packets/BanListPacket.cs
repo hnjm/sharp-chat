@@ -17,7 +17,7 @@ namespace SharpChat.Packets {
 
             sb.Append((int)SockChatServerPacket.MessageAdd);
             sb.Append('\t');
-            sb.Append(DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+            sb.Append(DateTimeOffset.Now.ToUnixTimeSeconds());
             sb.Append("\t-1\t0\fbanlist\f");
 
             foreach (IBan ban in Bans)

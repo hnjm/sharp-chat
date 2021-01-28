@@ -10,9 +10,9 @@ namespace SharpChat.Commands {
             => name == @"nick";
 
         public IChatMessageEvent DispatchCommand(IChatCommandContext ctx) {
-            bool setOthersNick = ctx.User.Can(ChatUserPermissions.SetOthersNickname);
+            bool setOthersNick = ctx.User.Can(UserPermissions.SetOthersNickname);
 
-            if(!setOthersNick && !ctx.User.Can(ChatUserPermissions.SetOwnNickname))
+            if(!setOthersNick && !ctx.User.Can(UserPermissions.SetOwnNickname))
                 throw new CommandException(LCR.COMMAND_NOT_ALLOWED, @"/nick");
 
             ChatUser targetUser = null;

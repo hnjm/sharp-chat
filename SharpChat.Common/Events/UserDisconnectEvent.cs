@@ -9,7 +9,7 @@ namespace SharpChat.Events {
         public UserDisconnectReason Reason { get; set; }
 
         public UserDisconnectEvent() : base() {}
-        public UserDisconnectEvent(DateTimeOffset parted, BasicUser user, IPacketTarget target, UserDisconnectReason reason)
+        public UserDisconnectEvent(DateTimeOffset parted, User user, IPacketTarget target, UserDisconnectReason reason)
             : base(parted, user, target, ChatEventFlags.Log) {
             Reason = reason;
         }

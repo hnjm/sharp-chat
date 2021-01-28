@@ -4,9 +4,9 @@ using System.Text;
 
 namespace SharpChat.Packets {
     public class ChannelCreatePacket : ServerPacket {
-        public ChatChannel Channel { get; private set; }
+        public Channel Channel { get; private set; }
 
-        public ChannelCreatePacket(ChatChannel channel) {
+        public ChannelCreatePacket(Channel channel) {
             Channel = channel;
         }
 

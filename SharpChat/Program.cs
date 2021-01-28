@@ -5,6 +5,7 @@ using SharpChat.Database.Null;
 using SharpChat.Database.SQLite;
 using SharpChat.DataProvider;
 using SharpChat.DataProvider.Null;
+using SharpChat.Sessions;
 using SharpChat.WebSocket;
 using SharpChat.WebSocket.Fleck;
 using System;
@@ -62,18 +63,20 @@ namespace SharpChat {
                 databaseBackend = (IDatabaseBackend)Activator.CreateInstance(databaseBackendType, config.ScopeTo($@"db:{databaseBackendName}"));
             }
 
-            HttpClient.Instance.DefaultUserAgent = @"SharpChat/1.0";
+            using HttpClient httpClient = new HttpClient {
+                DefaultUserAgent = @"SharpChat/1.0"
+            };
 
             string dataProviderName = GetFlagArgument(args, @"--dpn") ?? config.ReadValue(@"dp");
             Type dataProviderType = FindDataProviderType(dataProviderName);
-            IDataProvider dataProvider = (IDataProvider)Activator.CreateInstance(dataProviderType, config.ScopeTo($@"dp:{dataProviderName}"), HttpClient.Instance);
+            IDataProvider dataProvider = (IDataProvider)Activator.CreateInstance(dataProviderType, config.ScopeTo($@"dp:{dataProviderName}"), httpClient);
 
             string portArg = GetFlagArgument(args, @"--port") ?? config.ReadValue(@"chat:port");
             if(string.IsNullOrEmpty(portArg) || !ushort.TryParse(portArg, out ushort port))
                 port = DEFAULT_PORT;
 
             using IWebSocketServer wss = new FleckWebSocketServer(new IPEndPoint(IPAddress.Any, port));
-            using SockChatServer scs = new SockChatServer(config, wss, HttpClient.Instance, dataProvider, databaseBackend);
+            using SockChatServer scs = new SockChatServer(config, wss, httpClient, dataProvider, databaseBackend);
 
             using ManualResetEvent mre = new ManualResetEvent(false);
             Console.CancelKeyPress += (s, e) => { e.Cancel = true; mre.Set(); };
@@ -127,10 +130,11 @@ namespace SharpChat {
             sw.WriteLine();
 
             sw.WriteLine(@"# General Configuration");
-            sw.WriteLine($@"#chat:port                 {DEFAULT_PORT}");
-            sw.WriteLine($@"#chat:messages:maxLength   {ChatContext.DEFAULT_MSG_LENGTH_MAX}");
-            sw.WriteLine($@"#chat:users:maxConnections {SockChatServer.DEFAULT_MAX_CONNECTIONS}");
-            sw.WriteLine($@"#chat:flood:banDuration    {SockChatServer.DEFAULT_FLOOD_BAN_DURATION}");
+            sw.WriteLine($@"#chat:port               {DEFAULT_PORT}");
+            sw.WriteLine($@"#chat:messages:maxLength {ChatContext.DEFAULT_MSG_LENGTH_MAX}");
+            sw.WriteLine($@"#chat:flood:banDuration  {SockChatServer.DEFAULT_FLOOD_BAN_DURATION}");
+            sw.WriteLine($@"#chat:sessions:timeOut   {SessionManager.DEFAULT_TIMEOUT}");
+            sw.WriteLine($@"#chat:sessions:maxCount  {SessionManager.DEFAULT_MAX_COUNT}");
             sw.WriteLine();
 
             sw.WriteLine(@"# Channels");

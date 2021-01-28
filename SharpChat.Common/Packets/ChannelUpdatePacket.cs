@@ -5,9 +5,9 @@ using System.Text;
 namespace SharpChat.Packets {
     public class ChannelUpdatePacket : ServerPacket {
         public string PreviousName { get; private set; }
-        public ChatChannel Channel { get; private set; }
+        public Channel Channel { get; private set; }
 
-        public ChannelUpdatePacket(string previousName, ChatChannel channel) {
+        public ChannelUpdatePacket(string previousName, Channel channel) {
             PreviousName = previousName;
             Channel = channel;
         }

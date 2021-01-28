@@ -98,13 +98,13 @@ namespace SharpChat.Events.Storage {
             evt.DateTime = DateTimeOffset.FromUnixTimeSeconds(reader.ReadI32(@"event_created"));
 
             if(!reader.IsNull(@"event_sender")) {
-                evt.Sender = new BasicUser {
+                evt.Sender = new User {
                     UserId = reader.ReadI64(@"event_sender"),
                     Username = reader.ReadString(@"event_sender_name"),
                     Colour = new ChatColour(reader.ReadI32(@"event_sender_colour")),
                     Rank = reader.ReadI32(@"event_sender_rank"),
                     Nickname = reader.IsNull(@"event_sender_nick") ? null : reader.ReadString(@"event_sender_nick"),
-                    Permissions = (ChatUserPermissions)reader.ReadI32(@"event_sender_perms")
+                    Permissions = (UserPermissions)reader.ReadI32(@"event_sender_perms")
                 };
             }
 

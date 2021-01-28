@@ -22,7 +22,7 @@ namespace SharpChat.Commands {
                     statusText = statusText.Substring(0, MAX_LENGTH).Trim();
             }
 
-            ctx.User.Status = ChatUserStatus.Away;
+            ctx.User.Status = UserStatus.Away;
             ctx.User.StatusMessage = statusText;
             ctx.Channel.Send(new UserUpdatePacket(ctx.User));
             return null;

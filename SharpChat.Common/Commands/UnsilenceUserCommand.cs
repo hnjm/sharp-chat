@@ -11,7 +11,7 @@ namespace SharpChat.Commands {
             => name == @"unsilence";
 
         public IChatMessageEvent DispatchCommand(IChatCommandContext ctx) {
-            if(!ctx.User.Can(ChatUserPermissions.SilenceUser))
+            if(!ctx.User.Can(UserPermissions.SilenceUser))
                 throw new CommandException(LCR.COMMAND_NOT_ALLOWED, $@"/{ctx.Args.First()}");
 
             string userName = ctx.Args.ElementAtOrDefault(1);

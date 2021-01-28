@@ -12,7 +12,7 @@ namespace SharpChat.Channels {
     public class ChannelInvalidNameException : ChannelException { }
 
     public class ChannelManager : IDisposable {
-        private List<ChatChannel> Channels { get; } = new List<ChatChannel>();
+        private List<Channel> Channels { get; } = new List<Channel>();
 
         private IConfig Config { get; }
         private CachedValue<string[]> ChannelNames { get; }
@@ -28,7 +28,7 @@ namespace SharpChat.Channels {
             UpdateConfigChannels();
         }
 
-        public ChatChannel DefaultChannel { get; private set; }
+        public Channel DefaultChannel { get; private set; }
 
         // Needs better name + figure out how to run periodically
         public void UpdateConfigChannels() {
@@ -37,7 +37,7 @@ namespace SharpChat.Channels {
             try {
                 string[] channelNames = ChannelNames;
 
-                foreach(ChatChannel channel in Channels) {
+                foreach(Channel channel in Channels) {
                     if(channelNames.Contains(channel.Name)) {
                         UpdateConfigChannel(channel);
                     } else {
@@ -49,7 +49,7 @@ namespace SharpChat.Channels {
                 foreach(string channelName in channelNames) {
                     if(Channels.Any(x => x.Name == channelName))
                         continue;
-                    ChatChannel channel = new ChatChannel(channelName);
+                    Channel channel = new Channel(channelName);
                     UpdateConfigChannel(channel);
                     Add(channel);
                 }
@@ -61,7 +61,7 @@ namespace SharpChat.Channels {
             }
         }
 
-        private void UpdateConfigChannel(ChatChannel channel) {
+        private void UpdateConfigChannel(Channel channel) {
             IConfig config = Config.ScopeTo($@"channels:{channel.Name}");
 
             // If we're here, the channel is listed in the config which implicitly means it's not temporary
@@ -81,7 +81,7 @@ namespace SharpChat.Channels {
             }
         }
 
-        public void Add(ChatChannel channel) {
+        public void Add(Channel channel) {
             if(channel == null)
                 throw new ArgumentNullException(nameof(channel));
             if(!channel.Name.All(c => char.IsLetter(c) || char.IsNumber(c) || c == '-'))
@@ -107,7 +107,7 @@ namespace SharpChat.Channels {
             }
         }
 
-        public void Remove(ChatChannel channel) {
+        public void Remove(Channel channel) {
             if(channel == null || channel == DefaultChannel)
                 return;
 
@@ -131,7 +131,7 @@ namespace SharpChat.Channels {
             }
         }
 
-        public bool Contains(ChatChannel chan) {
+        public bool Contains(Channel chan) {
             if(chan == null)
                 return false;
 
@@ -148,7 +148,7 @@ namespace SharpChat.Channels {
         }
 
         // Should be replaced by an event
-        public void Update(ChatChannel channel, string name = null, bool? temporary = null, int? rank = null, string password = null) {
+        public void Update(Channel channel, string name = null, bool? temporary = null, int? rank = null, string password = null) {
             if(channel == null)
                 throw new ArgumentNullException(nameof(channel));
             if(!Channels.Contains(channel))
@@ -191,11 +191,11 @@ namespace SharpChat.Channels {
             }
         }
 
-        public ChatChannel Get(string name) {
+        public Channel Get(string name) {
             if(string.IsNullOrWhiteSpace(name))
                 return null;
 
-            ChatChannel result;
+            Channel result;
             Sync.WaitOne();
 
             try {
@@ -207,11 +207,11 @@ namespace SharpChat.Channels {
             return result;
         }
 
-        public IEnumerable<ChatChannel> GetUser(ChatUser user) {
+        public IEnumerable<Channel> GetUser(ChatUser user) {
             if(user == null)
                 return null;
 
-            IEnumerable<ChatChannel> result;
+            IEnumerable<Channel> result;
             Sync.WaitOne();
 
             try {
@@ -223,8 +223,8 @@ namespace SharpChat.Channels {
             return result;
         }
 
-        public IEnumerable<ChatChannel> OfHierarchy(int hierarchy) {
-            IEnumerable<ChatChannel> result;
+        public IEnumerable<Channel> OfHierarchy(int hierarchy) {
+            IEnumerable<Channel> result;
             Sync.WaitOne();
 
             try {
