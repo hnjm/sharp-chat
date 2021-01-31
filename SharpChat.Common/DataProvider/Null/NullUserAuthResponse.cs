@@ -7,7 +7,7 @@ namespace SharpChat.DataProvider.Null {
         public long UserId { get; }
         public string Username { get; }
         public int Rank { get; }
-        public ChatColour Colour { get; }
+        public Colour Colour { get; }
         public UserPermissions Permissions { get; }
         public DateTimeOffset SilencedUntil => DateTimeOffset.MinValue;
 
@@ -16,7 +16,7 @@ namespace SharpChat.DataProvider.Null {
             Username = $@"Misaka-{uar.UserId}";
             Rank = (int)(uar.UserId % 10);
             Random rng = new Random((int)uar.UserId);
-            Colour = new ChatColour(rng.Next());
+            Colour = new Colour(rng.Next());
             Permissions = (UserPermissions)rng.Next();
         }
     }

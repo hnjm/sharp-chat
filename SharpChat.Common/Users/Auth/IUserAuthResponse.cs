@@ -5,7 +5,7 @@ namespace SharpChat.Users.Auth {
         long UserId { get; }
         string Username { get; }
         int Rank { get; }
-        ChatColour Colour { get; }
+        Colour Colour { get; }
         DateTimeOffset SilencedUntil { get; }
         UserPermissions Permissions { get; }
     }

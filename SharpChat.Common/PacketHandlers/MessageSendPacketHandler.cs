@@ -50,10 +50,10 @@ namespace SharpChat.PacketHandlers {
             text = text.Trim();
 
 #if DEBUG
-            Logger.Write($@"<{ctx.Session.Id} {ctx.User.Username}> {text}");
+            Logger.Write($@"<{ctx.Session.Id} {ctx.User.UserName}> {text}");
 #endif
 
-            IChatMessageEvent message = null;
+            IMessageEvent message = null;
 
             if(text[0] == '/') {
                 message = HandleCommand(text, ctx.Chat, ctx.User, channel);
@@ -68,7 +68,7 @@ namespace SharpChat.PacketHandlers {
             channel.Send(new ChatMessageAddPacket(message));
         }
 
-        public IChatMessageEvent HandleCommand(string message, ChatContext context, ChatUser user, Channel channel) {
+        public IMessageEvent HandleCommand(string message, ChatContext context, ChatUser user, Channel channel) {
             string[] parts = message[1..].Split(' ');
             string commandName = parts[0].Replace(@".", string.Empty).ToLowerInvariant();
 

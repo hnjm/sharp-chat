@@ -3,12 +3,12 @@ using System;
 using System.Text.Json.Serialization;
 
 namespace SharpChat.Events {
-    public abstract class ChatEvent : IChatEvent {
+    public abstract class ChatEvent : IEvent {
         [JsonIgnore]
         public DateTimeOffset DateTime { get; set; }
 
         [JsonIgnore]
-        public User Sender { get; set; }
+        public IUser Sender { get; set; }
 
         [JsonIgnore]
         public IPacketTarget Target { get; set; }
@@ -17,7 +17,7 @@ namespace SharpChat.Events {
         public string TargetName { get; set; }
 
         [JsonIgnore]
-        public ChatEventFlags Flags { get; set; }
+        public EventFlags Flags { get; set; }
 
         [JsonIgnore]
         public long SequenceId { get; set; }
@@ -35,7 +35,17 @@ namespace SharpChat.Events {
         }
 
         public ChatEvent() { }
-        public ChatEvent(DateTimeOffset dateTime, User user, IPacketTarget target, ChatEventFlags flags) {
+        public ChatEvent(IEvent evt) {
+            if(evt == null)
+                throw new ArgumentNullException(nameof(evt));
+            DateTime = evt.DateTime;
+            Sender = evt.Sender;
+            Target = evt.Target;
+            TargetName = evt.TargetName;
+            Flags = evt.Flags;
+            SequenceId = evt.SequenceId;
+        }
+        public ChatEvent(DateTimeOffset dateTime, IUser user, IPacketTarget target, EventFlags flags) {
             SequenceId = GenerateSequenceId();
             DateTime = dateTime;
             Sender = user;

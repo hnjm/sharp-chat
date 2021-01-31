@@ -1,7 +1,8 @@
 ﻿namespace SharpChat.Users {
     public enum UserStatus {
-        Online,
-        Away,
+        Unknown,
         Offline,
+        Away,
+        Online,
     }
 }

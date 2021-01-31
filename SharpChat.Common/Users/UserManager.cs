@@ -37,7 +37,7 @@ namespace SharpChat.Users {
                 return false;
 
             lock (Users)
-                return Users.Contains(user) || Users.Any(x => x.UserId == user.UserId || x.Username.ToLowerInvariant() == user.Username.ToLowerInvariant());
+                return Users.Contains(user) || Users.Any(x => x.UserId == user.UserId || x.UserName.ToLowerInvariant() == user.UserName.ToLowerInvariant());
         }
 
         public ChatUser Get(long userId) {
@@ -51,8 +51,8 @@ namespace SharpChat.Users {
             username = username.ToLowerInvariant();
 
             lock(Users)
-                return Users.FirstOrDefault(x => x.Username.ToLowerInvariant() == username
-                    || (includeNickName && x.Nickname?.ToLowerInvariant() == username)
+                return Users.FirstOrDefault(x => x.UserName.ToLowerInvariant() == username
+                    || (includeNickName && x.NickName?.ToLowerInvariant() == username)
                     || (includeDisplayName && x.DisplayName.ToLowerInvariant() == username));
         }
 

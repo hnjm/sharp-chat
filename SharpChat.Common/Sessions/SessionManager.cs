@@ -48,13 +48,13 @@ namespace SharpChat.Sessions {
             }
         }
 
-        public int GetSessionCount(User user) {
+        public int GetSessionCount(IUser user) {
             int count = 0;
             FindMany(s => s.User == user, s => count = s.Count());
             return count;
         }
 
-        public int GetAvailableSessionCount(User user) {
+        public int GetAvailableSessionCount(IUser user) {
             return MaxPerUser - GetSessionCount(user);
         }
 
@@ -100,7 +100,7 @@ namespace SharpChat.Sessions {
             return Find(c => c.Connection == connection);
         }
 
-        public IEnumerable<Session> ByUser(User user) {
+        public IEnumerable<Session> ByUser(IUser user) {
             if(user == null)
                 throw new ArgumentNullException(nameof(user));
             return FindMany(s => s.User == user);

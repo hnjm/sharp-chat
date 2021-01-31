@@ -10,7 +10,7 @@ namespace SharpChat.Commands {
         public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == @"delchan" || (name == @"delete" && args.ElementAtOrDefault(1)?.All(char.IsDigit) == false);
 
-        public IChatMessageEvent DispatchCommand(IChatCommandContext ctx) {
+        public IMessageEvent DispatchCommand(IChatCommandContext ctx) {
             string channelName = string.Join('_', ctx.Args.Skip(1));
 
             if(string.IsNullOrWhiteSpace(channelName))

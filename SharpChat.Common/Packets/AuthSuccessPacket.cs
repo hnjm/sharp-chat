@@ -28,7 +28,7 @@ namespace SharpChat.Packets {
             sb.Append('\t');
             sb.Append(Channel.Name);
             sb.Append('\t');
-            sb.Append(SockChatServer.EXT_VERSION);
+            sb.Append(ChatServer.EXT_VERSION);
             sb.Append('\t');
             sb.Append(Session.Id);
             sb.Append('\t');

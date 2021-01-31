@@ -63,15 +63,12 @@ namespace SharpChat.Database {
             => Reader.GetDouble(GetOrdinal(name));
 
         private bool IsDisposed;
-
         ~ADODatabaseReader()
             => DoDispose();
-
         public void Dispose() {
             DoDispose();
             GC.SuppressFinalize(this);
         }
-
         private void DoDispose() {
             if(IsDisposed)
                 return;

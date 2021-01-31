@@ -9,7 +9,7 @@ namespace SharpChat.Commands {
         public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == @"delmsg" || (name == @"delete" && args.ElementAtOrDefault(1)?.All(char.IsDigit) == true);
 
-        public IChatMessageEvent DispatchCommand(IChatCommandContext ctx) {
+        public IMessageEvent DispatchCommand(IChatCommandContext ctx) {
             bool deleteAnyMessage = ctx.User.Can(UserPermissions.DeleteAnyMessage);
 
             if(!deleteAnyMessage && !ctx.User.Can(UserPermissions.DeleteOwnMessage))
@@ -18,9 +18,9 @@ namespace SharpChat.Commands {
             if(!long.TryParse(ctx.Args.ElementAtOrDefault(1), out long sequenceId))
                 throw new CommandException(LCR.COMMAND_FORMAT_ERROR);
 
-            IChatEvent delEvent = ctx.Chat.Events.GetEvent(sequenceId);
+            IEvent delEvent = ctx.Chat.Events.GetEvent(sequenceId);
 
-            if(delEvent is not IChatMessageEvent || delEvent.Sender.Rank > ctx.User.Rank
+            if(delEvent is not IMessageEvent || delEvent.Sender.Rank > ctx.User.Rank
                 || (!deleteAnyMessage && delEvent.Sender.UserId != ctx.User.UserId))
                 throw new CommandException(LCR.MESSAGE_DELETE_ERROR);
 

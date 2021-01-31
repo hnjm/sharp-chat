@@ -26,7 +26,7 @@ namespace SharpChat.Sessions {
 
         public Session(IWebSocketConnection ws) {
             Connection = ws;
-            Id = RNG.NextIdString(ID_LENGTH);
+            Id = RNG.NextString(ID_LENGTH);
             BumpPing();
         }
 

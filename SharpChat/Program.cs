@@ -41,6 +41,7 @@ namespace SharpChat {
 
             string configFile = GetFlagArgument(args, @"--cfg") ?? CONFIG;
 
+            // If the config file doesn't exist and we're using the default path, run the converter
             if(!File.Exists(configFile) && configFile == CONFIG)
                 ConvertConfiguration();
 
@@ -64,7 +65,7 @@ namespace SharpChat {
             }
 
             using HttpClient httpClient = new HttpClient {
-                DefaultUserAgent = @"SharpChat/1.0"
+                DefaultUserAgent = @"SharpChat/1.0",
             };
 
             string dataProviderName = GetFlagArgument(args, @"--dpn") ?? config.ReadValue(@"dp");
@@ -76,7 +77,7 @@ namespace SharpChat {
                 port = DEFAULT_PORT;
 
             using IWebSocketServer wss = new FleckWebSocketServer(new IPEndPoint(IPAddress.Any, port));
-            using SockChatServer scs = new SockChatServer(config, wss, httpClient, dataProvider, databaseBackend);
+            using ChatServer scs = new ChatServer(config, wss, httpClient, dataProvider, databaseBackend);
 
             using ManualResetEvent mre = new ManualResetEvent(false);
             Console.CancelKeyPress += (s, e) => { e.Cancel = true; mre.Set(); };
@@ -122,17 +123,13 @@ namespace SharpChat {
 
             using StreamWriter sw = new StreamWriter(s, new UTF8Encoding(false));
 
-            const string sql_config = @"sqlite.txt";
-            const string mdb_config = @"mariadb.txt";
-            const string msz_config = @"login_key.txt";
-
             sw.WriteLine(@"# and ; can be used at the start of a line for comments.");
             sw.WriteLine();
 
             sw.WriteLine(@"# General Configuration");
             sw.WriteLine($@"#chat:port               {DEFAULT_PORT}");
             sw.WriteLine($@"#chat:messages:maxLength {ChatContext.DEFAULT_MSG_LENGTH_MAX}");
-            sw.WriteLine($@"#chat:flood:banDuration  {SockChatServer.DEFAULT_FLOOD_BAN_DURATION}");
+            sw.WriteLine($@"#chat:flood:banDuration  {ChatServer.DEFAULT_FLOOD_BAN_DURATION}");
             sw.WriteLine($@"#chat:sessions:timeOut   {SessionManager.DEFAULT_TIMEOUT}");
             sw.WriteLine($@"#chat:sessions:maxCount  {SessionManager.DEFAULT_MAX_COUNT}");
             sw.WriteLine();
@@ -148,6 +145,8 @@ namespace SharpChat {
             sw.WriteLine(@"# Staff channel settings");
             sw.WriteLine(@"chat:channels:staff:minRank 5");
             sw.WriteLine();
+
+            const string msz_config = @"login_key.txt";
 
             sw.WriteLine(@"# Selected DataProvider (misuzu, null)");
             if(!File.Exists(msz_config))
@@ -169,6 +168,9 @@ namespace SharpChat {
             }
 
             sw.WriteLine();
+
+            const string sql_config = @"sqlite.txt";
+            const string mdb_config = @"mariadb.txt";
 
             bool hasMDB = File.Exists(mdb_config),
                  hasSQL = File.Exists(sql_config);

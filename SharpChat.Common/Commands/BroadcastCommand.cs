@@ -9,7 +9,7 @@ namespace SharpChat.Commands {
         public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == @"say";
 
-        public IChatMessageEvent DispatchCommand(IChatCommandContext ctx) {
+        public IMessageEvent DispatchCommand(IChatCommandContext ctx) {
             if(!ctx.User.Can(UserPermissions.Broadcast))
                 throw new CommandException(LCR.COMMAND_NOT_ALLOWED, @"/say");
 

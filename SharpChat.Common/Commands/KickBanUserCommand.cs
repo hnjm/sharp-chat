@@ -10,7 +10,7 @@ namespace SharpChat.Commands {
         public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == @"kick" || name == @"ban";
 
-        public IChatMessageEvent DispatchCommand(IChatCommandContext ctx) {
+        public IMessageEvent DispatchCommand(IChatCommandContext ctx) {
             string commandName = ctx.Args.First();
             bool isBan = commandName == @"ban";
 
@@ -23,7 +23,7 @@ namespace SharpChat.Commands {
                 throw new CommandException(LCR.USER_NOT_FOUND, userName ?? @"User");
 
             if(user == ctx.User || user.Rank >= ctx.User.Rank || ctx.Chat.Bans.Check(user) > DateTimeOffset.Now)
-                throw new CommandException(LCR.KICK_NOT_ALLOWED, user.Username);
+                throw new CommandException(LCR.KICK_NOT_ALLOWED, user.UserName);
 
             string durationArg = ctx.Args.ElementAtOrDefault(2);
             DateTimeOffset? duration = isBan ? (DateTimeOffset?)DateTimeOffset.MaxValue : null;

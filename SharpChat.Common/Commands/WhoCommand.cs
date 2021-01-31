@@ -47,7 +47,7 @@ namespace SharpChat.Commands {
             ctx.User.Send(new LegacyCommandResponse(LCR.USERS_LISTING_CHANNEL, false, whoChan.Name, MakeUserList(ctx.User, whoChan.GetUsers())));
         }
 
-        public IChatMessageEvent DispatchCommand(IChatCommandContext ctx) {
+        public IMessageEvent DispatchCommand(IChatCommandContext ctx) {
             string channelName = ctx.Args.ElementAtOrDefault(1) ?? string.Empty;
 
             if(string.IsNullOrEmpty(channelName))

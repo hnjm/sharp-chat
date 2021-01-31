@@ -30,9 +30,10 @@ namespace SharpChat {
 
         public const string ID_CHARS = @"abcdefghijklmnopqrstuvwxyz0123456789-_ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-        public static string NextIdString(int length, string chars = ID_CHARS) {
-            StringBuilder sb = new StringBuilder();
+        public static string NextString(int length, string chars = ID_CHARS) {
             byte[] buffer = new byte[length];
+            RNG.NextBytes(buffer);
+            StringBuilder sb = new StringBuilder();
             foreach(byte b in buffer)
                 sb.Append(chars[b % chars.Length]);
             return sb.ToString();

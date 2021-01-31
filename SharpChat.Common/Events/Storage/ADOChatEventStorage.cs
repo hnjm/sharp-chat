@@ -1,9 +1,7 @@
 ﻿using SharpChat.Database;
-using SharpChat.Users;
 using System;
 using System.Collections.Generic;
 using System.Text.Json;
-using System.Linq;
 
 namespace SharpChat.Events.Storage {
     public partial class ADOChatEventStorage : IChatEventStorage {
@@ -14,7 +12,7 @@ namespace SharpChat.Events.Storage {
             RunMigrations();
         }
 
-        public void AddEvent(IChatEvent evt) {
+        public void AddEvent(IEvent evt) {
             Wrapper.RunCommand(
                 @"INSERT INTO `sqc_events` (`event_id`, `event_created`, `event_type`, `event_target`, `event_flags`, `event_data`"
                 + @", `event_sender`, `event_sender_name`, `event_sender_colour`, `event_sender_rank`, `event_sender_nick`, `event_sender_perms`)"
@@ -27,23 +25,23 @@ namespace SharpChat.Events.Storage {
                 Wrapper.CreateParam(@"flags", (byte)evt.Flags),
                 Wrapper.CreateParam(@"data", JsonSerializer.SerializeToUtf8Bytes(evt, evt.GetType())),
                 Wrapper.CreateParam(@"sender", evt.Sender?.UserId < 1 ? null : (long?)evt.Sender.UserId),
-                Wrapper.CreateParam(@"sender_name", evt.Sender?.Username),
+                Wrapper.CreateParam(@"sender_name", evt.Sender?.UserName),
                 Wrapper.CreateParam(@"sender_colour", evt.Sender?.Colour.Raw),
                 Wrapper.CreateParam(@"sender_rank", evt.Sender?.Rank),
-                Wrapper.CreateParam(@"sender_nick", evt.Sender?.Nickname),
+                Wrapper.CreateParam(@"sender_nick", evt.Sender?.NickName),
                 Wrapper.CreateParam(@"sender_perms", evt.Sender?.Permissions)
             );
         }
 
-        public bool RemoveEvent(IChatEvent evt) {
+        public bool RemoveEvent(IEvent evt) {
             return Wrapper.RunCommand(
                 @"UPDATE IGNORE `sqc_events` SET `event_deleted` = " + Wrapper.DateTimeNow() + @" WHERE `event_id` = @id AND `event_deleted` IS NULL",
                 Wrapper.CreateParam(@"id", evt.SequenceId)
             ) > 0;
         }
 
-        public IChatEvent GetEvent(long seqId) {
-            IChatEvent evt = null;
+        public IEvent GetEvent(long seqId) {
+            IEvent evt = null;
 
             Wrapper.RunQuery(
                 @"SELECT `event_id`, `event_type`, `event_flags`, `event_data`, `event_target`"
@@ -61,8 +59,8 @@ namespace SharpChat.Events.Storage {
             return evt;
         }
 
-        public IEnumerable<IChatEvent> GetEventsForTarget(IPacketTarget target, int amount = 20, int offset = 0) {
-            List<IChatEvent> events = new List<IChatEvent>();
+        public IEnumerable<IEvent> GetEventsForTarget(IPacketTarget target, int amount = 20, int offset = 0) {
+            List<IEvent> events = new List<IEvent>();
 
             Wrapper.RunQuery(
                 @"SELECT `event_id`, `event_type`, `event_flags`, `event_data`, `event_target`"
@@ -74,7 +72,7 @@ namespace SharpChat.Events.Storage {
                 + @" LIMIT @amount OFFSET @offset",
                 reader => {
                     while(reader.Next()) {
-                        IChatEvent evt = ReadEvent(reader, target);
+                        IEvent evt = ReadEvent(reader, target);
                         if(evt != null)
                             events.Add(evt);
                     }
@@ -88,25 +86,11 @@ namespace SharpChat.Events.Storage {
             return events;
         }
 
-        private static IChatEvent ReadEvent(IDatabaseReader reader, IPacketTarget target = null) {
-            Type evtType = Type.GetType(reader.ReadString(@"event_type"));
-            IChatEvent evt = JsonSerializer.Deserialize(reader.ReadString(@"event_data"), evtType) as IChatEvent;
-            evt.SequenceId = reader.ReadI64(@"event_id");
-            evt.Target = target;
-            evt.TargetName = target?.TargetName ?? reader.ReadString(@"event_target");
-            evt.Flags = (ChatEventFlags)reader.ReadU8(@"event_flags");
-            evt.DateTime = DateTimeOffset.FromUnixTimeSeconds(reader.ReadI32(@"event_created"));
+        private static IEvent ReadEvent(IDatabaseReader reader, IPacketTarget target = null) {
+            ADOEvent adoEvent = new ADOEvent(reader, target);
 
-            if(!reader.IsNull(@"event_sender")) {
-                evt.Sender = new User {
-                    UserId = reader.ReadI64(@"event_sender"),
-                    Username = reader.ReadString(@"event_sender_name"),
-                    Colour = new ChatColour(reader.ReadI32(@"event_sender_colour")),
-                    Rank = reader.ReadI32(@"event_sender_rank"),
-                    Nickname = reader.IsNull(@"event_sender_nick") ? null : reader.ReadString(@"event_sender_nick"),
-                    Permissions = (UserPermissions)reader.ReadI32(@"event_sender_perms")
-                };
-            }
+
+            IEvent evt = JsonSerializer.Deserialize(adoEvent.Data, adoEvent.Type) as IEvent;
 
             return evt;
         }

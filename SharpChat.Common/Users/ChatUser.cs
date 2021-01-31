@@ -6,9 +6,37 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Text;
 
 namespace SharpChat.Users {
-    public class ChatUser : User, IPacketTarget {
+    public class ChatUser : IUser, IPacketTarget {
+        public long UserId { get; set; }
+        public string UserName { get; set; }
+        public Colour Colour { get; set; }
+        public int Rank { get; set; }
+        public string NickName { get; set; }
+        public UserPermissions Permissions { get; set; }
+        public UserStatus Status { get; set; } = UserStatus.Online;
+        public string StatusMessage { get; set; }
+
+        public string DisplayName {
+            get {
+                StringBuilder sb = new StringBuilder();
+
+                if(Status == UserStatus.Away)
+                    sb.AppendFormat(@"&lt;{0}&gt;_", StatusMessage.Substring(0, Math.Min(StatusMessage.Length, 5)).ToUpperInvariant());
+
+                if(string.IsNullOrWhiteSpace(NickName))
+                    sb.Append(UserName);
+                else {
+                    sb.Append('~');
+                    sb.Append(NickName);
+                }
+
+                return sb.ToString();
+            }
+        }
+
         public DateTimeOffset SilencedUntil { get; set; }
 
         private readonly List<Session> Sessions = new List<Session>();
@@ -46,7 +74,7 @@ namespace SharpChat.Users {
         }
 
         public void ApplyAuth(IUserAuthResponse auth, bool invalidateRestrictions = false) {
-            Username = auth.Username;
+            UserName = auth.Username;
 
             if(Status == UserStatus.Offline)
                 Status = UserStatus.Online;
@@ -57,6 +85,31 @@ namespace SharpChat.Users {
 
             if(invalidateRestrictions || !IsSilenced)
                 SilencedUntil = auth.SilencedUntil;
+        }
+
+        public bool Can(UserPermissions perm)
+            => (Permissions & perm) == perm;
+
+        public string Pack() {
+            StringBuilder sb = new StringBuilder();
+
+            sb.Append(UserId);
+            sb.Append('\t');
+            sb.Append(DisplayName);
+            sb.Append('\t');
+            sb.Append(Colour);
+            sb.Append('\t');
+            sb.Append(Rank);
+            sb.Append(' ');
+            sb.Append(Can(UserPermissions.KickUser) ? '1' : '0');
+            sb.Append(@" 0 ");
+            sb.Append(Can(UserPermissions.SetOwnNickname) ? '1' : '0');
+            sb.Append(' ');
+            sb.Append(Can(UserPermissions.CreateChannel | UserPermissions.SetChannelPermanent) ? 2 : (
+                Can(UserPermissions.CreateChannel) ? 1 : 0
+            ));
+
+            return sb.ToString();
         }
 
         public void Send(IServerPacket packet) {

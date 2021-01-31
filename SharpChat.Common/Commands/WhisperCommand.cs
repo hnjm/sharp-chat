@@ -9,7 +9,7 @@ namespace SharpChat.Commands {
         public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == @"whisper" || name == @"msg";
 
-        public IChatMessageEvent DispatchCommand(IChatCommandContext ctx) {
+        public IMessageEvent DispatchCommand(IChatCommandContext ctx) {
             if(ctx.Args.Count() < 3)
                 throw new CommandException(LCR.COMMAND_FORMAT_ERROR);
 
@@ -24,8 +24,8 @@ namespace SharpChat.Commands {
 
             string whisperStr = string.Join(' ', ctx.Args.Skip(2));
 
-            whisperUser.Send(new ChatMessageAddPacket(new ChatMessageEvent(ctx.User, whisperUser, whisperStr, ChatEventFlags.Private)));
-            ctx.User.Send(new ChatMessageAddPacket(new ChatMessageEvent(ctx.User, ctx.User, $@"{whisperUser.DisplayName} {whisperStr}", ChatEventFlags.Private)));
+            whisperUser.Send(new ChatMessageAddPacket(new ChatMessageEvent(ctx.User, whisperUser, whisperStr, EventFlags.Private)));
+            ctx.User.Send(new ChatMessageAddPacket(new ChatMessageEvent(ctx.User, ctx.User, $@"{whisperUser.DisplayName} {whisperStr}", EventFlags.Private)));
             return null;
         }
     }

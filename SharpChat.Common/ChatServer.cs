@@ -13,7 +13,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 namespace SharpChat {
-    public class SockChatServer : IDisposable {
+    public class ChatServer : IDisposable {
         public const int EXT_VERSION =
 #if DEBUG
             2;
@@ -23,13 +23,6 @@ namespace SharpChat {
 
         public const int DEFAULT_MAX_CONNECTIONS = 5;
         public const int DEFAULT_FLOOD_BAN_DURATION = 30;
-
-        public static ChatUser Bot { get; } = new ChatUser {
-            UserId = -1,
-            Username = @"ChatBot",
-            Rank = 0,
-            Colour = new ChatColour(),
-        };
 
         private IConfig Config { get; }
         private IWebSocketServer Server { get; }
@@ -44,7 +37,7 @@ namespace SharpChat {
 
         public bool AcceptingConnections { get; private set; }
 
-        public SockChatServer(IConfig config, IWebSocketServer server, HttpClient httpClient, IDataProvider dataProvider, IDatabaseBackend databaseBackend) {
+        public ChatServer(IConfig config, IWebSocketServer server, HttpClient httpClient, IDataProvider dataProvider, IDatabaseBackend databaseBackend) {
             Logger.Write("Starting Sock Chat server...");
 
             Config = config ?? throw new ArgumentNullException(nameof(config));
@@ -170,7 +163,7 @@ namespace SharpChat {
         }
 
         private bool IsDisposed;
-        ~SockChatServer()
+        ~ChatServer()
             => DoDispose();
         public void Dispose() { 
             DoDispose();

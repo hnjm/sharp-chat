@@ -16,13 +16,13 @@ namespace SharpChat.Packets {
         public override IEnumerable<string> Pack() {
             StringBuilder sb = new StringBuilder();
 
-            bool isSilent = string.IsNullOrEmpty(PreviousName);
-
-            if (!isSilent) {
+            if(!string.IsNullOrEmpty(PreviousName)) {
                 sb.Append((int)SockChatServerPacket.MessageAdd);
                 sb.Append('\t');
                 sb.Append(DateTimeOffset.Now.ToUnixTimeSeconds());
-                sb.Append("\t-1\t0\fnick\f");
+                sb.Append('\t');
+                sb.Append(-1);
+                sb.Append("\t0\fnick\f");
                 sb.Append(PreviousName);
                 sb.Append('\f');
                 sb.Append(User.DisplayName);

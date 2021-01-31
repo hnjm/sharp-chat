@@ -9,7 +9,7 @@ namespace SharpChat.Commands {
         public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == @"nick";
 
-        public IChatMessageEvent DispatchCommand(IChatCommandContext ctx) {
+        public IMessageEvent DispatchCommand(IChatCommandContext ctx) {
             bool setOthersNick = ctx.User.Can(UserPermissions.SetOthersNickname);
 
             if(!setOthersNick && !ctx.User.Can(UserPermissions.SetOwnNickname))
@@ -37,7 +37,7 @@ namespace SharpChat.Commands {
                 .Replace("\t", string.Empty)
                 .Trim();
 
-            if(nickStr == targetUser.Username)
+            if(nickStr == targetUser.UserName)
                 nickStr = null;
             else if(nickStr.Length > 15)
                 nickStr = nickStr.Substring(0, 15);
@@ -47,8 +47,8 @@ namespace SharpChat.Commands {
             if(nickStr != null && ctx.Chat.Users.Get(nickStr) != null)
                 throw new CommandException(LCR.NAME_IN_USE, nickStr);
 
-            string previousName = targetUser == ctx.User ? (targetUser.Nickname ?? targetUser.Username) : null;
-            targetUser.Nickname = nickStr;
+            string previousName = targetUser == ctx.User ? (targetUser.NickName ?? targetUser.UserName) : null;
+            targetUser.NickName = nickStr;
             ctx.Channel.Send(new UserUpdatePacket(targetUser, previousName));
             return null;
         }

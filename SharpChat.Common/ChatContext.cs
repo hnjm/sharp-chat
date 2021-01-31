@@ -13,8 +13,6 @@ using System.Collections.Generic;
 using System.Net;
 using System.Threading;
 
-// A lot of actions done by this class need to be relocated
-
 namespace SharpChat {
     public class ChatContext : IDisposable, IPacketTarget {
         public BanManager Bans { get; }
@@ -25,6 +23,8 @@ namespace SharpChat {
         public IChatEventStorage Events { get; }
         public IDataProvider DataProvider { get; }
         public IConfig Config { get; }
+
+        public ChatBot Bot { get; } = new ChatBot(); 
 
         private Timer BumpTimer { get; }
         private Timer BansTimer { get; }
@@ -59,9 +59,9 @@ namespace SharpChat {
         }
 
         public void Update() {
+            Sessions.DisposeTimedOut();
             Bans.RemoveExpired();
             PruneSessionlessUsers();
-            Sessions.DisposeTimedOut();
         }
 
         public void BanUser(ChatUser user, DateTimeOffset? until = null, bool banIPs = false, UserDisconnectReason reason = UserDisconnectReason.Kicked) {
@@ -92,9 +92,9 @@ namespace SharpChat {
             sess.Send(new AuthSuccessPacket(user, chan, sess, MessageTextMaxLength));
             sess.Send(new ContextUsersPacket(chan.GetUsers(new[] { user })));
 
-            IEnumerable<IChatEvent> msgs = Events.GetEventsForTarget(chan);
+            IEnumerable<IEvent> msgs = Events.GetEventsForTarget(chan);
 
-            foreach (IChatEvent msg in msgs)
+            foreach (IEvent msg in msgs)
                 sess.Send(new ContextMessagePacket(msg));
 
             sess.Send(new ContextChannelsPacket(Channels.OfHierarchy(user.Rank)));
@@ -162,9 +162,9 @@ namespace SharpChat {
             user.Send(new ContextClearPacket(chan, ContextClearMode.MessagesUsers));
             user.Send(new ContextUsersPacket(chan.GetUsers(new[] { user })));
 
-            IEnumerable<IChatEvent> msgs = Events.GetEventsForTarget(chan);
+            IEnumerable<IEvent> msgs = Events.GetEventsForTarget(chan);
 
-            foreach (IChatEvent msg in msgs)
+            foreach (IEvent msg in msgs)
                 user.Send(new ContextMessagePacket(msg));
 
             user.ForceChannel(chan);
@@ -177,10 +177,9 @@ namespace SharpChat {
 
         public void PruneSessionlessUsers() {
             lock(Users)
-                foreach (ChatUser user in Users.All()) {
+                foreach (ChatUser user in Users.All())
                     if(Sessions.GetSessionCount(user) < 1)
                         UserLeave(null, user, UserDisconnectReason.TimeOut);
-                }
         }
 
         public void Send(IServerPacket packet) {
@@ -189,15 +188,12 @@ namespace SharpChat {
         }
 
         private bool IsDisposed;
-
         ~ChatContext()
             => DoDispose();
-
         public void Dispose() {
             DoDispose();
             GC.SuppressFinalize(this);
         }
-
         private void DoDispose() {
             if (IsDisposed)
                 return;

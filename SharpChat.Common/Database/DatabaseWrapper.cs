@@ -82,15 +82,12 @@ namespace SharpChat.Database {
         }
 
         private bool IsDisposed;
-
         ~DatabaseWrapper()
             => DoDispose();
-
         public void Dispose() {
             DoDispose();
             GC.SuppressFinalize(this);
         }
-
         private void DoDispose() {
             if(IsDisposed)
                 return;

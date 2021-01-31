@@ -7,11 +7,11 @@ namespace SharpChat.Commands {
         public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == @"action" || name == @"me";
 
-        public IChatMessageEvent DispatchCommand(IChatCommandContext ctx) {
+        public IMessageEvent DispatchCommand(IChatCommandContext ctx) {
             if(ctx.Args.Count() < 2)
                 return null;
 
-            return new ChatMessageEvent(ctx.User, ctx.Channel, string.Join(' ', ctx.Args.Skip(1)), ChatEventFlags.Action);
+            return new ChatMessageEvent(ctx.User, ctx.Channel, string.Join(' ', ctx.Args.Skip(1)), EventFlags.Action);
         }
     }
 }

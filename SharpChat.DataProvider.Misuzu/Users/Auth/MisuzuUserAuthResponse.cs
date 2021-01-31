@@ -21,7 +21,7 @@ namespace SharpChat.DataProvider.Misuzu.Users.Auth {
         public int ColourRaw { get; set; }
 
         [JsonIgnore]
-        public ChatColour Colour => new ChatColour(ColourRaw);
+        public Colour Colour => new Colour(ColourRaw);
 
         [JsonPropertyName(@"hierarchy")]
         public int Rank { get; set; }

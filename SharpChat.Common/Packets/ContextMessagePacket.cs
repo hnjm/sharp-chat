@@ -5,15 +5,15 @@ using System.Text;
 
 namespace SharpChat.Packets {
     public class ContextMessagePacket : ServerPacket {
-        public IChatEvent Event { get; private set; }
+        public IEvent Event { get; private set; }
         public bool Notify { get; private set; }
 
-        public ContextMessagePacket(IChatEvent evt, bool notify = false) {
+        public ContextMessagePacket(IEvent evt, bool notify = false) {
             Event = evt ?? throw new ArgumentNullException(nameof(evt));
             Notify = notify;
         }
 
-        private const string V1_CHATBOT = "-1\tChatBot\tinherit\t\t";
+        private const string V1_CHATBOT = "-1\tChatBot\tinherit\t";
 
         public override IEnumerable<string> Pack() {
             StringBuilder sb = new StringBuilder();
@@ -26,7 +26,7 @@ namespace SharpChat.Packets {
             sb.Append('\t');
 
             switch (Event) {
-                case IChatMessageEvent msg:
+                case IMessageEvent msg:
                     sb.Append(Event.Sender.Pack());
                     sb.Append('\t');
                     sb.Append(
@@ -40,25 +40,25 @@ namespace SharpChat.Packets {
 
                 case UserConnectEvent _:
                     sb.Append(V1_CHATBOT);
-                    sb.Append("0\fjoin\f");
-                    sb.Append(Event.Sender.Username);
+                    sb.Append("\t0\fjoin\f");
+                    sb.Append(Event.Sender.UserName);
                     break;
 
                 case UserChannelJoinEvent _:
                     sb.Append(V1_CHATBOT);
-                    sb.Append("0\fjchan\f");
-                    sb.Append(Event.Sender.Username);
+                    sb.Append("\t0\fjchan\f");
+                    sb.Append(Event.Sender.UserName);
                     break;
 
                 case UserChannelLeaveEvent _:
                     sb.Append(V1_CHATBOT);
-                    sb.Append("0\flchan\f");
-                    sb.Append(Event.Sender.Username);
+                    sb.Append("\t0\flchan\f");
+                    sb.Append(Event.Sender.UserName);
                     break;
 
                 case UserDisconnectEvent ude:
                     sb.Append(V1_CHATBOT);
-                    sb.Append("0\f");
+                    sb.Append("\t0\f");
 
                     switch (ude.Reason) {
                         case UserDisconnectReason.Flood:
@@ -77,7 +77,7 @@ namespace SharpChat.Packets {
                     }
 
                     sb.Append('\f');
-                    sb.Append(Event.Sender.Username);
+                    sb.Append(Event.Sender.UserName);
                     break;
             }
 
@@ -88,9 +88,9 @@ namespace SharpChat.Packets {
             sb.Append(Notify ? '1' : '0');
             sb.AppendFormat(
                 "\t1{0}0{1}{2}",
-                Event.Flags.HasFlag(ChatEventFlags.Action) ? '1' : '0',
-                Event.Flags.HasFlag(ChatEventFlags.Action) ? '0' : '1',
-                Event.Flags.HasFlag(ChatEventFlags.Private) ? '1' : '0'
+                Event.Flags.HasFlag(EventFlags.Action) ? '1' : '0',
+                Event.Flags.HasFlag(EventFlags.Action) ? '0' : '1',
+                Event.Flags.HasFlag(EventFlags.Private) ? '1' : '0'
             );
 
             yield return sb.ToString();

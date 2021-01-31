@@ -70,7 +70,7 @@ namespace SharpChat.PacketHandlers {
 
                     user.AddSession(ctx.Session);
 
-                    ctx.Session.Send(new LegacyCommandResponse(LCR.WELCOME, false, $@"Welcome to Flashii Chat, {user.Username}!"));
+                    ctx.Session.Send(new LegacyCommandResponse(LCR.WELCOME, false, $@"Welcome to Flashii Chat, {user.UserName}!"));
 
                     if(File.Exists(WELCOME)) {
                         IEnumerable<string> lines = File.ReadAllLines(WELCOME).Where(x => !string.IsNullOrWhiteSpace(x));

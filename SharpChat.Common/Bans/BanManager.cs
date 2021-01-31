@@ -64,7 +64,7 @@ namespace SharpChat.Bans {
                 BannedUser ban = BanList.OfType<BannedUser>().FirstOrDefault(x => x.UserId == user.UserId);
 
                 if (ban == null)
-                    Add(new BannedUser { UserId = user.UserId, Expires = expires, Username = user.Username });
+                    Add(new BannedUser { UserId = user.UserId, Expires = expires, Username = user.UserName });
                 else
                     ban.Expires = expires;
             }
