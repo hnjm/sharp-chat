@@ -1,5 +1,6 @@
 ﻿using SharpChat.Users;
 using System;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace SharpChat.Events {
@@ -34,10 +35,11 @@ namespace SharpChat.Events {
             return id;
         }
 
-        public ChatEvent() { }
-        public ChatEvent(IEvent evt) {
-            if(evt == null)
-                throw new ArgumentNullException(nameof(evt));
+        private ChatEvent() { }
+
+#pragma warning disable IDE0060 // Remove unused parameter
+        public ChatEvent(IEvent evt, JsonElement elem) {
+#pragma warning restore IDE0060 // Remove unused parameter
             DateTime = evt.DateTime;
             Sender = evt.Sender;
             Target = evt.Target;

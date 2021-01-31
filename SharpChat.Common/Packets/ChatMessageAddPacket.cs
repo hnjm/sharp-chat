@@ -7,11 +7,8 @@ namespace SharpChat.Packets {
     public class ChatMessageAddPacket : ServerPacket {
         public IMessageEvent Message { get; private set; }
 
-        public ChatMessageAddPacket(IMessageEvent message) : base(message?.SequenceId ?? 0) {
+        public ChatMessageAddPacket(IMessageEvent message) : base(message.SequenceId) {
             Message = message ?? throw new ArgumentNullException(nameof(message));
-
-            if (Message.SequenceId < 1)
-                Message.SequenceId = SequenceId;
         }
 
         public override IEnumerable<string> Pack() {

@@ -1,6 +1,8 @@
 ﻿using SharpChat.Database;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using System.Text.Json;
 
 namespace SharpChat.Events.Storage {
@@ -86,13 +88,13 @@ namespace SharpChat.Events.Storage {
             return events;
         }
 
+        private static readonly Type[] constPropTypes = new[] { typeof(IEvent), typeof(JsonElement), };
+
         private static IEvent ReadEvent(IDatabaseReader reader, IPacketTarget target = null) {
-            ADOEvent adoEvent = new ADOEvent(reader, target);
-
-
-            IEvent evt = JsonSerializer.Deserialize(adoEvent.Data, adoEvent.Type) as IEvent;
-
-            return evt;
+            Type evtType = Type.GetType(reader.ReadString(@"event_type"));
+            ConstructorInfo evtConst = evtType.GetConstructors().FirstOrDefault(ci => ci.GetParameters().Select(pi => pi.ParameterType).SequenceEqual(constPropTypes));
+            JsonDocument jsonDoc = JsonDocument.Parse(reader.ReadString(@"event_data"));
+            return (IEvent)evtConst.Invoke(new object[] { new ADOEventReader(reader, target), jsonDoc.RootElement });
         }
 
         public void Dispose() {

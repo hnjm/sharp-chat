@@ -4,7 +4,8 @@ using System.Collections.Generic;
 using System.Text;
 
 namespace SharpChat.Packets {
-    public enum UserDisconnectReason {
+    public enum UserDisconnectReason : int {
+        Unknown,
         Leave,
         TimeOut,
         Kicked,
