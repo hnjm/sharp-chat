@@ -12,6 +12,7 @@ namespace SharpChat.PacketHandlers {
         Session Session { get; }
         ChatUser User { get; }
 
+        bool HasSession { get; }
         bool HasUser { get; }
     }
 
@@ -19,16 +20,18 @@ namespace SharpChat.PacketHandlers {
         public IEnumerable<string> Args { get; }
         public ChatContext Chat { get; }
         public Session Session { get; }
+        public IWebSocketConnection Connection { get; }
 
-        public IWebSocketConnection Connection => Session.Connection;
         public ChatUser User => Session.User;
 
-        public bool HasUser => Session.HasUser;
+        public bool HasSession => Session != null;
+        public bool HasUser => HasSession;
 
-        public PacketHandlerContext(IEnumerable<string> args, ChatContext ctx, Session sess) {
+        public PacketHandlerContext(IEnumerable<string> args, ChatContext ctx, Session sess, IWebSocketConnection conn) {
             Args = args ?? throw new ArgumentNullException(nameof(args));
             Chat = ctx ?? throw new ArgumentNullException(nameof(ctx));
-            Session = sess ?? throw new ArgumentNullException(nameof(sess));
+            Session = sess;
+            Connection = conn ?? throw new ArgumentNullException(nameof(conn));
         }
     }
 }

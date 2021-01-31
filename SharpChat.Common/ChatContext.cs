@@ -58,10 +58,10 @@ namespace SharpChat {
             }, null, TimeSpan.Zero, TimeSpan.FromMinutes(15));
         }
 
-        public void Update() {
+        public void Update() { // this should probably not exist, or at least not called the way it is
             Sessions.DisposeTimedOut();
             Bans.RemoveExpired();
-            PruneSessionlessUsers();
+            PruneSessionlessUsers(); // this function also needs to go
         }
 
         public void BanUser(ChatUser user, DateTimeOffset? until = null, bool banIPs = false, UserDisconnectReason reason = UserDisconnectReason.Kicked) {

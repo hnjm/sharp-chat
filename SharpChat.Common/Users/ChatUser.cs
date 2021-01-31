@@ -2,6 +2,7 @@
 using SharpChat.Packets;
 using SharpChat.Sessions;
 using SharpChat.Users.Auth;
+using SharpChat.WebSocket;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,7 +10,7 @@ using System.Net;
 using System.Text;
 
 namespace SharpChat.Users {
-    public class ChatUser : IUser, IPacketTarget {
+    public class ChatUser : IUser, IHasSessions, IPacketTarget {
         public long UserId { get; set; }
         public string UserName { get; set; }
         public Colour Colour { get; set; }
@@ -39,10 +40,8 @@ namespace SharpChat.Users {
 
         public DateTimeOffset SilencedUntil { get; set; }
 
-        private readonly List<Session> Sessions = new List<Session>();
-        private readonly List<Channel> Channels = new List<Channel>();
-
-        public readonly ChatRateLimiter RateLimiter = new ChatRateLimiter();
+        private List<Session> Sessions { get; } = new List<Session>();
+        private List<Channel> Channels { get; } = new List<Channel>();
 
         public string TargetName => @"@log";
 
@@ -176,6 +175,20 @@ namespace SharpChat.Users {
             sess.User = null;
             lock(Sessions)
                 Sessions.Remove(sess);
+        }
+
+        public bool HasSession(Session sess) {
+            if(sess == null)
+                throw new ArgumentNullException(nameof(sess));
+            lock(Sessions)
+                return Sessions.Contains(sess);
+        }
+
+        public bool HasConnection(IWebSocketConnection conn) {
+            if(conn == null)
+                throw new ArgumentNullException(nameof(conn));
+            lock(Sessions)
+                return Sessions.Any(s => s.Connection == conn);
         }
     }
 }

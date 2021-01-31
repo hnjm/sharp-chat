@@ -5,6 +5,7 @@ using SharpChat.Database;
 using SharpChat.DataProvider;
 using SharpChat.PacketHandlers;
 using SharpChat.Packets;
+using SharpChat.RateLimiting;
 using SharpChat.Sessions;
 using SharpChat.Users;
 using SharpChat.WebSocket;
@@ -22,12 +23,12 @@ namespace SharpChat {
 #endif
 
         public const int DEFAULT_MAX_CONNECTIONS = 5;
-        public const int DEFAULT_FLOOD_BAN_DURATION = 30;
 
         private IConfig Config { get; }
         private IWebSocketServer Server { get; }
         private ChatContext Context { get; }
         private DatabaseWrapper Database { get; }
+        private RateLimiter RateLimiter { get; }
 
         public HttpClient HttpClient { get; }
 
@@ -44,8 +45,9 @@ namespace SharpChat {
             Database = new DatabaseWrapper(databaseBackend ?? throw new ArgumentNullException(nameof(databaseBackend)));
             HttpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
             Context = new ChatContext(Config.ScopeTo(@"chat"), Database, dataProvider);
+            RateLimiter = new RateLimiter(Config.ScopeTo(@"chat:flood"));
 
-            FloodBanDuration = Config.ReadCached(@"chat:flood:banDuration", DEFAULT_FLOOD_BAN_DURATION);
+            FloodBanDuration = Config.ReadCached(@"chat:flood:banDuration", RateLimiter.DEFAULT_BAN_DURATION);
             FloodRankException = Config.ReadCached(@"chat:flood:exceptRank", 0, TimeSpan.FromSeconds(10));
 
             List<IPacketHandler> handlers = new List<IPacketHandler> {
@@ -97,32 +99,11 @@ namespace SharpChat {
                 return;
             }
 
-            // Recreation of old behaviour, should be altered for resumable sessions (as in not be here)
-            Context.Sessions.FindMany(s => s.Connection == conn, sessions => {
-                if(!sessions.Any())
-                    Context.Sessions.Add(new Session(conn));
-            });
-
             Context.Update();
         }
 
         private void OnClose(IWebSocketConnection conn) {
-            Session sess = Context.Sessions.ByConnection(conn);
-
-            if(sess != null) {
-                // Remove connection from user
-                if(sess.HasUser) {
-                    // RemoveConnection sets conn.User to null so we must grab a local copy.
-                    ChatUser user = sess.User;
-
-                    user.RemoveSession(sess);
-
-                    if(Context.Sessions.GetSessionCount(user) < 1)
-                        Context.UserLeave(null, user);
-                }
-
-                Context.Update();
-            }
+            Context.Update();
         }
 
         private void OnError(IWebSocketConnection conn, Exception ex) {
@@ -135,30 +116,34 @@ namespace SharpChat {
         private void OnMessage(IWebSocketConnection conn, string msg) {
             Context.Update();
 
-            Session sess = Context.Sessions.ByConnection(conn);
-            if(sess == null) {
+            RateLimitState rateLimit = RateLimiter.Bump(conn);
+            Logger.Debug($@"[{conn.RemoteAddress}] {rateLimit}");
+            if(rateLimit == RateLimitState.Disconnect) {
                 conn.Dispose();
                 return;
             }
 
-            int exceptRank = FloodRankException;
-            if(sess.User is ChatUser && (exceptRank <= 0 || sess.User.Rank < exceptRank)) {
-                sess.User.RateLimiter.AddTimePoint();
-
-                if(sess.User.RateLimiter.State == ChatRateLimitState.Kick) {
-                    Context.BanUser(sess.User, DateTimeOffset.Now.AddSeconds(FloodBanDuration), false, UserDisconnectReason.Flood);
-                    return;
-                } else if(sess.User.RateLimiter.State == ChatRateLimitState.Warning)
-                    sess.User.Send(new FloodWarningPacket()); // make it so this thing only sends once
-            }
-
-            string[] args = msg.Split('\t');
-
-            if(args.Length < 1 || !Enum.TryParse(args[0], out SockChatClientPacket opCode))
+            IEnumerable<string> args = msg.Split('\t');
+            if(!Enum.TryParse(args.ElementAtOrDefault(0), out SockChatClientPacket opCode))
                 return;
 
+            Session sess = Context.Sessions.ByConnection(conn);
+
+            if(opCode != SockChatClientPacket.Authenticate) {
+                if(sess == null) {
+                    conn.Dispose();
+                    return;
+                }
+
+                if(rateLimit == RateLimitState.Kick) {
+                    Context.BanUser(sess.User, DateTimeOffset.Now.AddSeconds(FloodBanDuration), false, UserDisconnectReason.Flood);
+                    return;
+                } else if(rateLimit == RateLimitState.Warning)
+                    sess.User.Send(new FloodWarningPacket());
+            }
+
             PacketHandlers.FirstOrDefault(x => x.PacketId == opCode)?.HandlePacket(
-                new PacketHandlerContext(args, Context, sess)
+                new PacketHandlerContext(args, Context, sess, conn)
             );
         }
 

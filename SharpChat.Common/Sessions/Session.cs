@@ -8,7 +8,7 @@ namespace SharpChat.Sessions {
     public class Session : IDisposable, IPacketTarget {
         public const int ID_LENGTH = 32;
 
-        public IWebSocketConnection Connection { get; }
+        public IWebSocketConnection Connection { get; private set; }
 
         public string Id { get; private set; }
         public DateTimeOffset LastPing { get; set; }
@@ -18,28 +18,56 @@ namespace SharpChat.Sessions {
 
         public string TargetName => @"@log";
 
-        public bool HasUser
-            => User != null;
+        public bool HasConnection
+            => Connection != null;
 
         public IPAddress RemoteAddress
-            => Connection.RemoteAddress;
+            => Connection?.RemoteAddress;
 
-        public Session(IWebSocketConnection ws) {
-            Connection = ws;
+        private object Sync { get; } = new object();
+        private Queue<IServerPacket> PacketQueue { get; } = new Queue<IServerPacket>();
+
+        public Session(IWebSocketConnection conn, IHasSessions user) {
             Id = RNG.NextString(ID_LENGTH);
             BumpPing();
+            Connection = conn;
+            user.AddSession(this);
         }
 
         public void Send(IServerPacket packet) {
-            if (!Connection.IsAvailable)
-                return;
+            lock(Sync) {
+                if(!HasConnection) {
+                    PacketQueue.Enqueue(packet);
+                    return;
+                }
 
-            IEnumerable<string> data = packet.Pack();
+                if(!Connection.IsAvailable)
+                    return;
 
-            if (data != null)
-                foreach (string line in data)
-                    if (!string.IsNullOrWhiteSpace(line))
-                        Connection.Send(line);
+                IEnumerable<string> data = packet.Pack();
+
+                if(data != null)
+                    foreach(string line in data)
+                        if(!string.IsNullOrWhiteSpace(line))
+                            Connection.Send(line);
+            }
+        }
+
+        public void Suspend() {
+            lock(Sync) {
+                BumpPing();
+                Connection = null;
+            }
+        }
+
+        public void Resume(IWebSocketConnection conn) {
+            lock(Sync) {
+                BumpPing();
+                Connection = conn;
+
+                while(PacketQueue.TryDequeue(out IServerPacket packet))
+                    Send(packet);
+            }
         }
 
         public void BumpPing()
@@ -56,8 +84,7 @@ namespace SharpChat.Sessions {
             if (IsDisposed)
                 return;
             IsDisposed = true;
-            if(HasUser)
-                User.RemoveSession(this);
+            User.RemoveSession(this);
             Connection.Dispose();
             LastPing = DateTimeOffset.MinValue;
         }

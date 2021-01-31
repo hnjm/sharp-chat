@@ -5,7 +5,6 @@ using SharpChat.Database.Null;
 using SharpChat.Database.SQLite;
 using SharpChat.DataProvider;
 using SharpChat.DataProvider.Null;
-using SharpChat.Sessions;
 using SharpChat.WebSocket;
 using SharpChat.WebSocket.Fleck;
 using System;
@@ -129,9 +128,16 @@ namespace SharpChat {
             sw.WriteLine(@"# General Configuration");
             sw.WriteLine($@"#chat:port               {DEFAULT_PORT}");
             sw.WriteLine($@"#chat:messages:maxLength {ChatContext.DEFAULT_MSG_LENGTH_MAX}");
-            sw.WriteLine($@"#chat:flood:banDuration  {ChatServer.DEFAULT_FLOOD_BAN_DURATION}");
-            sw.WriteLine($@"#chat:sessions:timeOut   {SessionManager.DEFAULT_TIMEOUT}");
-            sw.WriteLine($@"#chat:sessions:maxCount  {SessionManager.DEFAULT_MAX_COUNT}");
+            sw.WriteLine($@"#chat:sessions:timeOut   {Sessions.SessionManager.DEFAULT_TIMEOUT}");
+            sw.WriteLine($@"#chat:sessions:maxCount  {Sessions.SessionManager.DEFAULT_MAX_COUNT}");
+            sw.WriteLine();
+
+            sw.WriteLine(@"# Rate Limiter Configuration, backlog > threshold > warnWithin or things will break");
+            sw.WriteLine($@"#chat:flood:backlog      {RateLimiting.RateLimiter.DEFAULT_BACKLOG_SIZE}");
+            sw.WriteLine($@"#chat:flood:threshold    {RateLimiting.RateLimiter.DEFAULT_THRESHOLD}");
+            sw.WriteLine($@"#chat:flood:warnWithin   {RateLimiting.RateLimiter.DEFAULT_WARN_WITHIN}");
+            sw.WriteLine($@"#chat:flood:banDuration  {RateLimiting.RateLimiter.DEFAULT_BAN_DURATION}");
+            sw.WriteLine($@"#chat:flood:exceptRank   {RateLimiting.RateLimiter.DEFAULT_RANK_EXCEPT}");
             sw.WriteLine();
 
             sw.WriteLine(@"# Channels");

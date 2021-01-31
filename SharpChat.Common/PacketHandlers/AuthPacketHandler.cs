@@ -20,14 +20,14 @@ namespace SharpChat.PacketHandlers {
         }
 
         public void HandlePacket(IPacketHandlerContext ctx) {
-            if(ctx.HasUser)
+            if(ctx.HasSession)
                 return;
 
-            DateTimeOffset banDuration = ctx.Chat.Bans.Check(ctx.Session.RemoteAddress);
+            DateTimeOffset banDuration = ctx.Chat.Bans.Check(ctx.Connection.RemoteAddress);
 
             if(banDuration > DateTimeOffset.Now) {
-                ctx.Session.Send(new AuthFailPacket(AuthFailReason.Banned, banDuration));
-                ctx.Session.Dispose();
+                ctx.Connection.Send(new AuthFailPacket(AuthFailReason.Banned, banDuration));
+                ctx.Connection.Dispose();
                 return;
             }
 
@@ -39,7 +39,7 @@ namespace SharpChat.PacketHandlers {
                 return;
 
             ctx.Chat.DataProvider.UserAuthClient.AttemptAuth(
-                new UserAuthRequest(userId, token, ctx.Session.RemoteAddress),
+                new UserAuthRequest(userId, token, ctx.Connection.RemoteAddress),
                 onSuccess: res => {
                     ChatUser user = ctx.Chat.Users.Get(res.UserId);
 
@@ -53,39 +53,37 @@ namespace SharpChat.PacketHandlers {
                     banDuration = ctx.Chat.Bans.Check(user);
 
                     if(banDuration > DateTimeOffset.Now) {
-                        ctx.Session.Send(new AuthFailPacket(AuthFailReason.Banned, banDuration));
-                        ctx.Session.Dispose();
+                        ctx.Connection.Send(new AuthFailPacket(AuthFailReason.Banned, banDuration));
+                        ctx.Connection.Dispose();
                         return;
                     }
 
                     // Enforce a maximum amount of connections per user
                     if(Sessions.GetAvailableSessionCount(user) < 1) {
-                        ctx.Session.Send(new AuthFailPacket(AuthFailReason.MaxSessions));
-                        ctx.Session.Dispose();
+                        ctx.Connection.Send(new AuthFailPacket(AuthFailReason.MaxSessions));
+                        ctx.Connection.Dispose();
                         return;
                     }
 
-                    // Bumping the ping to prevent upgrading
-                    ctx.Session.BumpPing();
+                    Session sess = new Session(ctx.Connection, user);
+                    Sessions.Add(sess);
 
-                    user.AddSession(ctx.Session);
-
-                    ctx.Session.Send(new LegacyCommandResponse(LCR.WELCOME, false, $@"Welcome to Flashii Chat, {user.UserName}!"));
+                    sess.Send(new LegacyCommandResponse(LCR.WELCOME, false, $@"Welcome to Flashii Chat, {user.UserName}!"));
 
                     if(File.Exists(WELCOME)) {
                         IEnumerable<string> lines = File.ReadAllLines(WELCOME).Where(x => !string.IsNullOrWhiteSpace(x));
                         string line = lines.ElementAtOrDefault(RNG.Next(lines.Count()));
 
                         if(!string.IsNullOrWhiteSpace(line))
-                            ctx.Session.Send(new LegacyCommandResponse(LCR.WELCOME, false, line));
+                            sess.Send(new LegacyCommandResponse(LCR.WELCOME, false, line));
                     }
 
-                    ctx.Chat.HandleJoin(user, ctx.Chat.Channels.DefaultChannel, ctx.Session);
+                    ctx.Chat.HandleJoin(user, ctx.Chat.Channels.DefaultChannel, sess);
                 },
                 onFailure: ex => {
-                    Logger.Debug($@"<{ctx.Session.Id}> Auth fail: {ex.Message}");
-                    ctx.Session.Send(new AuthFailPacket(AuthFailReason.AuthInvalid));
-                    ctx.Session.Dispose();
+                    Logger.Debug($@"<{ctx.Connection.RemoteAddress}> Auth fail: {ex.Message}");
+                    ctx.Connection.Send(new AuthFailPacket(AuthFailReason.AuthInvalid));
+                    ctx.Connection.Dispose();
                 }
             );
         }
