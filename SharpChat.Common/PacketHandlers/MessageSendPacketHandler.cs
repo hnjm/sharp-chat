@@ -56,7 +56,12 @@ namespace SharpChat.PacketHandlers {
             IMessageEvent message = null;
 
             if(text[0] == '/') {
-                message = HandleCommand(text, ctx.Chat, ctx.User, channel);
+                try {
+                    message = HandleCommand(text, ctx.Chat, ctx.User, channel);
+                } catch(CommandException ex) {
+                    ctx.User.Send(ex.ToPacket(Context.Bot));
+                }
+
                 if(message == null)
                     return;
             }
@@ -78,17 +83,9 @@ namespace SharpChat.PacketHandlers {
                                    .Replace("\n", @" <br/> ");
 
             IChatCommand command = Commands.FirstOrDefault(x => x.IsCommandMatch(commandName, parts));
-            if(command == null) {
-                user.Send(new LegacyCommandResponse(LCR.COMMAND_NOT_FOUND, true, commandName));
-            } else {
-                try {
-                    return command.DispatchCommand(new ChatCommandContext(parts, user, channel, context));
-                } catch(CommandException ex) {
-                    user.Send(ex.ToPacket());
-                }
-            }
-
-            return null;
+            if(command == null)
+                throw new CommandNotFoundException(commandName);
+            return command.DispatchCommand(new ChatCommandContext(parts, user, channel, context));
         }
     }
 }

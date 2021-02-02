@@ -1,6 +1,5 @@
 ﻿using SharpChat.Channels;
 using System;
-using System.Collections.Generic;
 using System.Text;
 
 namespace SharpChat.Packets {
@@ -11,7 +10,7 @@ namespace SharpChat.Packets {
             Channel = channel ?? throw new ArgumentNullException(nameof(channel));
         }
 
-        public override IEnumerable<string> Pack() {
+        public override string Pack() {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)ServerPacket.UserSwitch);
@@ -20,7 +19,7 @@ namespace SharpChat.Packets {
             sb.Append(IServerPacket.SEPARATOR);
             sb.Append(Channel.Name);
 
-            yield return sb.ToString();
+            return sb.ToString();
         }
     }
 }

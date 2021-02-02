@@ -7,28 +7,33 @@ using System.Linq;
 
 namespace SharpChat.Commands {
     public class UnsilenceUserCommand : IChatCommand {
+        private IUser Sender { get; }
+
+        public UnsilenceUserCommand(IUser sender) {
+            Sender = sender ?? throw new ArgumentNullException(nameof(sender));
+        }
+
         public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == @"unsilence";
 
         public IMessageEvent DispatchCommand(IChatCommandContext ctx) {
             if(!ctx.User.Can(UserPermissions.SilenceUser))
-                throw new CommandException(LCR.COMMAND_NOT_ALLOWED, $@"/{ctx.Args.First()}");
+                throw new CommandNotAllowedException(ctx.Args);
 
             string userName = ctx.Args.ElementAtOrDefault(1);
-            ChatUser user = null;
-            if(string.IsNullOrEmpty(userName)
-                || (user = ctx.Chat.Users.Get(userName)) == null)
-                throw new CommandException(LCR.USER_NOT_FOUND, userName ?? @"User");
+            ChatUser user;
+            if(string.IsNullOrEmpty(userName) || (user = ctx.Chat.Users.Get(userName)) == null)
+                throw new UserNotFoundCommandException(userName);
 
             if(user.Rank >= ctx.User.Rank)
-                throw new CommandException(LCR.UNSILENCE_RANK);
+                throw new RevokeSilenceNotAllowedCommandException();
 
             if(!user.IsSilenced)
-                throw new CommandException(LCR.NOT_SILENCED);
+                throw new NotSilencedCommandException();
 
             user.SilencedUntil = DateTimeOffset.MinValue;
-            user.Send(new LegacyCommandResponse(LCR.UNSILENCED, false));
-            ctx.User.Send(new LegacyCommandResponse(LCR.TARGET_UNSILENCED, false, user.DisplayName));
+            user.Send(new SilenceRevokeNoticePacket(Sender));
+            ctx.User.Send(new SilenceRevokeResponsePacket(Sender, user));
             return null;
         }
     }

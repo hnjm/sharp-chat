@@ -7,38 +7,43 @@ using System.Linq;
 
 namespace SharpChat.Commands {
     public class SilenceUserCommand : IChatCommand {
+        private IUser Sender { get; }
+
+        public SilenceUserCommand(IUser sender) {
+            Sender = sender ?? throw new ArgumentNullException(nameof(sender));
+        }
+
         public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == @"silence";
 
         public IMessageEvent DispatchCommand(IChatCommandContext ctx) {
             if(!ctx.User.Can(UserPermissions.SilenceUser))
-                throw new CommandException(LCR.COMMAND_NOT_ALLOWED, $@"/{ctx.Args.First()}");
+                throw new CommandNotAllowedException(ctx.Args);
 
             string userName = ctx.Args.ElementAtOrDefault(1);
-            ChatUser user = null;
-            if(string.IsNullOrEmpty(userName)
-                || (user = ctx.Chat.Users.Get(userName)) == null)
-                throw new CommandException(LCR.USER_NOT_FOUND, userName ?? @"User");
+            ChatUser user;
+            if(string.IsNullOrEmpty(userName) || (user = ctx.Chat.Users.Get(userName)) == null)
+                throw new UserNotFoundCommandException(userName);
 
             if(user == ctx.User)
-                throw new CommandException(LCR.SILENCE_SELF);
+                throw new SelfSilenceCommandException();
             if(user.Rank >= user.Rank)
-                throw new CommandException(LCR.SILENCE_RANK);
+                throw new SilenceNotAllowedCommandException();
             if(user.IsSilenced)
-                throw new CommandException(LCR.SILENCE_ALREADY);
+                throw new AlreadySilencedCommandException();
 
             string durationArg = ctx.Args.ElementAtOrDefault(2);
             DateTimeOffset duration = DateTimeOffset.MaxValue;
 
             if(string.IsNullOrEmpty(durationArg)) {
                 if(!double.TryParse(durationArg, out double durationRaw))
-                    throw new CommandException(LCR.COMMAND_FORMAT_ERROR);
+                    throw new CommandFormatException();
                 duration = DateTimeOffset.Now.AddSeconds(durationRaw);
             }
 
             user.SilencedUntil = duration;
-            user.Send(new LegacyCommandResponse(LCR.SILENCED, false));
-            ctx.User.Send(new LegacyCommandResponse(LCR.TARGET_SILENCED, false, user.UserName));
+            user.Send(new SilenceNoticePacket(Sender));
+            ctx.User.Send(new SilenceResponsePacket(Sender, user));
             return null;
         }
     }

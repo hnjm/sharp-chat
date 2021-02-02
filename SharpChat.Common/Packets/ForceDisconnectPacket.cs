@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Text;
 
 namespace SharpChat.Packets {
@@ -22,7 +21,7 @@ namespace SharpChat.Packets {
             }
         }
 
-        public override IEnumerable<string> Pack() {
+        public override string Pack() {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)ServerPacket.BAKA);
@@ -34,7 +33,7 @@ namespace SharpChat.Packets {
                 sb.Append(Expires.ToUnixTimeSeconds());
             }
 
-            yield return sb.ToString();
+            return sb.ToString();
         }
     }
 }

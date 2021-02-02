@@ -114,23 +114,19 @@ namespace SharpChat {
 
             if (!user.Can(UserPermissions.JoinAnyChannel) && chan.Owner != user) {
                 if (chan.MinimumRank > user.Rank) {
-                    user.Send(new LegacyCommandResponse(LCR.CHANNEL_INSUFFICIENT_HIERARCHY, true, chan.Name));
+                    user.Send(new BotResponsePacket(Bot, LCR.CHANNEL_INSUFFICIENT_HIERARCHY, true, chan.Name));
                     user.ForceChannel();
                     return;
                 }
 
                 if (chan.Password != password) {
-                    user.Send(new LegacyCommandResponse(LCR.CHANNEL_INVALID_PASSWORD, true, chan.Name));
+                    user.Send(new BotResponsePacket(Bot, LCR.CHANNEL_INVALID_PASSWORD, true, chan.Name));
                     user.ForceChannel();
                     return;
                 }
             }
 
-            ForceChannelSwitch(user, chan);
-        }
-
-        public void ForceChannelSwitch(ChatUser user, Channel chan) {
-            if (!Channels.Contains(chan))
+            if(!Channels.Contains(chan))
                 return;
 
             Channel oldChan = user.CurrentChannel;
@@ -145,14 +141,14 @@ namespace SharpChat {
 
             IEnumerable<IEvent> msgs = Events.GetEventsForTarget(chan);
 
-            foreach (IEvent msg in msgs)
+            foreach(IEvent msg in msgs)
                 user.Send(new ContextMessagePacket(msg));
 
             user.ForceChannel(chan);
             oldChan.UserLeave(user);
             chan.UserJoin(user);
 
-            if (oldChan.IsTemporary && oldChan.Owner == user)
+            if(oldChan.IsTemporary && oldChan.Owner == user)
                 Channels.Remove(oldChan);
         }
 

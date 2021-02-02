@@ -16,10 +16,12 @@ namespace SharpChat.PacketHandlers {
         public ClientPacket PacketId => ClientPacket.Authenticate;
 
         private SessionManager Sessions { get; }
+        private IUser Sender { get; }
         private int Version { get; }
 
-        public AuthPacketHandler(SessionManager sessions, int version) {
+        public AuthPacketHandler(SessionManager sessions, IUser sender, int version) {
             Sessions = sessions ?? throw new ArgumentNullException(nameof(sessions));
+            Sender = sender ?? throw new ArgumentNullException(nameof(sender));
             Version = version;
         }
 
@@ -72,14 +74,14 @@ namespace SharpChat.PacketHandlers {
                     Session sess = new Session(ctx.Connection, user);
                     Sessions.Add(sess);
 
-                    sess.Send(new LegacyCommandResponse(LCR.WELCOME, false, $@"Welcome to Flashii Chat, {user.UserName}!"));
+                    sess.Send(new WelcomeMessagePacket(Sender, $@"Welcome to Flashii Chat, {user.UserName}!"));
 
                     if(File.Exists(WELCOME)) {
                         IEnumerable<string> lines = File.ReadAllLines(WELCOME).Where(x => !string.IsNullOrWhiteSpace(x));
                         string line = lines.ElementAtOrDefault(RNG.Next(lines.Count()));
 
                         if(!string.IsNullOrWhiteSpace(line))
-                            sess.Send(new LegacyCommandResponse(LCR.WELCOME, false, line));
+                            sess.Send(new WelcomeMessagePacket(Sender, line));
                     }
 
                     Channel chan = ctx.Chat.Channels.DefaultChannel;

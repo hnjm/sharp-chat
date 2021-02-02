@@ -1,6 +1,5 @@
 ﻿using SharpChat.Channels;
 using SharpChat.Events;
-using SharpChat.Packets;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -19,9 +18,9 @@ namespace SharpChat.Commands {
             Channel channel = ctx.Chat.Channels.Get(channelName);
 
             if(channel == null) {
-                ctx.User.Send(new LegacyCommandResponse(LCR.CHANNEL_NOT_FOUND, true, channelName));
+                // technically in the wrong order, but it might make more sense in the long run
                 ctx.User.ForceChannel();
-                return null;
+                throw new ChannelNotFoundCommandException(channelName);
             }
 
             string password = string.Join(' ', ctx.Args.Skip(2));

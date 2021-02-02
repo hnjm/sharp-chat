@@ -1,9 +1,8 @@
 ﻿using SharpChat.Packets;
+using SharpChat.Users;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SharpChat.Commands {
     public class CommandException : Exception {
@@ -15,8 +14,93 @@ namespace SharpChat.Commands {
             Arguments = args;
         }
 
-        public IServerPacket ToPacket() {
-            return new LegacyCommandResponse(ErrorCode, true, Arguments);
+        public IServerPacket ToPacket(IUser sender) {
+            return new BotResponsePacket(sender, BotArguments.Error(ErrorCode, Arguments));
         }
+    }
+
+    public class CommandNotFoundException : CommandException {
+        public CommandNotFoundException(string commandName) : base(@"nocmd", commandName) { }
+    }
+
+    public class CommandNotAllowedException : CommandException {
+        public CommandNotAllowedException(string commandName) : base(@"cmdna", @"/" + commandName) { }
+        public CommandNotAllowedException(IEnumerable<string> argList) : this(argList.First()) { }
+    }
+
+    public class CommandFormatException : CommandException {
+        public CommandFormatException() : base(@"cmderr") { }
+    }
+
+    public class UserNotFoundCommandException : CommandException {
+        public UserNotFoundCommandException(string userName) : base(@"usernf", userName ?? @"User") { }
+    }
+
+    public class SelfSilenceCommandException : CommandException {
+        public SelfSilenceCommandException() : base(@"silself") { }
+    }
+
+    public class SilenceNotAllowedCommandException : CommandException {
+        public SilenceNotAllowedCommandException() : base(@"silperr") { }
+    }
+
+    public class AlreadySilencedCommandException : CommandException {
+        public AlreadySilencedCommandException() : base(@"silerr") { }
+    }
+
+    public class RevokeSilenceNotAllowedCommandException : CommandException {
+        public RevokeSilenceNotAllowedCommandException() : base(@"usilperr") { }
+    }
+
+    public class NotSilencedCommandException : CommandException {
+        public NotSilencedCommandException() : base(@"usilerr") { }
+    }
+
+    public class NickNameInUseCommandException : CommandException {
+        public NickNameInUseCommandException(string nickName) : base(@"nameinuse", nickName) { }
+    }
+
+    public class UserListChannelNotFoundCommandException : CommandException {
+        public UserListChannelNotFoundCommandException(string channelName) : base(@"whoerr", channelName) { }
+    }
+
+    public class InsufficientRankForChangeCommandException : CommandException {
+        public InsufficientRankForChangeCommandException() : base(@"rankerr") { }
+    }
+
+    public class MessageNotFoundCommandException : CommandException {
+        public MessageNotFoundCommandException() : base(@"delerr") { }
+    }
+
+    public class KickNotAllowedCommandException : CommandException {
+        public KickNotAllowedCommandException(string userName) : base(@"kickna", userName) { }
+    }
+
+    public class NotBannedCommandException : CommandException {
+        public NotBannedCommandException(string subject) : base(@"notban", subject) { }
+    }
+
+    public class ChannelNotFoundCommandException : CommandException {
+        public ChannelNotFoundCommandException(string channelName) : base(@"nochan", channelName) { }
+    }
+
+    public class ChannelExistsCommandException : CommandException {
+        public ChannelExistsCommandException(string channelName) : base(@"nischan", channelName) { }
+    }
+
+    public class ChannelRankCommandException : CommandException {
+        public ChannelRankCommandException(string channelName) : base(@"ipchan", channelName) { }
+    }
+
+    public class ChannelPasswordCommandException : CommandException {
+        public ChannelPasswordCommandException(string channelName) : base(@"ipwchan", channelName) { }
+    }
+
+    public class ChannelNameInvalidCommandException : CommandException {
+        public ChannelNameInvalidCommandException() : base(@"inchan") { }
+    }
+
+    public class ChannelDeletionCommandException : CommandException {
+        public ChannelDeletionCommandException(string channelName) : base(@"ndchan", channelName) { }
     }
 }

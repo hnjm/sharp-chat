@@ -1,6 +1,5 @@
 ﻿using SharpChat.Events;
 using System;
-using System.Collections.Generic;
 using System.Text;
 
 namespace SharpChat.Packets {
@@ -11,14 +10,14 @@ namespace SharpChat.Packets {
             Event = evt ?? throw new ArgumentNullException(nameof(evt));
         }
 
-        public override IEnumerable<string> Pack() {
+        public override string Pack() {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)ServerPacket.MessageDelete);
             sb.Append(IServerPacket.SEPARATOR);
             sb.Append(Event.EventId);
 
-            yield return sb.ToString();
+            return sb.ToString();
         }
     }
 }

@@ -1,5 +1,4 @@
 ﻿using SharpChat.Events;
-using SharpChat.Packets;
 using SharpChat.Users;
 using System;
 using System.Collections.Generic;
@@ -15,22 +14,22 @@ namespace SharpChat.Commands {
             bool isBan = commandName == @"ban";
 
             if(!ctx.User.Can(isBan ? UserPermissions.BanUser : UserPermissions.KickUser))
-                throw new CommandException(LCR.COMMAND_NOT_ALLOWED, $@"/{commandName}");
+                throw new CommandNotAllowedException(commandName);
 
             string userName = ctx.Args.ElementAtOrDefault(1);
             ChatUser user;
             if(userName == null || (user = ctx.Chat.Users.Get(userName)) == null)
-                throw new CommandException(LCR.USER_NOT_FOUND, userName ?? @"User");
+                throw new UserNotFoundCommandException(userName);
 
             if(user == ctx.User || user.Rank >= ctx.User.Rank || ctx.Chat.Bans.Check(user) > DateTimeOffset.Now)
-                throw new CommandException(LCR.KICK_NOT_ALLOWED, user.UserName);
+                throw new KickNotAllowedCommandException(user.UserName);
 
             string durationArg = ctx.Args.ElementAtOrDefault(2);
             DateTimeOffset? duration = isBan ? (DateTimeOffset?)DateTimeOffset.MaxValue : null;
 
             if(!string.IsNullOrEmpty(durationArg)) {
                 if(!double.TryParse(durationArg, out double durationRaw))
-                    throw new CommandException(LCR.COMMAND_FORMAT_ERROR);
+                    throw new CommandFormatException();
                 duration = DateTimeOffset.Now.AddSeconds(durationRaw);
             }
 

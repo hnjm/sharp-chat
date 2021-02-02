@@ -2,7 +2,6 @@
 using SharpChat.Sessions;
 using SharpChat.Users;
 using System;
-using System.Collections.Generic;
 using System.Text;
 
 namespace SharpChat.Packets {
@@ -21,7 +20,7 @@ namespace SharpChat.Packets {
             CharacterLimit = charLimit;
         }
 
-        public override IEnumerable<string> Pack() {
+        public override string Pack() {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)ServerPacket.UserConnect);
@@ -38,7 +37,7 @@ namespace SharpChat.Packets {
             sb.Append(IServerPacket.SEPARATOR);
             sb.Append(CharacterLimit);
 
-            return new[] { sb.ToString() };
+            return sb.ToString();
         }
     }
 }

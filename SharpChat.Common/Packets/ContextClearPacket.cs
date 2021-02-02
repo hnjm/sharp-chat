@@ -1,5 +1,4 @@
 ﻿using SharpChat.Channels;
-using System.Collections.Generic;
 using System.Text;
 
 namespace SharpChat.Packets {
@@ -23,7 +22,7 @@ namespace SharpChat.Packets {
             Mode = mode;
         }
 
-        public override IEnumerable<string> Pack() {
+        public override string Pack() {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)ServerPacket.ContextClear);
@@ -33,7 +32,7 @@ namespace SharpChat.Packets {
             if(!IsGlobal)
                 sb.Append(Channel.Name);
 
-            yield return sb.ToString();
+            return sb.ToString();
         }
     }
 }

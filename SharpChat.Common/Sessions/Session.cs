@@ -42,12 +42,7 @@ namespace SharpChat.Sessions {
                 if(!Connection.IsAvailable)
                     return;
 
-                IEnumerable<string> data = packet.Pack();
-
-                if(data != null)
-                    foreach(string line in data)
-                        if(!string.IsNullOrWhiteSpace(line))
-                            Connection.Send(line);
+                Connection.Send(packet.Pack());
             }
         }
 

@@ -1,19 +1,27 @@
 ﻿using SharpChat.Events;
 using SharpChat.Packets;
 using SharpChat.Users;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace SharpChat.Commands {
     public class NickCommand : IChatCommand {
+        private const string NAME = @"nick";
+        private IUser Sender { get; }
+
+        public NickCommand(IUser sender) {
+            Sender = sender ?? throw new ArgumentNullException(nameof(sender));
+        }
+
         public bool IsCommandMatch(string name, IEnumerable<string> args)
-            => name == @"nick";
+            => name == NAME;
 
         public IMessageEvent DispatchCommand(IChatCommandContext ctx) {
             bool setOthersNick = ctx.User.Can(UserPermissions.SetOthersNickname);
 
             if(!setOthersNick && !ctx.User.Can(UserPermissions.SetOwnNickname))
-                throw new CommandException(LCR.COMMAND_NOT_ALLOWED, @"/nick");
+                throw new CommandNotAllowedException(NAME);
 
             ChatUser targetUser = null;
             int offset = 1;
@@ -27,7 +35,7 @@ namespace SharpChat.Commands {
                 targetUser = ctx.User;
 
             if(ctx.Args.Count() < offset)
-                throw new CommandException(LCR.COMMAND_FORMAT_ERROR);
+                throw new CommandFormatException();
 
             string nickStr = string.Join('_', ctx.Args.Skip(offset))
                 .Replace(' ', '_')
@@ -45,11 +53,12 @@ namespace SharpChat.Commands {
                 nickStr = null;
 
             if(nickStr != null && ctx.Chat.Users.Get(nickStr) != null)
-                throw new CommandException(LCR.NAME_IN_USE, nickStr);
+                throw new NickNameInUseCommandException(nickStr);
 
             string previousName = targetUser == ctx.User ? (targetUser.NickName ?? targetUser.UserName) : null;
             targetUser.NickName = nickStr;
-            ctx.Channel.Send(new UserUpdatePacket(targetUser, previousName));
+            ctx.Channel.Send(new UserNickChangePacket(Sender, previousName, targetUser.DisplayName));
+            ctx.Channel.Send(new UserUpdatePacket(targetUser));
             return null;
         }
     }

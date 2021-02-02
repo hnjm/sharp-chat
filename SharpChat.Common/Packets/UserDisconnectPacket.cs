@@ -1,6 +1,5 @@
 ﻿using SharpChat.Users;
 using System;
-using System.Collections.Generic;
 using System.Text;
 
 namespace SharpChat.Packets {
@@ -23,7 +22,7 @@ namespace SharpChat.Packets {
             Reason = reason;
         }
 
-        public override IEnumerable<string> Pack() {
+        public override string Pack() {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)ServerPacket.UserDisconnect);
@@ -54,7 +53,7 @@ namespace SharpChat.Packets {
             sb.Append(IServerPacket.SEPARATOR);
             sb.Append(SequenceId);
 
-            return new[] { sb.ToString() };
+            return sb.ToString();
         }
     }
 }

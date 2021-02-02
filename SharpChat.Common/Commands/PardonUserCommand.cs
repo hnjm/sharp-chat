@@ -8,12 +8,18 @@ using System.Linq;
 
 namespace SharpChat.Commands {
     public class PardonUserCommand : IChatCommand {
+        private IUser Sender { get; }
+
+        public PardonUserCommand(IUser sender) {
+            Sender = sender ?? throw new ArgumentNullException(nameof(sender));
+        }
+
         public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == @"pardon" || name == @"unban";
 
         public IMessageEvent DispatchCommand(IChatCommandContext ctx) {
             if(!ctx.User.Can(UserPermissions.BanUser | UserPermissions.KickUser))
-                throw new CommandException(LCR.COMMAND_NOT_ALLOWED, $@"/{ctx.Args.First()}");
+                throw new CommandNotAllowedException(ctx.Args);
 
             string userName = ctx.Args.ElementAtOrDefault(1);
             BannedUser banRecord = null;
@@ -21,10 +27,10 @@ namespace SharpChat.Commands {
             if(string.IsNullOrEmpty(userName)
                 || (banRecord = ctx.Chat.Bans.GetUser(userName)) == null
                 || banRecord.Expires <= DateTimeOffset.Now)
-                throw new CommandException(LCR.USER_NOT_BANNED, banRecord?.Username ?? userName ?? @"User");
+                throw new NotBannedCommandException(banRecord?.Username ?? userName ?? @"User");
 
             ctx.Chat.Bans.Remove(banRecord);
-            ctx.User.Send(new LegacyCommandResponse(LCR.USER_UNBANNED, false, banRecord));
+            ctx.User.Send(new PardonResponsePacket(Sender, banRecord));
             return null;
         }
     }

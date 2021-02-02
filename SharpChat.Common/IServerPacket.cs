@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading;
 
 namespace SharpChat {
@@ -8,7 +7,8 @@ namespace SharpChat {
 
         [Obsolete(@"Should be represented by an Event's ID")]
         long SequenceId { get; }
-        IEnumerable<string> Pack();
+
+        string Pack();
     }
 
     public abstract class ServerPacketBase : IServerPacket {
@@ -22,6 +22,6 @@ namespace SharpChat {
             SequenceId = sequenceId > 0 ? sequenceId : Interlocked.Increment(ref SequenceIdCounter);
         }
 
-        public abstract IEnumerable<string> Pack();
+        public abstract string Pack();
     }
 }

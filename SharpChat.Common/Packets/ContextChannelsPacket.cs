@@ -12,7 +12,7 @@ namespace SharpChat.Packets {
             Channels = channels?.Where(c => c != null) ?? throw new ArgumentNullException(nameof(channels));
         }
 
-        public override IEnumerable<string> Pack() {
+        public override string Pack() {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)ServerPacket.ContextPopulate);
@@ -26,7 +26,7 @@ namespace SharpChat.Packets {
                 sb.Append(channel.Pack());
             }
 
-            yield return sb.ToString();
+            return sb.ToString();
         }
     }
 }

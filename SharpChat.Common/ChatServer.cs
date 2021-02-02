@@ -38,29 +38,29 @@ namespace SharpChat {
 
             List<IPacketHandler> handlers = new List<IPacketHandler> {
                 new PingPacketHandler(),
-                new AuthPacketHandler(Context.Sessions, VERSION),
+                new AuthPacketHandler(Context.Sessions, Context.Bot, VERSION),
                 new MessageSendPacketHandler(Context, new IChatCommand[] {
                     new JoinCommand(),
                     new AFKCommand(),
                     new WhisperCommand(),
                     new ActionCommand(),
-                    new WhoCommand(),
+                    new WhoCommand(Context.Bot),
                     new DeleteMessageCommand(),
 
-                    new NickCommand(),
-                    new CreateChannelCommand(),
-                    new DeleteChannelCommand(),
-                    new ChannelPasswordCommand(),
-                    new ChannelRankCommand(),
+                    new NickCommand(Context.Bot),
+                    new CreateChannelCommand(Context.Bot),
+                    new DeleteChannelCommand(Context.Bot),
+                    new ChannelPasswordCommand(Context.Bot),
+                    new ChannelRankCommand(Context.Bot),
 
-                    new BroadcastCommand(),
+                    new BroadcastCommand(Context.Bot),
                     new KickBanUserCommand(),
-                    new PardonUserCommand(),
-                    new PardonIPCommand(),
-                    new BanListCommand(),
-                    new WhoIsUserCommand(),
-                    new SilenceUserCommand(),
-                    new UnsilenceUserCommand(),
+                    new PardonUserCommand(Context.Bot),
+                    new PardonIPCommand(Context.Bot),
+                    new BanListCommand(Context.Bot),
+                    new WhoIsUserCommand(Context.Bot),
+                    new SilenceUserCommand(Context.Bot),
+                    new UnsilenceUserCommand(Context.Bot),
                 }),
             };
 
@@ -127,7 +127,7 @@ namespace SharpChat {
                     Context.BanUser(sess.User, DateTimeOffset.Now + Context.RateLimiter.BanDuration, false, UserDisconnectReason.Flood);
                     return;
                 } else if(rateLimit == RateLimitState.Warning)
-                    sess.User.Send(new FloodWarningPacket());
+                    sess.User.Send(new FloodWarningPacket(Context.Bot));
             }
 
             PacketHandlers.FirstOrDefault(x => x.PacketId == opCode)?.HandlePacket(

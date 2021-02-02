@@ -1,6 +1,5 @@
 ﻿using SharpChat.Events;
 using System;
-using System.Collections.Generic;
 using System.Text;
 
 namespace SharpChat.Packets {
@@ -15,7 +14,7 @@ namespace SharpChat.Packets {
 
         private const string V1_CHATBOT = "-1\tChatBot\tinherit\t";
 
-        public override IEnumerable<string> Pack() {
+        public override string Pack() {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)ServerPacket.ContextPopulate);
@@ -83,7 +82,7 @@ namespace SharpChat.Packets {
                 Event.Flags.HasFlag(EventFlags.Private) ? '1' : '0'
             );
 
-            yield return sb.ToString();
+            return sb.ToString();
         }
     }
 }
