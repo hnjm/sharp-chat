@@ -16,15 +16,15 @@ namespace SharpChat.Packets {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)ServerPacket.ContextPopulate);
-            sb.Append('\t');
+            sb.Append(IServerPacket.SEPARATOR);
             sb.Append((int)ServerContextPacket.Users);
-            sb.Append('\t');
+            sb.Append(IServerPacket.SEPARATOR);
             sb.Append(Users.Count());
 
             foreach (ChatUser user in Users) {
-                sb.Append('\t');
+                sb.Append(IServerPacket.SEPARATOR);
                 sb.Append(user.Pack());
-                sb.Append('\t');
+                sb.Append(IServerPacket.SEPARATOR);
                 sb.Append('1'); // visibility flag
             }
 

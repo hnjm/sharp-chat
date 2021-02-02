@@ -9,9 +9,6 @@ namespace SharpChat.Events {
         [JsonPropertyName(@"text")]
         public string Text { get; set; }
 
-        public static string PackBotMessage(int type, string id, params string[] parts)
-            => type.ToString() + '\f' + id + '\f' + string.Join('\f', parts);
-
         public ChatMessageEvent(IEvent evt, JsonElement elem) : base(evt, elem) {
             if(elem.TryGetProperty(@"text", out JsonElement textElem))
                 Text = textElem.GetString();

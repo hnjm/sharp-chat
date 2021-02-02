@@ -7,6 +7,9 @@ using System.Text.Json.Serialization;
 namespace SharpChat.Events {
     public abstract class ChatEvent : IEvent {
         [JsonIgnore]
+        public long EventId { get; set; }
+
+        [JsonIgnore]
         public DateTimeOffset DateTime { get; set; }
 
         [JsonIgnore]
@@ -21,9 +24,6 @@ namespace SharpChat.Events {
         [JsonIgnore]
         public EventFlags Flags { get; set; }
 
-        [JsonIgnore]
-        public long SequenceId { get; set; }
-
         private const long SEQ_ID_EPOCH = 1588377600000;
         private static int SequenceIdCounter = 0;
 
@@ -37,15 +37,15 @@ namespace SharpChat.Events {
         }
 
         public ChatEvent(IEvent evt, JsonElement elem) {
+            EventId = evt.EventId;
             DateTime = evt.DateTime;
             Sender = evt.Sender;
             Target = evt.Target;
             TargetName = evt.TargetName;
             Flags = evt.Flags;
-            SequenceId = evt.SequenceId;
         }
         public ChatEvent(DateTimeOffset dateTime, IUser user, Channel target, EventFlags flags) {
-            SequenceId = GenerateSequenceId();
+            EventId = GenerateSequenceId();
             DateTime = dateTime;
             Sender = user ?? throw new ArgumentNullException(nameof(user));
             Target = target ?? throw new ArgumentNullException(nameof(target));

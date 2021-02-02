@@ -18,23 +18,22 @@ namespace SharpChat.Packets {
 
             if(!string.IsNullOrEmpty(PreviousName)) {
                 sb.Append((int)ServerPacket.MessageAdd);
-                sb.Append('\t');
+                sb.Append(IServerPacket.SEPARATOR);
                 sb.Append(DateTimeOffset.Now.ToUnixTimeSeconds());
-                sb.Append('\t');
-                sb.Append(-1);
-                sb.Append("\t0\fnick\f");
-                sb.Append(PreviousName);
-                sb.Append('\f');
-                sb.Append(User.DisplayName);
-                sb.Append('\t');
+                sb.Append(IServerPacket.SEPARATOR);
+                sb.Append(-1); // HERE
+                sb.Append(IServerPacket.SEPARATOR);
+                sb.Append(BotArguments.Notice(@"nick", PreviousName, User.DisplayName));
+                sb.Append(IServerPacket.SEPARATOR);
                 sb.Append(SequenceId);
-                sb.Append("\t10010");
+                sb.Append(IServerPacket.SEPARATOR);
+                sb.Append(@"10010");
                 yield return sb.ToString();
                 sb.Clear();
             }
 
             sb.Append((int)ServerPacket.UserUpdate);
-            sb.Append('\t');
+            sb.Append(IServerPacket.SEPARATOR);
             sb.Append(User.Pack());
 
             yield return sb.ToString();

@@ -25,7 +25,7 @@ namespace SharpChat.Commands {
                 throw new CommandException(LCR.MESSAGE_DELETE_ERROR);
 
             if(ctx.Chat.Events.RemoveEvent(delEvent))
-                ctx.Chat.Send(new ChatMessageDeletePacket(delEvent.SequenceId));
+                ctx.Chat.Send(new ChatMessageDeletePacket(delEvent.EventId));
 
             return null;
         }

@@ -15,15 +15,15 @@ namespace SharpChat.Packets {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)ServerPacket.UserSwitch);
-            sb.Append('\t');
+            sb.Append(IServerPacket.SEPARATOR);
             sb.Append((int)ServerMovePacket.UserJoined);
-            sb.Append('\t');
+            sb.Append(IServerPacket.SEPARATOR);
             sb.Append(User.UserId);
-            sb.Append('\t');
+            sb.Append(IServerPacket.SEPARATOR);
             sb.Append(User.DisplayName);
-            sb.Append('\t');
+            sb.Append(IServerPacket.SEPARATOR);
             sb.Append(User.Colour);
-            sb.Append('\t');
+            sb.Append(IServerPacket.SEPARATOR);
             sb.Append(SequenceId);
 
             return new[] { sb.ToString() };

@@ -15,9 +15,9 @@ namespace SharpChat.Packets {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)ServerPacket.ChannelEvent);
-            sb.Append('\t');
+            sb.Append(IServerPacket.SEPARATOR);
             sb.Append((int)ServerChannelPacket.Delete);
-            sb.Append('\t');
+            sb.Append(IServerPacket.SEPARATOR);
             sb.Append(Channel.Name);
 
             yield return sb.ToString();

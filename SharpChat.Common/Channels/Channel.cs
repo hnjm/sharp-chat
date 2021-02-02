@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 
 namespace SharpChat.Channels {
-    public class Channel : IPacketTarget {
+    public class Channel : IServerPacketTarget {
         public string Name { get; set; }
         public string Password { get; set; } = string.Empty;
         public bool IsTemporary { get; set; } = false;
@@ -99,9 +99,9 @@ namespace SharpChat.Channels {
             StringBuilder sb = new StringBuilder();
 
             sb.Append(Name);
-            sb.Append('\t');
+            sb.Append(IServerPacket.SEPARATOR);
             sb.Append(string.IsNullOrEmpty(Password) ? '0' : '1');
-            sb.Append('\t');
+            sb.Append(IServerPacket.SEPARATOR);
             sb.Append(IsTemporary ? '1' : '0');
 
             return sb.ToString();

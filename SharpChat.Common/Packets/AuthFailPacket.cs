@@ -27,7 +27,9 @@ namespace SharpChat.Packets {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)ServerPacket.UserConnect);
-            sb.Append("\tn\t");
+            sb.Append(IServerPacket.SEPARATOR);
+            sb.Append('n');
+            sb.Append(IServerPacket.SEPARATOR);
 
             switch (Reason) {
                 case AuthFailReason.AuthInvalid:
@@ -43,7 +45,7 @@ namespace SharpChat.Packets {
             }
 
             if (Reason == AuthFailReason.Banned) {
-                sb.Append('\t');
+                sb.Append(IServerPacket.SEPARATOR);
 
                 if (Expires == DateTimeOffset.MaxValue)
                     sb.Append(@"-1");

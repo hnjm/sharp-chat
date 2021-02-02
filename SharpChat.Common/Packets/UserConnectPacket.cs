@@ -17,11 +17,11 @@ namespace SharpChat.Packets {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)ServerPacket.UserConnect);
-            sb.Append('\t');
+            sb.Append(IServerPacket.SEPARATOR);
             sb.Append(Joined.ToUnixTimeSeconds());
-            sb.Append('\t');
+            sb.Append(IServerPacket.SEPARATOR);
             sb.Append(User.Pack());
-            sb.Append('\t');
+            sb.Append(IServerPacket.SEPARATOR);
             sb.Append(SequenceId);
 
             yield return sb.ToString();

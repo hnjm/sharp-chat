@@ -10,7 +10,7 @@ using System.Net;
 using System.Text;
 
 namespace SharpChat.Users {
-    public class ChatUser : IUser, IHasSessions, IPacketTarget {
+    public class ChatUser : IUser, IHasSessions, IServerPacketTarget {
         public long UserId { get; set; }
         public string UserName { get; set; }
         public Colour Colour { get; set; }
@@ -91,11 +91,11 @@ namespace SharpChat.Users {
             StringBuilder sb = new StringBuilder();
 
             sb.Append(UserId);
-            sb.Append('\t');
+            sb.Append(IServerPacket.SEPARATOR);
             sb.Append(DisplayName);
-            sb.Append('\t');
+            sb.Append(IServerPacket.SEPARATOR);
             sb.Append(Colour);
-            sb.Append('\t');
+            sb.Append(IServerPacket.SEPARATOR);
             sb.Append(Rank);
             sb.Append(' ');
             sb.Append(Can(UserPermissions.KickUser) ? '1' : '0');

@@ -16,13 +16,13 @@ namespace SharpChat.Packets {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)ServerPacket.ContextPopulate);
-            sb.Append('\t');
+            sb.Append(IServerPacket.SEPARATOR);
             sb.Append((int)ServerContextPacket.Channels);
-            sb.Append('\t');
+            sb.Append(IServerPacket.SEPARATOR);
             sb.Append(Channels.Count());
 
             foreach (Channel channel in Channels) {
-                sb.Append('\t');
+                sb.Append(IServerPacket.SEPARATOR);
                 sb.Append(channel.Pack());
             }
 

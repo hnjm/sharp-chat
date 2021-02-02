@@ -26,11 +26,11 @@ namespace SharpChat.Packets {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)ServerPacket.BAKA);
-            sb.Append('\t');
+            sb.Append(IServerPacket.SEPARATOR);
             sb.Append((int)Reason);
 
             if (Reason == ForceDisconnectReason.Banned) {
-                sb.Append('\t');
+                sb.Append(IServerPacket.SEPARATOR);
                 sb.Append(Expires.ToUnixTimeSeconds());
             }
 

@@ -9,6 +9,6 @@ namespace SharpChat.Events {
         Channel Target { get; }
         string TargetName { get; }
         EventFlags Flags { get; }
-        long SequenceId { get; }
+        long EventId { get; }
     }
 }

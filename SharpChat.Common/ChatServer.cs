@@ -111,7 +111,7 @@ namespace SharpChat {
                 return;
             }
 
-            IEnumerable<string> args = msg.Split('\t');
+            IEnumerable<string> args = msg.Split(IServerPacket.SEPARATOR);
             if(!Enum.TryParse(args.ElementAtOrDefault(0), out ClientPacket opCode))
                 return;
 

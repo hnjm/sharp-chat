@@ -19,16 +19,16 @@ namespace SharpChat.Packets {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)ServerPacket.ContextPopulate);
-            sb.Append('\t');
+            sb.Append(IServerPacket.SEPARATOR);
             sb.Append((int)ServerContextPacket.Message);
-            sb.Append('\t');
+            sb.Append(IServerPacket.SEPARATOR);
             sb.Append(Event.DateTime.ToUnixTimeSeconds());
-            sb.Append('\t');
+            sb.Append(IServerPacket.SEPARATOR);
 
             switch (Event) {
                 case IMessageEvent msg:
                     sb.Append(Event.Sender.Pack());
-                    sb.Append('\t');
+                    sb.Append(IServerPacket.SEPARATOR);
                     sb.Append(
                         msg.Text
                             .Replace(@"<", @"&lt;")
@@ -40,54 +40,44 @@ namespace SharpChat.Packets {
 
                 case UserConnectEvent _:
                     sb.Append(V1_CHATBOT);
-                    sb.Append("\t0\fjoin\f");
-                    sb.Append(Event.Sender.UserName);
+                    sb.Append(IServerPacket.SEPARATOR);
+                    sb.Append(BotArguments.Notice(@"join", Event.Sender.UserName));
                     break;
 
                 case UserChannelJoinEvent _:
                     sb.Append(V1_CHATBOT);
-                    sb.Append("\t0\fjchan\f");
-                    sb.Append(Event.Sender.UserName);
+                    sb.Append(IServerPacket.SEPARATOR);
+                    sb.Append(BotArguments.Notice(@"jchan", Event.Sender.UserName));
                     break;
 
                 case UserChannelLeaveEvent _:
                     sb.Append(V1_CHATBOT);
-                    sb.Append("\t0\flchan\f");
-                    sb.Append(Event.Sender.UserName);
+                    sb.Append(IServerPacket.SEPARATOR);
+                    sb.Append(BotArguments.Notice(@"lchan", Event.Sender.UserName));
                     break;
 
                 case UserDisconnectEvent ude:
+                    string udeReason = ude.Reason switch {
+                        UserDisconnectReason.Flood => @"flood",
+                        UserDisconnectReason.Kicked => @"kick",
+                        UserDisconnectReason.TimeOut => @"timeout",
+                        _ => @"leave",
+                    };
+
                     sb.Append(V1_CHATBOT);
-                    sb.Append("\t0\f");
-
-                    switch (ude.Reason) {
-                        case UserDisconnectReason.Flood:
-                            sb.Append(@"flood");
-                            break;
-                        case UserDisconnectReason.Kicked:
-                            sb.Append(@"kick");
-                            break;
-                        case UserDisconnectReason.TimeOut:
-                            sb.Append(@"timeout");
-                            break;
-                        case UserDisconnectReason.Leave:
-                        default:
-                            sb.Append(@"leave");
-                            break;
-                    }
-
-                    sb.Append('\f');
-                    sb.Append(Event.Sender.UserName);
+                    sb.Append(IServerPacket.SEPARATOR);
+                    sb.Append(BotArguments.Notice(udeReason, Event.Sender.UserName));
                     break;
             }
 
 
-            sb.Append('\t');
-            sb.Append(Event.SequenceId < 1 ? SequenceId : Event.SequenceId);
-            sb.Append('\t');
+            sb.Append(IServerPacket.SEPARATOR);
+            sb.Append(Event.EventId < 1 ? SequenceId : Event.EventId);
+            sb.Append(IServerPacket.SEPARATOR);
             sb.Append(Notify ? '1' : '0');
+            sb.Append(IServerPacket.SEPARATOR);
             sb.AppendFormat(
-                "\t1{0}0{1}{2}",
+                "1{0}0{1}{2}",
                 Event.Flags.HasFlag(EventFlags.Action) ? '1' : '0',
                 Event.Flags.HasFlag(EventFlags.Action) ? '0' : '1',
                 Event.Flags.HasFlag(EventFlags.Private) ? '1' : '0'

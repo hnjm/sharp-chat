@@ -1,8 +1,12 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 
 namespace SharpChat {
     public interface IServerPacket {
+        public const char SEPARATOR = '\t';
+
+        [Obsolete(@"Should be represented by an Event's ID")]
         long SequenceId { get; }
         IEnumerable<string> Pack();
     }
@@ -10,6 +14,7 @@ namespace SharpChat {
     public abstract class ServerPacketBase : IServerPacket {
         private static long SequenceIdCounter = 0;
 
+        [Obsolete(@"Should be represented by an Event's ID")]
         public long SequenceId { get; }
 
         public ServerPacketBase(long sequenceId = 0) {

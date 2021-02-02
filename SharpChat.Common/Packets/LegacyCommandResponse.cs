@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 
 namespace SharpChat.Packets {
@@ -24,43 +23,36 @@ namespace SharpChat.Packets {
 
             if (StringId == LCR.WELCOME) {
                 sb.Append((int)ServerPacket.ContextPopulate);
-                sb.Append('\t');
+                sb.Append(IServerPacket.SEPARATOR);
                 sb.Append((int)ServerContextPacket.Message);
-                sb.Append('\t');
+                sb.Append(IServerPacket.SEPARATOR);
                 sb.Append(DateTimeOffset.Now.ToUnixTimeSeconds());
-                sb.Append('\t');
+                sb.Append(IServerPacket.SEPARATOR);
                 sb.Append("-1\tChatBot\tinherit\t"); // HERE
-                sb.Append('\t');
+                sb.Append(IServerPacket.SEPARATOR);
             } else {
                 sb.Append((int)ServerPacket.MessageAdd);
-                sb.Append('\t');
+                sb.Append(IServerPacket.SEPARATOR);
                 sb.Append(DateTimeOffset.Now.ToUnixTimeSeconds());
-                sb.Append('\t');
+                sb.Append(IServerPacket.SEPARATOR);
                 sb.Append(-1); // HERE
-                sb.Append('\t');
+                sb.Append(IServerPacket.SEPARATOR);
             }
 
-            sb.Append(IsError ? '1' : '0');
-            sb.Append('\f');
-            sb.Append(StringId == LCR.WELCOME ? LCR.BROADCAST : StringId);
-
-            if (Arguments?.Any() == true)
-                foreach (object arg in Arguments) {
-                    sb.Append('\f');
-                    sb.Append(arg);
-                }
-
-            sb.Append('\t');
+            sb.Append(new BotArguments(IsError, StringId == LCR.WELCOME ? LCR.BROADCAST : StringId, Arguments));
+            sb.Append(IServerPacket.SEPARATOR);
 
             if (StringId == LCR.WELCOME) {
                 sb.Append(StringId);
-                sb.Append("\t0");
+                sb.Append(IServerPacket.SEPARATOR);
+                sb.Append('0');
             } else
                 sb.Append(SequenceId);
 
-            sb.Append("\t10010");
+            sb.Append(IServerPacket.SEPARATOR);
+            sb.Append("10010");
             /*sb.AppendFormat(
-                "\t1{0}0{1}{2}",
+                "1{0}0{1}{2}",
                 Flags.HasFlag(ChatMessageFlags.Action) ? '1' : '0',
                 Flags.HasFlag(ChatMessageFlags.Action) ? '0' : '1',
                 Flags.HasFlag(ChatMessageFlags.Private) ? '1' : '0'

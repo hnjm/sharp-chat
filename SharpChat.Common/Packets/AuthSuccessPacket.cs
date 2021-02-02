@@ -25,15 +25,17 @@ namespace SharpChat.Packets {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)ServerPacket.UserConnect);
-            sb.Append("\ty\t");
+            sb.Append(IServerPacket.SEPARATOR);
+            sb.Append('y');
+            sb.Append(IServerPacket.SEPARATOR);
             sb.Append(User.Pack());
-            sb.Append('\t');
+            sb.Append(IServerPacket.SEPARATOR);
             sb.Append(Channel.Name);
-            sb.Append('\t');
+            sb.Append(IServerPacket.SEPARATOR);
             sb.Append(Version);
-            sb.Append('\t');
+            sb.Append(IServerPacket.SEPARATOR);
             sb.Append(Session.Id);
-            sb.Append('\t');
+            sb.Append(IServerPacket.SEPARATOR);
             sb.Append(CharacterLimit);
 
             return new[] { sb.ToString() };

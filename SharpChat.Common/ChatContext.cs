@@ -15,7 +15,7 @@ using System.Net;
 using System.Threading;
 
 namespace SharpChat {
-    public class ChatContext : IDisposable, IPacketTarget {
+    public class ChatContext : IDisposable, IServerPacketTarget {
         public BanManager Bans { get; }
         public ChannelManager Channels { get; }
         public UserManager Users { get; }

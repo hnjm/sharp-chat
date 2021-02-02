@@ -7,7 +7,7 @@ namespace SharpChat.Packets {
     public class ChatMessageAddPacket : ServerPacketBase {
         public IMessageEvent Message { get; private set; }
 
-        public ChatMessageAddPacket(IMessageEvent message) : base(message.SequenceId) {
+        public ChatMessageAddPacket(IMessageEvent message) : base(message.EventId) {
             Message = message ?? throw new ArgumentNullException(nameof(message));
         }
 
@@ -15,13 +15,13 @@ namespace SharpChat.Packets {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)ServerPacket.MessageAdd);
-            sb.Append('\t');
+            sb.Append(IServerPacket.SEPARATOR);
 
             sb.Append(Message.DateTime.ToUnixTimeSeconds());
-            sb.Append('\t');
+            sb.Append(IServerPacket.SEPARATOR);
 
             sb.Append(Message.Sender?.UserId ?? -1);
-            sb.Append('\t');
+            sb.Append(IServerPacket.SEPARATOR);
 
             if (Message.Flags.HasFlag(EventFlags.Action))
                 sb.Append(@"<i>");
@@ -37,15 +37,16 @@ namespace SharpChat.Packets {
             if (Message.Flags.HasFlag(EventFlags.Action))
                 sb.Append(@"</i>");
 
-            sb.Append('\t');
+            sb.Append(IServerPacket.SEPARATOR);
             sb.Append(SequenceId);
+            sb.Append(IServerPacket.SEPARATOR);
             sb.AppendFormat(
-                "\t1{0}0{1}{2}",
+                "1{0}0{1}{2}",
                 Message.Flags.HasFlag(EventFlags.Action) ? '1' : '0',
                 Message.Flags.HasFlag(EventFlags.Action) ? '0' : '1',
                 Message.Flags.HasFlag(EventFlags.Private) ? '1' : '0'
             );
-            sb.Append('\t');
+            sb.Append(IServerPacket.SEPARATOR);
             sb.Append(Message.TargetName);
 
             yield return sb.ToString();

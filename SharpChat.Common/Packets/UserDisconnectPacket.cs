@@ -27,11 +27,11 @@ namespace SharpChat.Packets {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)ServerPacket.UserDisconnect);
-            sb.Append('\t');
+            sb.Append(IServerPacket.SEPARATOR);
             sb.Append(User.UserId);
-            sb.Append('\t');
+            sb.Append(IServerPacket.SEPARATOR);
             sb.Append(User.DisplayName);
-            sb.Append('\t');
+            sb.Append(IServerPacket.SEPARATOR);
 
             switch (Reason) {
                 case UserDisconnectReason.Leave:
@@ -49,9 +49,9 @@ namespace SharpChat.Packets {
                     break;
             }
 
-            sb.Append('\t');
+            sb.Append(IServerPacket.SEPARATOR);
             sb.Append(Disconnected.ToUnixTimeSeconds());
-            sb.Append('\t');
+            sb.Append(IServerPacket.SEPARATOR);
             sb.Append(SequenceId);
 
             return new[] { sb.ToString() };

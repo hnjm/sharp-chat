@@ -20,7 +20,7 @@ namespace SharpChat.Events.Storage {
 
         public IEvent GetEvent(long seqId) {
             lock(Lock)
-                return Events.FirstOrDefault(e => e.SequenceId == seqId);
+                return Events.FirstOrDefault(e => e.EventId == seqId);
         }
 
         public IEnumerable<IEvent> GetEventsForTarget(Channel target, int amount = 20, int offset = 0) {

@@ -15,6 +15,6 @@
             => true;
 
         public string Pack() // permission part is empty for bot apparently
-            => "-1\tChatBot\t#9e8da7\t";
+            => string.Join(IServerPacket.SEPARATOR, UserId, DisplayName, Colour, string.Empty);
     }
 }

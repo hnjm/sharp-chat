@@ -14,7 +14,7 @@ namespace SharpChat.Packets {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)ServerPacket.Pong);
-            sb.Append('\t');
+            sb.Append(IServerPacket.SEPARATOR);
             sb.Append(PongTime.ToUnixTimeSeconds());
 
             yield return sb.ToString();

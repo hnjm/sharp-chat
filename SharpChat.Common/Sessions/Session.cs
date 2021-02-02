@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Net;
 
 namespace SharpChat.Sessions {
-    public class Session : IDisposable, IPacketTarget {
+    public class Session : IDisposable, IServerPacketTarget {
         public const int ID_LENGTH = 32;
 
         public IConnection Connection { get; private set; }

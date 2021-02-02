@@ -21,7 +21,7 @@ namespace SharpChat.Events.Storage {
                 + @", `event_sender`, `event_sender_name`, `event_sender_colour`, `event_sender_rank`, `event_sender_nick`, `event_sender_perms`)"
                 + @" VALUES (@id, " + Wrapper.FromUnixTime(@"@created") + @", @type, @target, @flags, @data"
                 + @", @sender, @sender_name, @sender_colour, @sender_rank, @sender_nick, @sender_perms)",
-                Wrapper.CreateParam(@"id", evt.SequenceId),
+                Wrapper.CreateParam(@"id", evt.EventId),
                 Wrapper.CreateParam(@"created", evt.DateTime.ToUnixTimeSeconds()),
                 Wrapper.CreateParam(@"type", evt.GetType().FullName),
                 Wrapper.CreateParam(@"target", evt.Target.Name),
@@ -39,7 +39,7 @@ namespace SharpChat.Events.Storage {
         public bool RemoveEvent(IEvent evt) {
             return Wrapper.RunCommand(
                 @"UPDATE IGNORE `sqc_events` SET `event_deleted` = " + Wrapper.DateTimeNow() + @" WHERE `event_id` = @id AND `event_deleted` IS NULL",
-                Wrapper.CreateParam(@"id", evt.SequenceId)
+                Wrapper.CreateParam(@"id", evt.EventId)
             ) > 0;
         }
 

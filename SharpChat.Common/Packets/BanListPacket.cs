@@ -16,19 +16,18 @@ namespace SharpChat.Packets {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)ServerPacket.MessageAdd);
-            sb.Append('\t');
+            sb.Append(IServerPacket.SEPARATOR);
             sb.Append(DateTimeOffset.Now.ToUnixTimeSeconds());
-            sb.Append("\t-1\t0\fbanlist\f");
-
-            foreach (IBan ban in Bans)
-                sb.AppendFormat(@"<a href=""javascript:void(0);"" onclick=""Chat.SendMessageWrapper('/unban '+ this.innerHTML);"">{0}</a>, ", ban);
-
-            if (Bans.Any())
-                sb.Length -= 2;
-
-            sb.Append('\t');
+            sb.Append(IServerPacket.SEPARATOR);
+            sb.Append(-1); // HERE
+            sb.Append(IServerPacket.SEPARATOR);
+            sb.Append(BotArguments.Notice(@"banlist", string.Join(", ", Bans.Select(
+                b => string.Format(@"<a href=""javascript:void(0);"" onclick=""Chat.SendMessageWrapper('/unban '+ this.innerHTML);"">{0}</a>, ", b)
+            ))));
+            sb.Append(IServerPacket.SEPARATOR);
             sb.Append(SequenceId);
-            sb.Append("\t10010");
+            sb.Append(IServerPacket.SEPARATOR);
+            sb.Append(@"10010");
 
             return new[] { sb.ToString() };
         }
