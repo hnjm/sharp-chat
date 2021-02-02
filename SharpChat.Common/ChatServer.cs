@@ -1,5 +1,4 @@
-﻿using Hamakaze;
-using SharpChat.Commands;
+﻿using SharpChat.Commands;
 using SharpChat.Configuration;
 using SharpChat.Database;
 using SharpChat.DataProvider;
@@ -27,17 +26,14 @@ namespace SharpChat {
         private IServer Server { get; }
         private ChatContext Context { get; }
 
-        public HttpClient HttpClient { get; }
-
         private IReadOnlyCollection<IPacketHandler> PacketHandlers { get; }
 
         public bool AcceptingConnections { get; private set; }
 
-        public ChatServer(IConfig config, IServer server, HttpClient httpClient, IDataProvider dataProvider, IDatabaseBackend databaseBackend) {
+        public ChatServer(IConfig config, IServer server, IDataProvider dataProvider, IDatabaseBackend databaseBackend) {
             Logger.Write("Starting Sock Chat server...");
 
             Config = config ?? throw new ArgumentNullException(nameof(config));
-            HttpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
             Context = new ChatContext(Config.ScopeTo(@"chat"), databaseBackend, dataProvider);
 
             List<IPacketHandler> handlers = new List<IPacketHandler> {
@@ -84,6 +80,8 @@ namespace SharpChat {
         }
 
         private void OnOpen(IConnection conn) {
+            Logger.Debug($@"[{conn}] Connection oepened");
+
             if(!AcceptingConnections) {
                 conn.Dispose();
                 return;
@@ -93,13 +91,13 @@ namespace SharpChat {
         }
 
         private void OnClose(IConnection conn) {
+            Logger.Debug($@"[{conn}] Connection closed");
             Context.Update();
         }
 
         private void OnError(IConnection conn, Exception ex) {
             Session sess = Context.Sessions.ByConnection(conn);
-            string sessId = sess?.Id ?? new string('0', Session.ID_LENGTH);
-            Logger.Write($@"[{sessId} {conn.RemoteAddress}] {ex}");
+            Logger.Write($@"[{sess} {conn}] {ex}");
             Context.Update();
         }
 
@@ -107,7 +105,7 @@ namespace SharpChat {
             Context.Update();
 
             RateLimitState rateLimit = Context.RateLimiter.Bump(conn);
-            Logger.Debug($@"[{conn.RemoteAddress}] {rateLimit}");
+            Logger.Debug($@"[{conn}] {rateLimit}");
             if(rateLimit == RateLimitState.Disconnect) {
                 conn.Dispose();
                 return;

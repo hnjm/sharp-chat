@@ -73,6 +73,10 @@ namespace SharpChat.Sessions {
         public void BumpPing()
             => LastPing = DateTimeOffset.Now;
 
+        public override string ToString() {
+            return Id;
+        }
+
         private bool IsDisposed;
         ~Session()
             => DoDispose();

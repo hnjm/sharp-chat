@@ -5,8 +5,4 @@
     <RootNamespace>SharpChat</RootNamespace>
   </PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\Hamakaze\Hamakaze.csproj" />
-  </ItemGroup>
-
 </Project>

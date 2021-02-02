@@ -2,17 +2,15 @@
 using SharpChat.Configuration;
 using SharpChat.Database;
 using SharpChat.Database.Null;
-using SharpChat.Database.SQLite;
 using SharpChat.DataProvider;
 using SharpChat.DataProvider.Null;
+using SharpChat.Reflection;
 using SharpChat.WebSocket;
 using SharpChat.WebSocket.Fleck;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Reflection;
 using System.Text;
 using System.Threading;
 
@@ -47,36 +45,39 @@ namespace SharpChat {
             using IConfig config = new StreamConfig(configFile);
 
             // Load database and data provider libraries
-            LoadAssemblies(@"SharpChat.Database.*.dll");
-            LoadAssemblies(@"SharpChat.DataProvider.*.dll");
-
-            IDatabaseBackend databaseBackend;
+            ReflectionUtilities.LoadAssemblies(@"SharpChat.Database.*.dll");
+            ReflectionUtilities.LoadAssemblies(@"SharpChat.DataProvider.*.dll");
 
             // Allow forcing a sqlite database through console flags
             string sqliteDbPath = GetFlagArgument(args, @"--dbpath");
+            string databaseBackendName;
+            object databaseArgument;
             if(!string.IsNullOrEmpty(sqliteDbPath)) {
                 Logger.Write($@"Forcing SQLite: {sqliteDbPath}");
-                databaseBackend = new SQLiteDatabaseBackend(sqliteDbPath);
+                databaseBackendName = @"sqlite";
+                databaseArgument = sqliteDbPath;
             } else {
-                string databaseBackendName = GetFlagArgument(args, @"--dbb") ?? config.ReadValue(@"db");
-                Type databaseBackendType = FindDatabaseBackendType(databaseBackendName);
-                databaseBackend = (IDatabaseBackend)Activator.CreateInstance(databaseBackendType, config.ScopeTo($@"db:{databaseBackendName}"));
+                databaseBackendName = GetFlagArgument(args, @"--dbb") ?? config.ReadValue(@"db");
+                databaseArgument = config.ScopeTo($@"db:{databaseBackendName}");
             }
+
+            IDatabaseBackend databaseBackend = new ObjectConstructor<IDatabaseBackend, DatabaseBackendAttribute, NullDatabaseBackend>()
+                .Construct(databaseBackendName, databaseArgument);
 
             using HttpClient httpClient = new HttpClient {
                 DefaultUserAgent = @"SharpChat/1.0",
             };
 
             string dataProviderName = GetFlagArgument(args, @"--dpn") ?? config.ReadValue(@"dp");
-            Type dataProviderType = FindDataProviderType(dataProviderName);
-            IDataProvider dataProvider = (IDataProvider)Activator.CreateInstance(dataProviderType, config.ScopeTo($@"dp:{dataProviderName}"), httpClient);
+            IDataProvider dataProvider = new ObjectConstructor<IDataProvider, DataProviderAttribute, NullDataProvider>()
+                    .Construct(dataProviderName, config.ScopeTo($@"dp:{dataProviderName}"), httpClient);
 
             string portArg = GetFlagArgument(args, @"--port") ?? config.ReadValue(@"chat:port");
             if(string.IsNullOrEmpty(portArg) || !ushort.TryParse(portArg, out ushort port))
                 port = DEFAULT_PORT;
 
             using IServer wss = new FleckServer(new IPEndPoint(IPAddress.Any, port));
-            using ChatServer scs = new ChatServer(config, wss, httpClient, dataProvider, databaseBackend);
+            using ChatServer scs = new ChatServer(config, wss, dataProvider, databaseBackend);
 
             using ManualResetEvent mre = new ManualResetEvent(false);
             Console.CancelKeyPress += (s, e) => { e.Cancel = true; mre.Set(); };
@@ -86,34 +87,6 @@ namespace SharpChat {
                 dpd.Dispose();
             if(databaseBackend is IDisposable dbd)
                 dbd.Dispose();
-        }
-
-        private static void LoadAssemblies(string pattern) {
-            IEnumerable<string> files = Directory.GetFiles(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), pattern);
-            foreach(string file in files)
-                Assembly.LoadFile(file);
-        }
-
-        private static Type FindTypeThroughAttribute<T>(Func<T, bool> compare)
-            where T : Attribute {
-            IEnumerable<Assembly> asms = AppDomain.CurrentDomain.GetAssemblies();
-            foreach(Assembly asm in asms) {
-                IEnumerable<Type> types = asm.GetExportedTypes();
-                foreach(Type type in types) {
-                    Attribute attr = type.GetCustomAttribute(typeof(T));
-                    if(attr != null && compare((T)attr))
-                        return type;
-                }
-            }
-            return null;
-        }
-
-        private static Type FindDatabaseBackendType(string name) {
-            return FindTypeThroughAttribute<DatabaseBackendAttribute>(a => a.Name == name) ?? typeof(NullDatabaseBackend);
-        }
-
-        private static Type FindDataProviderType(string name) {
-            return FindTypeThroughAttribute<DataProviderAttribute>(a => a.Name == name) ?? typeof(NullDataProvider);
         }
 
         private static void ConvertConfiguration() {

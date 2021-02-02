@@ -22,7 +22,7 @@ namespace SharpChat.WebSocket.Fleck {
         public event Action<IConnection, Exception> OnError;
         public event Action<IConnection, string> OnMessage;
 
-        private InternalFleckWebSocketServer Server { get; set; }
+        private FleckWebSocketServer Server { get; set; }
         private IPEndPoint EndPoint { get; }
 
         public FleckServer(IPEndPoint endPoint) {
@@ -32,7 +32,7 @@ namespace SharpChat.WebSocket.Fleck {
         public void Start() {
             if(Server != null)
                 throw new Exception(@"A server has already been started.");
-            Server = new InternalFleckWebSocketServer(EndPoint);
+            Server = new FleckWebSocketServer(EndPoint);
             Server.Start(rawConn => {
                 FleckConnection conn = new FleckConnection(rawConn);
                 rawConn.OnOpen += () => OnOpen?.Invoke(conn);
@@ -59,14 +59,14 @@ namespace SharpChat.WebSocket.Fleck {
             Server?.Dispose();
         }
 
-        private class InternalFleckWebSocketServer : IFleckWebSocketServer {
+        private class FleckWebSocketServer : IFleckWebSocketServer {
             private readonly string _scheme;
             private readonly IPAddress _locationIP;
             private Action<IFleckWebSocketConnection> _config;
 
             public EndPoint EndPoint { get; }
 
-            public InternalFleckWebSocketServer(IPEndPoint endPoint, bool secure = false) {
+            public FleckWebSocketServer(IPEndPoint endPoint, bool secure = false) {
                 EndPoint = endPoint ?? throw new ArgumentNullException(nameof(endPoint));
                 _scheme = secure ? @"wss" : @"ws";
 

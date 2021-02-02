@@ -5,6 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Hamakaze\Hamakaze.csproj" />
     <ProjectReference Include="..\SharpChat.Common\SharpChat.Common.csproj" />
   </ItemGroup>
 

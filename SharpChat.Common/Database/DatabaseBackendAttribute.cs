@@ -1,12 +1,8 @@
-﻿using System;
+﻿using SharpChat.Reflection;
 
 namespace SharpChat.Database {
-    [AttributeUsage(AttributeTargets.Class)]
-    public class DatabaseBackendAttribute : Attribute {
-        public string Name { get; }
-
-        public DatabaseBackendAttribute(string name) {
-            Name = name ?? throw new ArgumentNullException(nameof(name));
+    public class DatabaseBackendAttribute : ObjectConstructorAttribute {
+        public DatabaseBackendAttribute(string name) : base(name) {
         }
     }
 }
