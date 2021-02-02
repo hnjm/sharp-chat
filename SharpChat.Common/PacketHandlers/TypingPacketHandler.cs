@@ -3,7 +3,7 @@ using SharpChat.Packets;
 
 namespace SharpChat.PacketHandlers {
     public class TypingPacketHandler : IPacketHandler {
-        public SockChatClientPacket PacketId => SockChatClientPacket.Typing;
+        public ClientPacket PacketId => ClientPacket.Typing;
 
         public void HandlePacket(IPacketHandlerContext ctx) {
             if(!ctx.HasUser)

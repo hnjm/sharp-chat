@@ -6,6 +6,7 @@ using SharpChat.DataProvider;
 using SharpChat.Events;
 using SharpChat.Events.Storage;
 using SharpChat.Packets;
+using SharpChat.RateLimiting;
 using SharpChat.Sessions;
 using SharpChat.Users;
 using System;
@@ -19,6 +20,9 @@ namespace SharpChat {
         public ChannelManager Channels { get; }
         public UserManager Users { get; }
         public SessionManager Sessions { get; }
+        public RateLimiter RateLimiter { get; }
+
+        public DatabaseWrapper Database { get; }
 
         public IChatEventStorage Events { get; }
         public IDataProvider DataProvider { get; }
@@ -35,16 +39,18 @@ namespace SharpChat {
         private CachedValue<int> MessageTextMaxLengthValue { get; }
         public int MessageTextMaxLength => MessageTextMaxLengthValue;
 
-        public ChatContext(IConfig config, DatabaseWrapper database, IDataProvider dataProvider) {
+        public ChatContext(IConfig config, IDatabaseBackend databaseBackend, IDataProvider dataProvider) {
             Config = config ?? throw new ArgumentNullException(nameof(config));
+            Database = new DatabaseWrapper(databaseBackend ?? throw new ArgumentNullException(nameof(databaseBackend)));
             DataProvider = dataProvider ?? throw new ArgumentNullException(nameof(dataProvider));
             Bans = new BanManager(this);
             Users = new UserManager(this);
             Channels = new ChannelManager(this, config);
             Sessions = new SessionManager(config.ScopeTo(@"sessions"));
-            Events = database.IsNullBackend
+            RateLimiter = new RateLimiter(Config.ScopeTo(@"flood"));
+            Events = Database.IsNullBackend
                 ? new MemoryChatEventStorage()
-                : new ADOChatEventStorage(database);
+                : new ADOChatEventStorage(Database);
 
             MessageTextMaxLengthValue = Config.ReadCached(@"messages:maxLength", DEFAULT_MSG_LENGTH_MAX);
 
@@ -81,29 +87,6 @@ namespace SharpChat {
 
             user.Close();
             UserLeave(user.Channel, user, reason);
-        }
-
-        public void HandleJoin(ChatUser user, Channel chan, Session sess) {
-            if (!chan.HasUser(user)) {
-                chan.Send(new UserConnectPacket(DateTimeOffset.Now, user));
-                Events.AddEvent(new UserConnectEvent(DateTimeOffset.Now, user, chan));
-            }
-
-            sess.Send(new AuthSuccessPacket(user, chan, sess, MessageTextMaxLength));
-            sess.Send(new ContextUsersPacket(chan.GetUsers(new[] { user })));
-
-            IEnumerable<IEvent> msgs = Events.GetEventsForTarget(chan);
-
-            foreach (IEvent msg in msgs)
-                sess.Send(new ContextMessagePacket(msg));
-
-            sess.Send(new ContextChannelsPacket(Channels.OfHierarchy(user.Rank)));
-
-            if (!chan.HasUser(user))
-                chan.UserJoin(user);
-
-            if (!Users.Contains(user))
-                Users.Add(user);
         }
 
         public void UserLeave(Channel chan, ChatUser user, UserDisconnectReason reason = UserDisconnectReason.Leave) {
@@ -207,8 +190,6 @@ namespace SharpChat {
             Channels.Dispose();
             Users.Dispose();
             Bans.Dispose();
-
-            MessageTextMaxLengthValue.Dispose();
         }
     }
 }

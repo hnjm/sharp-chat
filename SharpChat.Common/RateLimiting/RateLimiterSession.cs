@@ -6,7 +6,7 @@ using System.Collections.Generic;
 namespace SharpChat.RateLimiting {
     public class RateLimiterSession {
         public IHasSessions User { get; }
-        public IWebSocketConnection Connection { get; }
+        public IConnection Connection { get; }
         public Queue<DateTimeOffset> TimePoints { get; } = new Queue<DateTimeOffset>();
         public object Sync { get; } = new object();
 
@@ -14,13 +14,13 @@ namespace SharpChat.RateLimiting {
             User = user ?? throw new ArgumentNullException(nameof(user));
         }
 
-        public RateLimiterSession(IWebSocketConnection conn) {
+        public RateLimiterSession(IConnection conn) {
             Connection = conn ?? throw new ArgumentNullException(nameof(conn));
         }
 
         public bool IsMatch(IHasSessions user)
             => user != null && User == user;
-        public bool IsMatch(IWebSocketConnection conn)
+        public bool IsMatch(IConnection conn)
             => conn != null ? Connection == conn : User.HasConnection(conn);
     }
 }

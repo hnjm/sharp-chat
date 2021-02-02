@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 
 namespace SharpChat.Packets {
-    public class ChatMessageAddPacket : ServerPacket {
+    public class ChatMessageAddPacket : ServerPacketBase {
         public IMessageEvent Message { get; private set; }
 
         public ChatMessageAddPacket(IMessageEvent message) : base(message.SequenceId) {
@@ -14,7 +14,7 @@ namespace SharpChat.Packets {
         public override IEnumerable<string> Pack() {
             StringBuilder sb = new StringBuilder();
 
-            sb.Append((int)SockChatServerPacket.MessageAdd);
+            sb.Append((int)ServerPacket.MessageAdd);
             sb.Append('\t');
 
             sb.Append(Message.DateTime.ToUnixTimeSeconds());

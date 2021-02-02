@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 
 namespace SharpChat.Packets {
-    public class TypingPacket : ServerPacket {
+    public class TypingPacket : ServerPacketBase {
         public Channel Channel { get; }
         public ChannelTyping TypingInfo { get; }
 
@@ -16,7 +16,7 @@ namespace SharpChat.Packets {
         public override IEnumerable<string> Pack() {
             StringBuilder sb = new StringBuilder();
 
-            sb.Append((int)SockChatServerPacket.Typing);
+            sb.Append((int)ServerPacket.Typing);
             sb.Append('\t');
             sb.Append(Channel?.TargetName ?? string.Empty);
             sb.Append('\t');

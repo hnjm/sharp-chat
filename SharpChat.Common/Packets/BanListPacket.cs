@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 
 namespace SharpChat.Packets {
-    public class BanListPacket : ServerPacket {
+    public class BanListPacket : ServerPacketBase {
         public IEnumerable<IBan> Bans { get; private set; }
 
         public BanListPacket(IEnumerable<IBan> bans) {
@@ -15,7 +15,7 @@ namespace SharpChat.Packets {
         public override IEnumerable<string> Pack() {
             StringBuilder sb = new StringBuilder();
 
-            sb.Append((int)SockChatServerPacket.MessageAdd);
+            sb.Append((int)ServerPacket.MessageAdd);
             sb.Append('\t');
             sb.Append(DateTimeOffset.Now.ToUnixTimeSeconds());
             sb.Append("\t-1\t0\fbanlist\f");

@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.Text;
 
 namespace SharpChat.Packets {
-    public class FloodWarningPacket : ServerPacket {
+    public class FloodWarningPacket : ServerPacketBase {
         public override IEnumerable<string> Pack() {
             StringBuilder sb = new StringBuilder();
 
-            sb.Append((int)SockChatServerPacket.MessageAdd);
+            sb.Append((int)ServerPacket.MessageAdd);
             sb.Append('\t');
             sb.Append(DateTimeOffset.Now.ToUnixTimeSeconds());
             sb.Append('\t');

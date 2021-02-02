@@ -32,7 +32,7 @@ namespace SharpChat {
 
         public static string NextString(int length, string chars = ID_CHARS) {
             byte[] buffer = new byte[length];
-            RNG.NextBytes(buffer);
+            NextBytes(buffer);
             StringBuilder sb = new StringBuilder();
             foreach(byte b in buffer)
                 sb.Append(chars[b % chars.Length]);

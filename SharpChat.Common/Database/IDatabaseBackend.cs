@@ -1,7 +1,5 @@
-﻿using System;
-
-namespace SharpChat.Database {
-    public interface IDatabaseBackend : IDisposable {
+﻿namespace SharpChat.Database {
+    public interface IDatabaseBackend {
         IDatabaseConnection CreateConnection();
         IDatabaseParameter CreateParameter(string name, object value);
 

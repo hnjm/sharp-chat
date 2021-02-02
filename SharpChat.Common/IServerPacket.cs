@@ -7,12 +7,12 @@ namespace SharpChat {
         IEnumerable<string> Pack();
     }
 
-    public abstract class ServerPacket : IServerPacket {
+    public abstract class ServerPacketBase : IServerPacket {
         private static long SequenceIdCounter = 0;
 
         public long SequenceId { get; }
 
-        public ServerPacket(long sequenceId = 0) {
+        public ServerPacketBase(long sequenceId = 0) {
             // Allow sequence id to be manually set for potential message repeats
             SequenceId = sequenceId > 0 ? sequenceId : Interlocked.Increment(ref SequenceIdCounter);
         }

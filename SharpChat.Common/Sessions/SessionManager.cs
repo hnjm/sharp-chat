@@ -94,7 +94,7 @@ namespace SharpChat.Sessions {
             }
         }
 
-        public Session ByConnection(IWebSocketConnection connection) {
+        public Session ByConnection(IConnection connection) {
             if(connection == null)
                 throw new ArgumentNullException(nameof(connection));
             return Find(c => c.Connection == connection);

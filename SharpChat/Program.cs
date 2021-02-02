@@ -75,7 +75,7 @@ namespace SharpChat {
             if(string.IsNullOrEmpty(portArg) || !ushort.TryParse(portArg, out ushort port))
                 port = DEFAULT_PORT;
 
-            using IWebSocketServer wss = new FleckWebSocketServer(new IPEndPoint(IPAddress.Any, port));
+            using IServer wss = new FleckServer(new IPEndPoint(IPAddress.Any, port));
             using ChatServer scs = new ChatServer(config, wss, httpClient, dataProvider, databaseBackend);
 
             using ManualResetEvent mre = new ManualResetEvent(false);
@@ -84,7 +84,8 @@ namespace SharpChat {
 
             if(dataProvider is IDisposable dpd)
                 dpd.Dispose();
-            databaseBackend.Dispose();
+            if(databaseBackend is IDisposable dbd)
+                dbd.Dispose();
         }
 
         private static void LoadAssemblies(string pattern) {

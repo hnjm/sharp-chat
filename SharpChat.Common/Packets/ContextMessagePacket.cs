@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 
 namespace SharpChat.Packets {
-    public class ContextMessagePacket : ServerPacket {
+    public class ContextMessagePacket : ServerPacketBase {
         public IEvent Event { get; private set; }
         public bool Notify { get; private set; }
 
@@ -18,9 +18,9 @@ namespace SharpChat.Packets {
         public override IEnumerable<string> Pack() {
             StringBuilder sb = new StringBuilder();
 
-            sb.Append((int)SockChatServerPacket.ContextPopulate);
+            sb.Append((int)ServerPacket.ContextPopulate);
             sb.Append('\t');
-            sb.Append((int)SockChatServerContextPacket.Message);
+            sb.Append((int)ServerContextPacket.Message);
             sb.Append('\t');
             sb.Append(Event.DateTime.ToUnixTimeSeconds());
             sb.Append('\t');

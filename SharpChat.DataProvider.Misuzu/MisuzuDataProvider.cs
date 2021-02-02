@@ -12,7 +12,7 @@ using System.Text;
 
 namespace SharpChat.DataProvider.Misuzu {
     [DataProvider(@"misuzu")]
-    public class MisuzuDataProvider : IDataProvider, IDisposable {
+    public class MisuzuDataProvider : IDataProvider {
         private HttpClient HttpClient { get; }
         private IConfig Config { get; }
 
@@ -56,22 +56,6 @@ namespace SharpChat.DataProvider.Misuzu {
             }
 
             return sb.ToString();
-        }
-
-        private bool IsDisposed;
-        ~MisuzuDataProvider()
-            => DoDispose();
-        public void Dispose() {
-            DoDispose();
-            GC.SuppressFinalize(this);
-        }
-        private void DoDispose() {
-            if(IsDisposed)
-                return;
-            IsDisposed = true;
-
-            SecretKey.Dispose();
-            BaseURL.Dispose();
         }
     }
 }

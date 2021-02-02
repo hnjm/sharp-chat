@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 
 namespace SharpChat.Packets {
-    public class UserChannelJoinPacket : ServerPacket {
+    public class UserChannelJoinPacket : ServerPacketBase {
         public ChatUser User { get; private set; }
 
         public UserChannelJoinPacket(ChatUser user) {
@@ -14,9 +14,9 @@ namespace SharpChat.Packets {
         public override IEnumerable<string> Pack() {
             StringBuilder sb = new StringBuilder();
 
-            sb.Append((int)SockChatServerPacket.UserSwitch);
+            sb.Append((int)ServerPacket.UserSwitch);
             sb.Append('\t');
-            sb.Append((int)SockChatServerMovePacket.UserJoined);
+            sb.Append((int)ServerMovePacket.UserJoined);
             sb.Append('\t');
             sb.Append(User.UserId);
             sb.Append('\t');

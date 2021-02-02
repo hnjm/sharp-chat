@@ -16,16 +16,16 @@ using IFleckWebSocketServer = Fleck.IWebSocketServer;
 // https://github.com/statianzo/Fleck/blob/1.1.0/src/Fleck/WebSocketServer.cs
 
 namespace SharpChat.WebSocket.Fleck {
-    public class FleckWebSocketServer : IWebSocketServer {
-        public event Action<IWebSocketConnection> OnOpen;
-        public event Action<IWebSocketConnection> OnClose;
-        public event Action<IWebSocketConnection, Exception> OnError;
-        public event Action<IWebSocketConnection, string> OnMessage;
+    public class FleckServer : IServer {
+        public event Action<IConnection> OnOpen;
+        public event Action<IConnection> OnClose;
+        public event Action<IConnection, Exception> OnError;
+        public event Action<IConnection, string> OnMessage;
 
         private InternalFleckWebSocketServer Server { get; set; }
         private IPEndPoint EndPoint { get; }
 
-        public FleckWebSocketServer(IPEndPoint endPoint) {
+        public FleckServer(IPEndPoint endPoint) {
             EndPoint = endPoint ?? throw new ArgumentNullException(nameof(endPoint));
         }
 
@@ -34,7 +34,7 @@ namespace SharpChat.WebSocket.Fleck {
                 throw new Exception(@"A server has already been started.");
             Server = new InternalFleckWebSocketServer(EndPoint);
             Server.Start(rawConn => {
-                FleckWebSocketConnection conn = new FleckWebSocketConnection(rawConn);
+                FleckConnection conn = new FleckConnection(rawConn);
                 rawConn.OnOpen += () => OnOpen?.Invoke(conn);
                 rawConn.OnClose += () => { OnClose?.Invoke(conn); conn.Dispose(); };
                 rawConn.OnError += ex => OnError?.Invoke(conn, ex);
@@ -44,7 +44,7 @@ namespace SharpChat.WebSocket.Fleck {
 
         private bool IsDisposed;
 
-        ~FleckWebSocketServer()
+        ~FleckServer()
             => DoDispose();
 
         public void Dispose() {

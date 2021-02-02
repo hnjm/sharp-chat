@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 
 namespace SharpChat.Packets {
-    public class ContextUsersPacket : ServerPacket {
+    public class ContextUsersPacket : ServerPacketBase {
         public IEnumerable<ChatUser> Users { get; private set; }
 
         public ContextUsersPacket(IEnumerable<ChatUser> users) {
@@ -15,9 +15,9 @@ namespace SharpChat.Packets {
         public override IEnumerable<string> Pack() {
             StringBuilder sb = new StringBuilder();
 
-            sb.Append((int)SockChatServerPacket.ContextPopulate);
+            sb.Append((int)ServerPacket.ContextPopulate);
             sb.Append('\t');
-            sb.Append((int)SockChatServerContextPacket.Users);
+            sb.Append((int)ServerContextPacket.Users);
             sb.Append('\t');
             sb.Append(Users.Count());
 

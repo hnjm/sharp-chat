@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 
 namespace SharpChat.Packets {
-    public class PongPacket : ServerPacket {
+    public class PongPacket : ServerPacketBase {
         public DateTimeOffset PongTime { get; private set; }
 
         public PongPacket(DateTimeOffset dto) {
@@ -13,7 +13,7 @@ namespace SharpChat.Packets {
         public override IEnumerable<string> Pack() {
             StringBuilder sb = new StringBuilder();
 
-            sb.Append((int)SockChatServerPacket.Pong);
+            sb.Append((int)ServerPacket.Pong);
             sb.Append('\t');
             sb.Append(PongTime.ToUnixTimeSeconds());
 

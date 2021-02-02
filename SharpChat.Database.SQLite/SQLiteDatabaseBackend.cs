@@ -63,9 +63,5 @@ namespace SharpChat.Database.SQLite {
 
         public string AsciiCollation => @"NOCASE";
         public string UnicodeCollation => @"NOCASE";
-
-        public void Dispose() {
-            GC.SuppressFinalize(this);
-        }
     }
 }

@@ -2,7 +2,7 @@
 using System.Text;
 
 namespace SharpChat.Packets {
-    public class ChatMessageDeletePacket : ServerPacket {
+    public class ChatMessageDeletePacket : ServerPacketBase {
         public long EventId { get; private set; }
 
         public ChatMessageDeletePacket(long eventId) {
@@ -12,7 +12,7 @@ namespace SharpChat.Packets {
         public override IEnumerable<string> Pack() {
             StringBuilder sb = new StringBuilder();
 
-            sb.Append((int)SockChatServerPacket.MessageDelete);
+            sb.Append((int)ServerPacket.MessageDelete);
             sb.Append('\t');
             sb.Append(EventId);
 

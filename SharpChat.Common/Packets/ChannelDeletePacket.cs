@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 
 namespace SharpChat.Packets {
-    public class ChannelDeletePacket : ServerPacket {
+    public class ChannelDeletePacket : ServerPacketBase {
         public Channel Channel { get; private set; }
 
         public ChannelDeletePacket(Channel channel) {
@@ -14,9 +14,9 @@ namespace SharpChat.Packets {
         public override IEnumerable<string> Pack() {
             StringBuilder sb = new StringBuilder();
 
-            sb.Append((int)SockChatServerPacket.ChannelEvent);
+            sb.Append((int)ServerPacket.ChannelEvent);
             sb.Append('\t');
-            sb.Append((int)SockChatServerChannelPacket.Delete);
+            sb.Append((int)ServerChannelPacket.Delete);
             sb.Append('\t');
             sb.Append(Channel.Name);
 

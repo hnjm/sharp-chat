@@ -1,5 +1,4 @@
 ﻿using SharpChat.Configuration;
-using System;
 
 namespace SharpChat.Database.Null {
     [DatabaseBackend(@"null")]
@@ -12,10 +11,6 @@ namespace SharpChat.Database.Null {
 
         public IDatabaseParameter CreateParameter(string name, object value) {
             return new NullDatabaseParameter();
-        }
-
-        public void Dispose() {
-            GC.SuppressFinalize(this);
         }
 
         public string TimestampType

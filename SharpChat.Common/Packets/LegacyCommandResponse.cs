@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 
 namespace SharpChat.Packets {
-    public class LegacyCommandResponse : ServerPacket {
+    public class LegacyCommandResponse : ServerPacketBase {
         public bool IsError { get; private set; }
         public string StringId { get; private set; }
         public IEnumerable<object> Arguments { get; private set; }
@@ -23,16 +23,16 @@ namespace SharpChat.Packets {
             StringBuilder sb = new StringBuilder();
 
             if (StringId == LCR.WELCOME) {
-                sb.Append((int)SockChatServerPacket.ContextPopulate);
+                sb.Append((int)ServerPacket.ContextPopulate);
                 sb.Append('\t');
-                sb.Append((int)SockChatServerContextPacket.Message);
+                sb.Append((int)ServerContextPacket.Message);
                 sb.Append('\t');
                 sb.Append(DateTimeOffset.Now.ToUnixTimeSeconds());
                 sb.Append('\t');
                 sb.Append("-1\tChatBot\tinherit\t"); // HERE
                 sb.Append('\t');
             } else {
-                sb.Append((int)SockChatServerPacket.MessageAdd);
+                sb.Append((int)ServerPacket.MessageAdd);
                 sb.Append('\t');
                 sb.Append(DateTimeOffset.Now.ToUnixTimeSeconds());
                 sb.Append('\t');

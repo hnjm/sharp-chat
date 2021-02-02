@@ -2,7 +2,7 @@
 using System.Net;
 
 namespace SharpChat.WebSocket {
-    public interface IWebSocketConnection : IDisposable {
+    public interface IConnection : IDisposable {
         IPAddress RemoteAddress { get; }
         IPAddress OriginalRemoteAddress { get; }
         bool IsLocal { get; }

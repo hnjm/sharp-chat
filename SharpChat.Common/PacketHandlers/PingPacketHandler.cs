@@ -3,7 +3,7 @@ using System.Linq;
 
 namespace SharpChat.PacketHandlers {
     public class PingPacketHandler : IPacketHandler {
-        public SockChatClientPacket PacketId => SockChatClientPacket.Ping;
+        public ClientPacket PacketId => ClientPacket.Ping;
 
         public void HandlePacket(IPacketHandlerContext ctx) {
             if(!long.TryParse(ctx.Args.ElementAtOrDefault(1), out long userId)

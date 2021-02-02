@@ -9,7 +9,7 @@ using System.Linq;
 
 namespace SharpChat.PacketHandlers {
     public class MessageSendPacketHandler : IPacketHandler {
-        public SockChatClientPacket PacketId => SockChatClientPacket.MessageSend;
+        public ClientPacket PacketId => ClientPacket.MessageSend;
 
         public ChatContext Context { get; }
         public IEnumerable<IChatCommand> Commands { get; }

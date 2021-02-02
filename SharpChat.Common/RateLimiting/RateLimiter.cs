@@ -6,14 +6,14 @@ using System.Collections.Generic;
 using System.Linq;
 
 namespace SharpChat.RateLimiting {
-    public class RateLimiter : IDisposable {
+    public class RateLimiter {
         public const int DEFAULT_BAN_DURATION = 30;
         public const int DEFAULT_RANK_EXCEPT = 0;
         public const int DEFAULT_BACKLOG_SIZE = 30;
         public const int DEFAULT_THRESHOLD = 10;
         public const int DEFAULT_WARN_WITHIN = 5;
 
-        private CachedValue<int> BanDuration { get; }
+        private CachedValue<int> BanDurationValue { get; }
         private CachedValue<int> RankException { get; }
         private CachedValue<int> BacklogSize { get; }
         private CachedValue<int> Threshold { get; }
@@ -22,8 +22,10 @@ namespace SharpChat.RateLimiting {
         private List<RateLimiterSession> Sessions { get; } = new List<RateLimiterSession>();
         private object Sync { get; } = new object();
 
+        public TimeSpan BanDuration => TimeSpan.FromSeconds(BanDurationValue);
+
         public RateLimiter(IConfig config) {
-            BanDuration = config.ReadCached(@"banDuration", DEFAULT_BAN_DURATION);
+            BanDurationValue = config.ReadCached(@"banDuration", DEFAULT_BAN_DURATION);
             RankException = config.ReadCached(@"exceptRank", DEFAULT_RANK_EXCEPT);
             BacklogSize = config.ReadCached(@"backlog", DEFAULT_BAN_DURATION);
             Threshold = config.ReadCached(@"threshold", DEFAULT_RANK_EXCEPT);
@@ -33,15 +35,15 @@ namespace SharpChat.RateLimiting {
         public RateLimitState Bump(IHasSessions user) {
             if(user == null)
                 throw new ArgumentNullException(nameof(user));
-            if(BanDuration == 0)
+            if(BanDurationValue == 0)
                 return RateLimitState.None;
             return BumpInternal(GetSession(user));
         }
 
-        public RateLimitState Bump(IWebSocketConnection conn) {
+        public RateLimitState Bump(IConnection conn) {
             if(conn == null)
                 throw new ArgumentNullException(nameof(conn));
-            if(BanDuration == 0)
+            if(BanDurationValue == 0)
                 return RateLimitState.None;
             return BumpInternal(GetSession(conn));
         }
@@ -60,15 +62,15 @@ namespace SharpChat.RateLimiting {
         public RateLimitState GetState(IHasSessions user) {
             if(user == null)
                 throw new ArgumentNullException(nameof(user));
-            if(BanDuration == 0)
+            if(BanDurationValue == 0)
                 return RateLimitState.None;
             return GetStateInternal(GetSession(user));
         }
 
-        public RateLimitState GetState(IWebSocketConnection conn) {
+        public RateLimitState GetState(IConnection conn) {
             if(conn == null)
                 throw new ArgumentNullException(nameof(conn));
-            if(BanDuration == 0)
+            if(BanDurationValue == 0)
                 return RateLimitState.None;
             return GetStateInternal(GetSession(conn));
         }
@@ -110,7 +112,7 @@ namespace SharpChat.RateLimiting {
             }
         }
 
-        private RateLimiterSession GetSession(IWebSocketConnection conn) {
+        private RateLimiterSession GetSession(IConnection conn) {
             lock(Sync) {
                 RateLimiterSession sess = Sessions.Find(s => s.IsMatch(conn));
                 if(sess == null)
@@ -127,31 +129,12 @@ namespace SharpChat.RateLimiting {
             }
         }
 
-        public void Remove(IWebSocketConnection conn) {
+        public void Remove(IConnection conn) {
             if(conn == null)
                 throw new ArgumentNullException(nameof(conn));
             lock(Sync) {
                 Sessions.RemoveAll(s => s.IsMatch(conn));
             }
-        }
-
-        private bool IsDisposed;
-        ~RateLimiter()
-            => DoDispose();
-        public void Dispose() {
-            DoDispose();
-            GC.SuppressFinalize(this);
-        }
-        private void DoDispose() {
-            if(IsDisposed)
-                return;
-            IsDisposed = true;
-
-            BanDuration.Dispose();
-            RankException.Dispose();
-            BacklogSize.Dispose();
-            Threshold.Dispose();
-            WarnWithin.Dispose();
         }
     }
 }

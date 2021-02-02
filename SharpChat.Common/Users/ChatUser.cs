@@ -184,7 +184,7 @@ namespace SharpChat.Users {
                 return Sessions.Contains(sess);
         }
 
-        public bool HasConnection(IWebSocketConnection conn) {
+        public bool HasConnection(IConnection conn) {
             if(conn == null)
                 throw new ArgumentNullException(nameof(conn));
             lock(Sessions)

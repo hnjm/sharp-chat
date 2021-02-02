@@ -8,7 +8,7 @@ namespace SharpChat.Sessions {
     public class Session : IDisposable, IPacketTarget {
         public const int ID_LENGTH = 32;
 
-        public IWebSocketConnection Connection { get; private set; }
+        public IConnection Connection { get; private set; }
 
         public string Id { get; private set; }
         public DateTimeOffset LastPing { get; set; }
@@ -27,7 +27,7 @@ namespace SharpChat.Sessions {
         private object Sync { get; } = new object();
         private Queue<IServerPacket> PacketQueue { get; } = new Queue<IServerPacket>();
 
-        public Session(IWebSocketConnection conn, IHasSessions user) {
+        public Session(IConnection conn, IHasSessions user) {
             Id = RNG.NextString(ID_LENGTH);
             BumpPing();
             Connection = conn;
@@ -60,7 +60,7 @@ namespace SharpChat.Sessions {
             }
         }
 
-        public void Resume(IWebSocketConnection conn) {
+        public void Resume(IConnection conn) {
             lock(Sync) {
                 BumpPing();
                 Connection = conn;

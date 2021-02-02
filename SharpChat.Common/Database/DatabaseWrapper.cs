@@ -2,7 +2,7 @@
 using System.Linq;
 
 namespace SharpChat.Database {
-    public class DatabaseWrapper : IDisposable {
+    public class DatabaseWrapper {
         private IDatabaseBackend Backend { get; }
 
         public bool IsNullBackend
@@ -79,20 +79,6 @@ namespace SharpChat.Database {
                 using IDatabaseReader reader = comm.ExecuteReader();
                 action.Invoke(reader);
             }, @params);
-        }
-
-        private bool IsDisposed;
-        ~DatabaseWrapper()
-            => DoDispose();
-        public void Dispose() {
-            DoDispose();
-            GC.SuppressFinalize(this);
-        }
-        private void DoDispose() {
-            if(IsDisposed)
-                return;
-            IsDisposed = true;
-            Backend.Dispose();
         }
     }
 }

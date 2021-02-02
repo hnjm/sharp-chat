@@ -6,6 +6,6 @@ namespace SharpChat.Users {
         void AddSession(Session session);
         void RemoveSession(Session session);
         bool HasSession(Session session);
-        bool HasConnection(IWebSocketConnection connection);
+        bool HasConnection(IConnection connection);
     }
 }

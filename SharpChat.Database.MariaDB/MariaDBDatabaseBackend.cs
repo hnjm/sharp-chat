@@ -1,6 +1,5 @@
 ﻿using MySql.Data.MySqlClient;
 using SharpChat.Configuration;
-using System;
 
 namespace SharpChat.Database.MariaDB {
     [DatabaseBackend(@"mariadb")]
@@ -69,9 +68,5 @@ namespace SharpChat.Database.MariaDB {
 
         public string AsciiCollation => @"'ascii_general_ci'";
         public string UnicodeCollation => @"'utf8mb4_unicode_520_ci'";
-
-        public void Dispose() {
-            GC.SuppressFinalize(this);
-        }
     }
 }

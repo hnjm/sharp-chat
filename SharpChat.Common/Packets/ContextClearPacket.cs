@@ -11,7 +11,7 @@ namespace SharpChat.Packets {
         MessagesUsersChannels = 4,
     }
 
-    public class ContextClearPacket : ServerPacket {
+    public class ContextClearPacket : ServerPacketBase {
         public Channel Channel { get; private set; }
         public ContextClearMode Mode { get; private set; }
 
@@ -26,7 +26,7 @@ namespace SharpChat.Packets {
         public override IEnumerable<string> Pack() {
             StringBuilder sb = new StringBuilder();
 
-            sb.Append((int)SockChatServerPacket.ContextClear);
+            sb.Append((int)ServerPacket.ContextClear);
             sb.Append('\t');
             sb.Append((int)Mode);
             sb.Append('\t');

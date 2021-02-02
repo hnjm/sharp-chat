@@ -1,5 +1,5 @@
 ﻿namespace SharpChat {
-    public enum SockChatClientPacket {
+    public enum ClientPacket {
         // Version 1
         Ping = 0,
         Authenticate = 1,
@@ -9,7 +9,7 @@
         Typing = 3,
     }
 
-    public enum SockChatServerPacket {
+    public enum ServerPacket {
         // Version 1
         Pong = 0,
         UserConnect = 1,
@@ -27,19 +27,19 @@
         Typing = 11,
     }
 
-    public enum SockChatServerChannelPacket {
+    public enum ServerChannelPacket {
         Create = 0,
         Update = 1,
         Delete = 2,
     }
 
-    public enum SockChatServerMovePacket {
+    public enum ServerMovePacket {
         UserJoined = 0,
         UserLeft = 1,
         ForcedMove = 2,
     }
 
-    public enum SockChatServerContextPacket {
+    public enum ServerContextPacket {
         Users = 0,
         Message = 1,
         Channels = 2,

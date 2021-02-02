@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 
 namespace SharpChat.Packets {
-    public class ChannelCreatePacket : ServerPacket {
+    public class ChannelCreatePacket : ServerPacketBase {
         public Channel Channel { get; private set; }
 
         public ChannelCreatePacket(Channel channel) {
@@ -13,9 +13,9 @@ namespace SharpChat.Packets {
         public override IEnumerable<string> Pack() {
             StringBuilder sb = new StringBuilder();
 
-            sb.Append((int)SockChatServerPacket.ChannelEvent);
+            sb.Append((int)ServerPacket.ChannelEvent);
             sb.Append('\t');
-            sb.Append((int)SockChatServerChannelPacket.Create);
+            sb.Append((int)ServerChannelPacket.Create);
             sb.Append('\t');
             sb.Append(Channel.Pack());
 

@@ -9,7 +9,7 @@ namespace SharpChat.Packets {
         Banned,
     }
 
-    public class AuthFailPacket : ServerPacket {
+    public class AuthFailPacket : ServerPacketBase {
         public AuthFailReason Reason { get; private set; }
         public DateTimeOffset Expires { get; private set; }
 
@@ -26,7 +26,7 @@ namespace SharpChat.Packets {
         public override IEnumerable<string> Pack() {
             StringBuilder sb = new StringBuilder();
 
-            sb.Append((int)SockChatServerPacket.UserConnect);
+            sb.Append((int)ServerPacket.UserConnect);
             sb.Append("\tn\t");
 
             switch (Reason) {

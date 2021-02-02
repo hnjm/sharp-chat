@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 
 namespace SharpChat.Packets {
-    public class UserConnectPacket : ServerPacket {
+    public class UserConnectPacket : ServerPacketBase {
         public DateTimeOffset Joined { get; private set; }
         public ChatUser User { get; private set; }
 
@@ -16,7 +16,7 @@ namespace SharpChat.Packets {
         public override IEnumerable<string> Pack() {
             StringBuilder sb = new StringBuilder();
 
-            sb.Append((int)SockChatServerPacket.UserConnect);
+            sb.Append((int)ServerPacket.UserConnect);
             sb.Append('\t');
             sb.Append(Joined.ToUnixTimeSeconds());
             sb.Append('\t');

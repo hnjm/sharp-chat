@@ -12,7 +12,7 @@ namespace SharpChat.Packets {
         Flood,
     }
 
-    public class UserDisconnectPacket : ServerPacket {
+    public class UserDisconnectPacket : ServerPacketBase {
         public DateTimeOffset Disconnected { get; private set; }
         public ChatUser User { get; private set; }
         public UserDisconnectReason Reason { get; private set; }
@@ -26,7 +26,7 @@ namespace SharpChat.Packets {
         public override IEnumerable<string> Pack() {
             StringBuilder sb = new StringBuilder();
 
-            sb.Append((int)SockChatServerPacket.UserDisconnect);
+            sb.Append((int)ServerPacket.UserDisconnect);
             sb.Append('\t');
             sb.Append(User.UserId);
             sb.Append('\t');

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 
 namespace SharpChat.Packets {
-    public class UserUpdatePacket : ServerPacket {
+    public class UserUpdatePacket : ServerPacketBase {
         public ChatUser User { get; private set; }
         public string PreviousName { get; private set; }
 
@@ -17,7 +17,7 @@ namespace SharpChat.Packets {
             StringBuilder sb = new StringBuilder();
 
             if(!string.IsNullOrEmpty(PreviousName)) {
-                sb.Append((int)SockChatServerPacket.MessageAdd);
+                sb.Append((int)ServerPacket.MessageAdd);
                 sb.Append('\t');
                 sb.Append(DateTimeOffset.Now.ToUnixTimeSeconds());
                 sb.Append('\t');
@@ -33,7 +33,7 @@ namespace SharpChat.Packets {
                 sb.Clear();
             }
 
-            sb.Append((int)SockChatServerPacket.UserUpdate);
+            sb.Append((int)ServerPacket.UserUpdate);
             sb.Append('\t');
             sb.Append(User.Pack());
 
