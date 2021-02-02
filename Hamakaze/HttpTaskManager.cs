@@ -3,7 +3,7 @@ using System.Threading;
 
 namespace Hamakaze {
     public class HttpTaskManager : IDisposable {
-        private Semaphore Lock { get; }
+        private Semaphore Lock { get; set; }
 
         public HttpTaskManager(int maxThreads = 5) {
             Lock = new Semaphore(maxThreads, maxThreads);
@@ -18,7 +18,7 @@ namespace Hamakaze {
                 try {
                     task.Run();
                 } finally {
-                    Lock.Release();
+                    Lock?.Release();
                 }
             }).Start();
         }
@@ -35,6 +35,7 @@ namespace Hamakaze {
                 return;
             IsDisposed = true;
             Lock.Dispose();
+            Lock = null;
         }
     }
 }

@@ -226,12 +226,12 @@ namespace Hamakaze {
                     readBuffer(chunkLength);
                     readLine();
                 }
-
-                readLine();
             } else if(contentLength != 0) {
                 body = new MemoryStream();
                 readBuffer(contentLength);
             }
+
+            readLine();
 
             if(body != null)
                 // Check if body is empty and null it again if so
