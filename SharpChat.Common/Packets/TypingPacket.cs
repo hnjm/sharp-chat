@@ -9,7 +9,7 @@ namespace SharpChat.Packets {
         public ChannelTyping TypingInfo { get; }
 
         public TypingPacket(Channel channel, ChannelTyping typingInfo) {
-            Channel = channel;
+            Channel = channel ?? throw new ArgumentNullException(nameof(channel));
             TypingInfo = typingInfo ?? throw new ArgumentNullException(nameof(typingInfo));
         }
 
@@ -18,7 +18,7 @@ namespace SharpChat.Packets {
 
             sb.Append((int)ServerPacket.Typing);
             sb.Append('\t');
-            sb.Append(Channel?.TargetName ?? string.Empty);
+            sb.Append(Channel.Name);
             sb.Append('\t');
             sb.Append(TypingInfo.User.UserId);
             sb.Append('\t');

@@ -30,7 +30,8 @@ namespace SharpChat.Packets {
             sb.Append('\t');
             sb.Append((int)Mode);
             sb.Append('\t');
-            sb.Append(Channel?.TargetName ?? string.Empty);
+            if(!IsGlobal)
+                sb.Append(Channel.Name);
 
             yield return sb.ToString();
         }

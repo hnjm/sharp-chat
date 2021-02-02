@@ -43,8 +43,6 @@ namespace SharpChat.Users {
         private List<Session> Sessions { get; } = new List<Session>();
         private List<Channel> Channels { get; } = new List<Channel>();
 
-        public string TargetName => @"@log";
-
         [Obsolete(@"Don't rely on this anymore, keep multi-channel in mind.")]
         public Channel Channel {
             get {

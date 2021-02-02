@@ -1,4 +1,5 @@
-﻿using SharpChat.Users;
+﻿using SharpChat.Channels;
+using SharpChat.Users;
 using System;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -15,7 +16,7 @@ namespace SharpChat.Events {
             if(elem.TryGetProperty(@"text", out JsonElement textElem))
                 Text = textElem.GetString();
         }
-        public ChatMessageEvent(IUser sender, IPacketTarget target, string text, EventFlags flags = EventFlags.None, DateTimeOffset? dateTime = null)
+        public ChatMessageEvent(IUser sender, Channel target, string text, EventFlags flags = EventFlags.None, DateTimeOffset? dateTime = null)
             : base(dateTime ?? DateTimeOffset.Now, sender, target, flags) {
             Text = text ?? throw new ArgumentNullException(nameof(text));
         }
@@ -25,7 +26,7 @@ namespace SharpChat.Events {
     public class ChatMessage : ChatMessageEvent {
         public ChatMessage(IEvent evt, JsonElement elem) : base(evt, elem) {}
 
-        public ChatMessage(IUser sender, IPacketTarget target, string text, EventFlags flags = EventFlags.None, DateTimeOffset? dateTime = null)
+        public ChatMessage(IUser sender, Channel target, string text, EventFlags flags = EventFlags.None, DateTimeOffset? dateTime = null)
             : base(sender, target, text, flags, dateTime) {
             throw new InvalidOperationException(@"This object only exists for database backwards compatibility, please use ChatMessageEvent instead.");
         }

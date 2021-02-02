@@ -43,6 +43,11 @@ namespace SharpChat.Database {
         public string DateTimeNow()
             => Backend.DateTimeNow();
 
+        public string Concat(params string[] args)
+            => Backend.Concat(args);
+        public string ToLower(string param)
+            => Backend.ToLower(param);
+
         public bool SupportsAlterTableCollate
             => Backend.SupportsAlterTableCollate;
 

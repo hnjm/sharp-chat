@@ -4,16 +4,13 @@ using SharpChat.WebSocket;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace SharpChat.Sessions {
-    public class SessionManager : IDisposable {
+    public class SessionManager {
         public const short DEFAULT_MAX_COUNT = 5;
         public const ushort DEFAULT_TIMEOUT = 5;
 
-        private Mutex Sync { get; }
+        private object Sync { get; } = new object();
 
         private CachedValue<short> MaxPerUser { get; } 
         private CachedValue<ushort> TimeOut { get; }
@@ -23,8 +20,6 @@ namespace SharpChat.Sessions {
         public SessionManager(IConfig config) {
             MaxPerUser = config.ReadCached(@"maxCount", DEFAULT_MAX_COUNT);
             TimeOut = config.ReadCached(@"timeOut", DEFAULT_TIMEOUT);
-
-            Sync = new Mutex();
         }
 
         public bool HasTimedOut(Session session) {
@@ -40,11 +35,8 @@ namespace SharpChat.Sessions {
             if(session == null)
                 throw new ArgumentNullException(nameof(session));
 
-            Sync.WaitOne();
-            try {
+            lock(Sync) {
                 Sessions.Add(session);
-            } finally {
-                Sync.ReleaseMutex();
             }
         }
 
@@ -62,16 +54,9 @@ namespace SharpChat.Sessions {
             if(predicate == null)
                 throw new ArgumentNullException(nameof(predicate));
 
-            Session session = null;
-
-            Sync.WaitOne();
-            try {
-                session = Sessions.FirstOrDefault(predicate);
-            } finally {
-                Sync.ReleaseMutex();
+            lock(Sync) {
+                return Sessions.FirstOrDefault(predicate);
             }
-
-            return session;
         }
 
         public IEnumerable<Session> FindMany(Func<Session, bool> predicate) {
@@ -86,11 +71,8 @@ namespace SharpChat.Sessions {
             if(callback == null)
                 throw new ArgumentNullException(nameof(callback));
 
-            Sync.WaitOne();
-            try {
+            lock(Sync) {
                 callback.Invoke(Sessions.Where(predicate));
-            } finally {
-                Sync.ReleaseMutex();
             }
         }
 
@@ -114,21 +96,6 @@ namespace SharpChat.Sessions {
                     Sessions.Remove(session);
                 }
             });
-        }
-
-        private bool IsDisposed;
-        ~SessionManager()
-            => DoDispose();
-        public void Dispose() {
-            DoDispose();
-            GC.SuppressFinalize(this);
-        }
-        private void DoDispose() {
-            if(IsDisposed)
-                return;
-            IsDisposed = true;
-
-            Sync.Dispose();
         }
     }
 }

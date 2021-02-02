@@ -33,8 +33,6 @@ namespace SharpChat {
         private Timer BumpTimer { get; }
         private Timer BansTimer { get; }
 
-        public string TargetName => @"@broadcast";
-
         public const int DEFAULT_MSG_LENGTH_MAX = 2100;
         private CachedValue<int> MessageTextMaxLengthValue { get; }
         public int MessageTextMaxLength => MessageTextMaxLengthValue;
@@ -184,12 +182,6 @@ namespace SharpChat {
 
             BansTimer.Dispose();
             BumpTimer.Dispose();
-
-            Sessions.Dispose();
-            Events.Dispose();
-            Channels.Dispose();
-            Users.Dispose();
-            Bans.Dispose();
         }
     }
 }

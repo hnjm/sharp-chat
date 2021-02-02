@@ -46,7 +46,7 @@ namespace SharpChat.Bans {
     //  - Report new bans back to the site
     //  - Accept new bans from the site using an API of sorts (periodic sync should still happen, on an hourly basis probably)
     //  - more?
-    public class BanManager : IDisposable {
+    public class BanManager {
         private readonly List<IBan> BanList = new List<IBan>();
 
         public readonly ChatContext Context;
@@ -172,23 +172,6 @@ namespace SharpChat.Bans {
         public IEnumerable<IBan> All() {
             lock (BanList)
                 return BanList.ToList();
-        }
-
-        private bool IsDisposed;
-
-        ~BanManager()
-            => DoDispose();
-
-        public void Dispose() {
-            DoDispose();
-            GC.SuppressFinalize(this);
-        }
-
-        private void DoDispose() {
-            if (IsDisposed)
-                return;
-            IsDisposed = true;
-            BanList.Clear();
         }
     }
 }

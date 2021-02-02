@@ -59,6 +59,11 @@ namespace SharpChat.Database.SQLite {
         public string DateTimeNow()
             => @"strftime('%s', 'now')";
 
+        public string Concat(params string[] args)
+            => string.Join(@" || ", args);
+        public string ToLower(string param)
+            => string.Format(@"LOWER({0})", param);
+
         public bool SupportsAlterTableCollate => false;
 
         public string AsciiCollation => @"NOCASE";

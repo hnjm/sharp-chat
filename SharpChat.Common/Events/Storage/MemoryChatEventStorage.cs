@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SharpChat.Channels;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -22,7 +23,7 @@ namespace SharpChat.Events.Storage {
                 return Events.FirstOrDefault(e => e.SequenceId == seqId);
         }
 
-        public IEnumerable<IEvent> GetEventsForTarget(IPacketTarget target, int amount = 20, int offset = 0) {
+        public IEnumerable<IEvent> GetEventsForTarget(Channel target, int amount = 20, int offset = 0) {
             lock(Lock) {
                 IEnumerable<IEvent> subset = Events.Where(e => e.Target == target || e.Target == null);
 
@@ -35,20 +36,6 @@ namespace SharpChat.Events.Storage {
 
                 return subset.Skip(start).Take(amount).ToList();
             }
-        }
-
-        private bool IsDisposed;
-        ~MemoryChatEventStorage()
-            => DoDispose();
-        public void Dispose() {
-            DoDispose();
-            GC.SuppressFinalize(this);
-        }
-        private void DoDispose() {
-            if(IsDisposed)
-                return;
-            IsDisposed = true;
-            Events.Clear();
         }
     }
 }

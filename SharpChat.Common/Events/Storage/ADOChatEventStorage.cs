@@ -1,4 +1,5 @@
-﻿using SharpChat.Database;
+﻿using SharpChat.Channels;
+using SharpChat.Database;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,7 +24,7 @@ namespace SharpChat.Events.Storage {
                 Wrapper.CreateParam(@"id", evt.SequenceId),
                 Wrapper.CreateParam(@"created", evt.DateTime.ToUnixTimeSeconds()),
                 Wrapper.CreateParam(@"type", evt.GetType().FullName),
-                Wrapper.CreateParam(@"target", evt.Target.TargetName),
+                Wrapper.CreateParam(@"target", evt.Target.Name),
                 Wrapper.CreateParam(@"flags", (byte)evt.Flags),
                 Wrapper.CreateParam(@"data", JsonSerializer.SerializeToUtf8Bytes(evt, evt.GetType())),
                 Wrapper.CreateParam(@"sender", evt.Sender?.UserId < 1 ? null : (long?)evt.Sender.UserId),
@@ -61,7 +62,7 @@ namespace SharpChat.Events.Storage {
             return evt;
         }
 
-        public IEnumerable<IEvent> GetEventsForTarget(IPacketTarget target, int amount = 20, int offset = 0) {
+        public IEnumerable<IEvent> GetEventsForTarget(Channel target, int amount = 20, int offset = 0) {
             List<IEvent> events = new List<IEvent>();
 
             Wrapper.RunQuery(
@@ -79,7 +80,7 @@ namespace SharpChat.Events.Storage {
                             events.Add(evt);
                     }
                 },
-                Wrapper.CreateParam(@"target", target.TargetName),
+                Wrapper.CreateParam(@"target", target.Name),
                 Wrapper.CreateParam(@"amount", amount),
                 Wrapper.CreateParam(@"offset", offset)
             );
@@ -90,15 +91,11 @@ namespace SharpChat.Events.Storage {
 
         private static readonly Type[] constPropTypes = new[] { typeof(IEvent), typeof(JsonElement), };
 
-        private static IEvent ReadEvent(IDatabaseReader reader, IPacketTarget target = null) {
+        private static IEvent ReadEvent(IDatabaseReader reader, Channel target = null) {
             Type evtType = Type.GetType(reader.ReadString(@"event_type"));
             ConstructorInfo evtConst = evtType.GetConstructors().FirstOrDefault(ci => ci.GetParameters().Select(pi => pi.ParameterType).SequenceEqual(constPropTypes));
             JsonDocument jsonDoc = JsonDocument.Parse(reader.ReadString(@"event_data"));
             return (IEvent)evtConst.Invoke(new object[] { new ADOEventReader(reader, target), jsonDoc.RootElement });
-        }
-
-        public void Dispose() {
-            GC.SuppressFinalize(this);
         }
     }
 }

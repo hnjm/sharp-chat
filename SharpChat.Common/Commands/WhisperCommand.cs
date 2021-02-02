@@ -1,8 +1,5 @@
 ﻿using SharpChat.Events;
-using SharpChat.Packets;
-using SharpChat.Users;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace SharpChat.Commands {
     public class WhisperCommand : IChatCommand {
@@ -10,7 +7,11 @@ namespace SharpChat.Commands {
             => name == @"whisper" || name == @"msg";
 
         public IMessageEvent DispatchCommand(IChatCommandContext ctx) {
-            if(ctx.Args.Count() < 3)
+            // reimplement this entirely
+            // this should invoke the creation of a private temporary channel
+            // if the client joins this channel, it should no longer use the Private message flag and just pump shit into that channel
+
+            /*if(ctx.Args.Count() < 3)
                 throw new CommandException(LCR.COMMAND_FORMAT_ERROR);
 
             string whisperUserName = ctx.Args.ElementAtOrDefault(1);
@@ -25,7 +26,7 @@ namespace SharpChat.Commands {
             string whisperStr = string.Join(' ', ctx.Args.Skip(2));
 
             whisperUser.Send(new ChatMessageAddPacket(new ChatMessageEvent(ctx.User, whisperUser, whisperStr, EventFlags.Private)));
-            ctx.User.Send(new ChatMessageAddPacket(new ChatMessageEvent(ctx.User, ctx.User, $@"{whisperUser.DisplayName} {whisperStr}", EventFlags.Private)));
+            ctx.User.Send(new ChatMessageAddPacket(new ChatMessageEvent(ctx.User, ctx.User, $@"{whisperUser.DisplayName} {whisperStr}", EventFlags.Private)));*/
             return null;
         }
     }

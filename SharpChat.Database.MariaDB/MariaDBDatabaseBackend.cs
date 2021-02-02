@@ -64,6 +64,11 @@ namespace SharpChat.Database.MariaDB {
         public string DateTimeNow()
             => @"NOW()";
 
+        public string Concat(params string[] values)
+            => string.Format(@"CONCAT({0})", string.Join(@", ", values));
+        public string ToLower(string param)
+            => string.Format(@"LOWER({0})", param);
+
         public bool SupportsAlterTableCollate => true;
 
         public string AsciiCollation => @"'ascii_general_ci'";

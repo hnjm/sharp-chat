@@ -1,4 +1,5 @@
-﻿using SharpChat.Users;
+﻿using SharpChat.Channels;
+using SharpChat.Users;
 using System;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -12,7 +13,7 @@ namespace SharpChat.Events {
         public IUser Sender { get; set; }
 
         [JsonIgnore]
-        public IPacketTarget Target { get; set; }
+        public Channel Target { get; set; }
 
         [JsonIgnore]
         public string TargetName { get; set; }
@@ -35,11 +36,7 @@ namespace SharpChat.Events {
             return id;
         }
 
-        private ChatEvent() { }
-
-#pragma warning disable IDE0060 // Remove unused parameter
         public ChatEvent(IEvent evt, JsonElement elem) {
-#pragma warning restore IDE0060 // Remove unused parameter
             DateTime = evt.DateTime;
             Sender = evt.Sender;
             Target = evt.Target;
@@ -47,12 +44,12 @@ namespace SharpChat.Events {
             Flags = evt.Flags;
             SequenceId = evt.SequenceId;
         }
-        public ChatEvent(DateTimeOffset dateTime, IUser user, IPacketTarget target, EventFlags flags) {
+        public ChatEvent(DateTimeOffset dateTime, IUser user, Channel target, EventFlags flags) {
             SequenceId = GenerateSequenceId();
             DateTime = dateTime;
-            Sender = user;
-            Target = target;
-            TargetName = target?.TargetName;
+            Sender = user ?? throw new ArgumentNullException(nameof(user));
+            Target = target ?? throw new ArgumentNullException(nameof(target));
+            TargetName = target.Name;
             Flags = flags;
         }
     }

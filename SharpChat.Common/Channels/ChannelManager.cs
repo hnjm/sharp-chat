@@ -11,20 +11,19 @@ namespace SharpChat.Channels {
     public class ChannelExistException : ChannelException { }
     public class ChannelInvalidNameException : ChannelException { }
 
-    public class ChannelManager : IDisposable {
+    public class ChannelManager {
         private List<Channel> Channels { get; } = new List<Channel>();
 
         private IConfig Config { get; }
         private CachedValue<string[]> ChannelNames { get; }
 
         private ChatContext Context { get; }
-        private Mutex Sync { get; }
+        private object Sync { get; } = new object();
 
         public ChannelManager(ChatContext context, IConfig config) {
             Context = context ?? throw new ArgumentNullException(nameof(config));
             Config = config ?? throw new ArgumentNullException(nameof(config));
             ChannelNames = Config.ReadCached(@"channels", new[] { @"lounge" });
-            Sync = new Mutex();
             UpdateConfigChannels();
         }
 
@@ -32,9 +31,7 @@ namespace SharpChat.Channels {
 
         // Needs better name + figure out how to run periodically
         public void UpdateConfigChannels() {
-            Sync.WaitOne();
-
-            try {
+            lock(Sync) {
                 string[] channelNames = ChannelNames;
 
                 foreach(Channel channel in Channels) {
@@ -56,8 +53,6 @@ namespace SharpChat.Channels {
 
                 if(DefaultChannel == null || DefaultChannel.IsTemporary || !channelNames.Contains(DefaultChannel.Name))
                     DefaultChannel = Channels.FirstOrDefault(c => !c.IsTemporary && c.AutoJoin);
-            } finally {
-                Sync.ReleaseMutex();
             }
         }
 
@@ -89,9 +84,7 @@ namespace SharpChat.Channels {
             if(Get(channel.Name) != null)
                 throw new ChannelExistException();
 
-            Sync.WaitOne();
-
-            try {
+            lock(Sync) {
                 // Add channel to the listing
                 Channels.Add(channel);
 
@@ -102,8 +95,6 @@ namespace SharpChat.Channels {
                 // Broadcast creation of channel
                 foreach(ChatUser user in Context.Users.OfHierarchy(channel.MinimumRank))
                     user.Send(new ChannelCreatePacket(channel));
-            } finally {
-                Sync.ReleaseMutex();
             }
         }
 
@@ -111,9 +102,7 @@ namespace SharpChat.Channels {
             if(channel == null || channel == DefaultChannel)
                 return;
 
-            Sync.WaitOne();
-
-            try {
+            lock(Sync) {
                 // Remove channel from the listing
                 Channels.Remove(channel);
 
@@ -126,8 +115,6 @@ namespace SharpChat.Channels {
                 // Broadcast deletion of channel
                 foreach(ChatUser user in Context.Users.OfHierarchy(channel.MinimumRank))
                     user.Send(new ChannelDeletePacket(channel));
-            } finally {
-                Sync.ReleaseMutex();
             }
         }
 
@@ -135,16 +122,9 @@ namespace SharpChat.Channels {
             if(chan == null)
                 return false;
 
-            bool result;
-            Sync.WaitOne();
-
-            try {
-                result = Channels.Contains(chan) || Channels.Any(c => c.Name.ToLowerInvariant() == chan.Name.ToLowerInvariant());
-            } finally {
-                Sync.ReleaseMutex();
+            lock(Sync) {
+                return Channels.Contains(chan) || Channels.Any(c => c.Name.ToLowerInvariant() == chan.Name.ToLowerInvariant());
             }
-
-            return result;
         }
 
         // Should be replaced by an event
@@ -154,9 +134,7 @@ namespace SharpChat.Channels {
             if(!Channels.Contains(channel))
                 throw new ArgumentException(@"Provided channel is not registered with this manager.", nameof(channel));
 
-            Sync.WaitOne();
-
-            try {
+            lock(Sync) {
                 string prevName = channel.Name;
                 int prevHierarchy = channel.MinimumRank;
                 bool nameUpdated = !string.IsNullOrWhiteSpace(name) && name != prevName;
@@ -186,8 +164,6 @@ namespace SharpChat.Channels {
                     if(nameUpdated)
                         user.ForceChannel();
                 }
-            } finally {
-                Sync.ReleaseMutex();
             }
         }
 
@@ -195,63 +171,24 @@ namespace SharpChat.Channels {
             if(string.IsNullOrWhiteSpace(name))
                 return null;
 
-            Channel result;
-            Sync.WaitOne();
-
-            try {
-                result = Channels.FirstOrDefault(x => x.Name.ToLowerInvariant() == name.ToLowerInvariant());
-            } finally {
-                Sync.ReleaseMutex();
+            lock(Sync) {
+                return Channels.FirstOrDefault(x => x.Name.ToLowerInvariant() == name.ToLowerInvariant());
             }
-
-            return result;
         }
 
         public IEnumerable<Channel> GetUser(ChatUser user) {
             if(user == null)
                 return null;
 
-            IEnumerable<Channel> result;
-            Sync.WaitOne();
-
-            try {
-                result = Channels.Where(x => x.HasUser(user));
-            } finally {
-                Sync.ReleaseMutex();
+            lock(Sync) {
+                return Channels.Where(x => x.HasUser(user));
             }
-
-            return result;
         }
 
         public IEnumerable<Channel> OfHierarchy(int hierarchy) {
-            IEnumerable<Channel> result;
-            Sync.WaitOne();
-
-            try {
-                result = Channels.Where(c => c.MinimumRank <= hierarchy);
-            } finally {
-                Sync.ReleaseMutex();
+            lock(Sync) {
+                return Channels.Where(c => c.MinimumRank <= hierarchy);
             }
-
-            return result;
-        }
-
-        private bool IsDisposed;
-
-        ~ChannelManager()
-            => DoDispose();
-
-        public void Dispose() {
-            DoDispose();
-            GC.SuppressFinalize(this);
-        }
-
-        private void DoDispose() {
-            if(IsDisposed)
-                return;
-            IsDisposed = true;
-            Channels.Clear();
-            Sync.Dispose();
         }
     }
 }

@@ -18,6 +18,9 @@
         string ToUnixTime(string param);
         string DateTimeNow();
 
+        string Concat(params string[] args);
+        string ToLower(string param);
+
         bool SupportsAlterTableCollate { get; }
 
         string AsciiCollation { get; }

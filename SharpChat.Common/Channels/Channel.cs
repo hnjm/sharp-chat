@@ -22,8 +22,6 @@ namespace SharpChat.Channels {
         public bool HasMaxCapacity
             => MaxCapacity > 0;
 
-        public string TargetName => Name;
-
         public Channel() {
         }
 

@@ -16,8 +16,6 @@ namespace SharpChat.Sessions {
 
         public TimeSpan IdleTime => DateTimeOffset.Now - LastPing;
 
-        public string TargetName => @"@log";
-
         public bool HasConnection
             => Connection != null;
 

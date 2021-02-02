@@ -1,4 +1,5 @@
-﻿using SharpChat.Packets;
+﻿using SharpChat.Channels;
+using SharpChat.Packets;
 using SharpChat.Users;
 using System;
 using System.Text.Json;
@@ -16,7 +17,7 @@ namespace SharpChat.Events {
                 Reason = UserDisconnectReason.Unknown;
         }
 
-        public UserDisconnectEvent(DateTimeOffset parted, IUser user, IPacketTarget target, UserDisconnectReason reason)
+        public UserDisconnectEvent(DateTimeOffset parted, IUser user, Channel target, UserDisconnectReason reason)
             : base(parted, user, target, EventFlags.Log) {
             Reason = reason;
         }
