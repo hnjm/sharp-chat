@@ -53,7 +53,10 @@ namespace SharpChat.PacketHandlers {
                         user = new ChatUser(res);
                     else {
                         user.ApplyAuth(res);
-                        user.Channel?.Send(new UserUpdatePacket(user));
+
+                        IServerPacket userUpdate = new UserUpdatePacket(user);
+                        foreach(Channel uc in user.GetChannels())
+                            uc.Send(userUpdate);
                     }
 
                     banDuration = ctx.Chat.Bans.Check(user);

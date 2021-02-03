@@ -30,43 +30,40 @@ namespace SharpChat.Channels {
         }
 
         public bool HasUser(ChatUser user) {
-            lock (Users)
+            lock(Users)
                 return Users.Contains(user);
         }
 
         public void UserJoin(ChatUser user) {
-            if (!user.InChannel(this)) {
-                // Remove this, a different means for this should be established for V1 compat.
-                user.Channel?.UserLeave(user);
+            if(!user.InChannel(this))
                 user.JoinChannel(this);
-            }
 
-            lock (Users) {
-                if (!HasUser(user))
+            lock(Users) {
+                if(!HasUser(user))
                     Users.Add(user);
             }
         }
 
         public void UserLeave(ChatUser user) {
-            lock (Users)
+            lock(Users)
                 Users.Remove(user);
 
-            if (user.InChannel(this))
+            if(user.InChannel(this))
                 user.LeaveChannel(this);
         }
 
         public void Send(IServerPacket packet) {
-            lock (Users) {
-                foreach (ChatUser user in Users)
+            lock(Users) {
+                foreach(ChatUser user in Users)
                     user.Send(packet);
             }
         }
 
         public IEnumerable<ChatUser> GetUsers(IEnumerable<ChatUser> exclude = null) {
-            lock (Users) {
+            lock(Users) {
                 IEnumerable<ChatUser> users = Users.OrderByDescending(x => x.Rank);
 
-                if (exclude != null)
+                if(exclude != null)
                     users = users.Except(exclude);
 
                 return users.ToList();

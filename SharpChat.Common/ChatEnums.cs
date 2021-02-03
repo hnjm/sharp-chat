@@ -1,4 +1,6 @@
-﻿namespace SharpChat {
+﻿using System;
+
+namespace SharpChat {
     public enum ClientPacket {
         // Version 1
         Ping = 0,
@@ -7,6 +9,7 @@
 
         // Version 2
         Typing = 3,
+        Capabilities = 4,
     }
 
     public enum ServerPacket {
@@ -43,5 +46,18 @@
         Users = 0,
         Message = 1,
         Channels = 2,
+    }
+
+    [Flags]
+    public enum ClientCapabilities : int {
+        /// <summary>
+        /// Supports the typing event.
+        /// </summary>
+        TYPING = 0x01,
+
+        /// <summary>
+        /// Supports being in multiple channels at once.
+        /// </summary>
+        MCHAN = 0x02,
     }
 }

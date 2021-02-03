@@ -2,6 +2,7 @@
 using SharpChat.Commands;
 using SharpChat.Events;
 using SharpChat.Packets;
+using SharpChat.Sessions;
 using SharpChat.Users;
 using System;
 using System.Collections.Generic;
@@ -31,11 +32,19 @@ namespace SharpChat.PacketHandlers {
             if(string.IsNullOrWhiteSpace(text))
                 return;
 
-            Channel channel = ctx.User.CurrentChannel;
+            Channel channel;
+            string channelName = ctx.Args.ElementAtOrDefault(3)?.ToLowerInvariant();
+            if(string.IsNullOrWhiteSpace(channelName))
+                channel = ctx.Session.LastChannel;
+            else
+                channel = ctx.User.GetChannels().FirstOrDefault(c => c.Name.ToLowerInvariant() == channelName);
+
             if(channel == null
                 || !ctx.User.InChannel(channel)
                 || (ctx.User.IsSilenced && !ctx.User.Can(UserPermissions.SilenceUser)))
                 return;
+
+            ctx.Session.LastChannel = channel;
 
             if(ctx.User.Status != UserStatus.Online) {
                 ctx.User.Status = UserStatus.Online;
@@ -57,7 +66,7 @@ namespace SharpChat.PacketHandlers {
 
             if(text[0] == '/') {
                 try {
-                    message = HandleCommand(text, ctx.Chat, ctx.User, channel);
+                    message = HandleCommand(text, ctx.Chat, ctx.User, channel, ctx.Session);
                 } catch(CommandException ex) {
                     ctx.User.Send(ex.ToPacket(Context.Bot));
                 }
@@ -73,7 +82,7 @@ namespace SharpChat.PacketHandlers {
             channel.Send(new ChatMessageAddPacket(message));
         }
 
-        public IMessageEvent HandleCommand(string message, ChatContext context, ChatUser user, Channel channel) {
+        public IMessageEvent HandleCommand(string message, ChatContext context, ChatUser user, Channel channel, Session session) {
             string[] parts = message[1..].Split(' ');
             string commandName = parts[0].Replace(@".", string.Empty).ToLowerInvariant();
 
@@ -85,7 +94,7 @@ namespace SharpChat.PacketHandlers {
             IChatCommand command = Commands.FirstOrDefault(x => x.IsCommandMatch(commandName, parts));
             if(command == null)
                 throw new CommandNotFoundException(commandName);
-            return command.DispatchCommand(new ChatCommandContext(parts, user, channel, context));
+            return command.DispatchCommand(new ChatCommandContext(parts, user, channel, context, session));
         }
     }
 }

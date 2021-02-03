@@ -9,10 +9,4 @@ namespace SharpChat.Packets {
         public BotResponsePacket(IUser sender, BotArguments args)
             : base(sender, (args ?? throw new ArgumentNullException(nameof(args))).ToString()) { }
     }
-
-    // Abbreviated class name because otherwise shit gets wide
-    public static class LCR {
-        public const string CHANNEL_INSUFFICIENT_HIERARCHY = @"ipchan";
-        public const string CHANNEL_INVALID_PASSWORD = @"ipwchan";
-    }
 }

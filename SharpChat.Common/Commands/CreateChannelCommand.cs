@@ -50,7 +50,7 @@ namespace SharpChat.Commands {
                 throw new ChannelNameInvalidCommandException();
             }
 
-            ctx.Chat.SwitchChannel(ctx.User, createChan, createChan.Password);
+            ctx.Chat.SwitchChannel(ctx.Session, createChan);
             ctx.User.Send(new ChannelCreateResponsePacket(Sender, createChan));
             return null;
         }

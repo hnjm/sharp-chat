@@ -43,17 +43,6 @@ namespace SharpChat.Users {
         private List<Session> Sessions { get; } = new List<Session>();
         private List<Channel> Channels { get; } = new List<Channel>();
 
-        [Obsolete(@"Don't rely on this anymore, keep multi-channel in mind.")]
-        public Channel Channel {
-            get {
-                lock(Channels)
-                    return Channels.FirstOrDefault();
-            }
-        }
-
-        // This needs to be a session thing
-        public Channel CurrentChannel { get; private set; }
-
         public bool IsSilenced
             => DateTimeOffset.Now - SilencedUntil <= TimeSpan.Zero;
 
@@ -123,13 +112,10 @@ namespace SharpChat.Users {
             }
         }
 
-        public void ForceChannel(Channel chan = null)
-            => Send(new UserChannelForceJoinPacket(chan ?? CurrentChannel));
-
-        public void FocusChannel(Channel chan) {
-            lock(Channels) {
-                if(InChannel(chan))
-                    CurrentChannel = chan;
+        public void ForceChannel(Channel chan = null) {
+            lock(Sessions) {
+                foreach(Session session in Sessions)
+                    session.ForceChannel(chan);
             }
         }
 
@@ -140,17 +126,14 @@ namespace SharpChat.Users {
 
         public void JoinChannel(Channel chan) {
             lock(Channels) {
-                if(!InChannel(chan)) {
+                if(!InChannel(chan))
                     Channels.Add(chan);
-                    CurrentChannel = chan;
-                }
             }
         }
 
         public void LeaveChannel(Channel chan) {
             lock(Channels) {
                 Channels.Remove(chan);
-                CurrentChannel = Channels.FirstOrDefault();
             }
         }
 

@@ -1,4 +1,6 @@
-﻿using SharpChat.Users;
+﻿using SharpChat.Channels;
+using SharpChat.Packets;
+using SharpChat.Users;
 using SharpChat.WebSocket;
 using System;
 using System.Collections.Generic;
@@ -24,6 +26,10 @@ namespace SharpChat.Sessions {
 
         private object Sync { get; } = new object();
         private Queue<IServerPacket> PacketQueue { get; } = new Queue<IServerPacket>();
+
+        public Channel LastChannel { get; set; }
+
+        public ClientCapabilities Capabilities { get; set; }
 
         public Session(IConnection conn, IHasSessions user) {
             Id = RNG.NextString(ID_LENGTH);
@@ -65,6 +71,14 @@ namespace SharpChat.Sessions {
 
         public void BumpPing()
             => LastPing = DateTimeOffset.Now;
+
+        public void ForceChannel(Channel channel = null) {
+            if(channel != null)
+                LastChannel = channel;
+            if(LastChannel == null)
+                return;
+            Send(new UserChannelForceJoinPacket(LastChannel));
+        }
 
         public override string ToString() {
             return Id;

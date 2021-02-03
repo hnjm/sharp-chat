@@ -84,7 +84,9 @@ namespace SharpChat {
                 user.Send(new ForceDisconnectPacket(ForceDisconnectReason.Kicked));
 
             user.Close();
-            UserLeave(user.Channel, user, reason);
+
+            foreach(Channel chan in user.GetChannels())
+                UserLeave(chan, user, reason);
         }
 
         public void UserLeave(Channel chan, ChatUser user, UserDisconnectReason reason = UserDisconnectReason.Leave) {
@@ -105,51 +107,36 @@ namespace SharpChat {
             Events.AddEvent(new UserDisconnectEvent(DateTimeOffset.Now, user, chan, reason));
         }
 
-        public void SwitchChannel(ChatUser user, Channel chan, string password) {
-            if (user.CurrentChannel == chan) {
-                //user.Send(true, @"samechan", chan.Name);
-                user.ForceChannel();
-                return;
-            }
+        public void JoinChannel(ChatUser user, Channel channel) {
+            // These two should be combined into just an event broadcast
+            channel.Send(new UserChannelJoinPacket(user));
+            Events.AddEvent(new UserChannelJoinEvent(DateTimeOffset.Now, user, channel));
 
-            if (!user.Can(UserPermissions.JoinAnyChannel) && chan.Owner != user) {
-                if (chan.MinimumRank > user.Rank) {
-                    user.Send(new BotResponsePacket(Bot, LCR.CHANNEL_INSUFFICIENT_HIERARCHY, true, chan.Name));
-                    user.ForceChannel();
-                    return;
-                }
-
-                if (chan.Password != password) {
-                    user.Send(new BotResponsePacket(Bot, LCR.CHANNEL_INVALID_PASSWORD, true, chan.Name));
-                    user.ForceChannel();
-                    return;
-                }
-            }
-
-            if(!Channels.Contains(chan))
-                return;
-
-            Channel oldChan = user.CurrentChannel;
-
-            oldChan.Send(new UserChannelLeavePacket(user));
-            Events.AddEvent(new UserChannelLeaveEvent(DateTimeOffset.Now, user, oldChan));
-            chan.Send(new UserChannelJoinPacket(user));
-            Events.AddEvent(new UserChannelJoinEvent(DateTimeOffset.Now, user, chan));
-
-            user.Send(new ContextClearPacket(chan, ContextClearMode.MessagesUsers));
-            user.Send(new ContextUsersPacket(chan.GetUsers(new[] { user })));
-
-            IEnumerable<IEvent> msgs = Events.GetEventsForTarget(chan);
-
+            user.Send(new ContextClearPacket(channel, ContextClearMode.MessagesUsers));
+            user.Send(new ContextUsersPacket(channel.GetUsers(new[] { user })));
+            IEnumerable<IEvent> msgs = Events.GetEventsForTarget(channel);
             foreach(IEvent msg in msgs)
                 user.Send(new ContextMessagePacket(msg));
 
-            user.ForceChannel(chan);
-            oldChan.UserLeave(user);
-            chan.UserJoin(user);
+            channel.UserJoin(user);
+            user.ForceChannel(channel);
+        }
 
-            if(oldChan.IsTemporary && oldChan.Owner == user)
-                Channels.Remove(oldChan);
+        public void LeaveChannel(ChatUser user, Channel channel) {
+            channel.UserLeave(user);
+
+            // These two should be combined into just an event broadcast
+            channel.Send(new UserChannelLeavePacket(user));
+            Events.AddEvent(new UserChannelLeaveEvent(DateTimeOffset.Now, user, channel));
+
+            if(channel.IsTemporary && channel.Owner == user)
+                Channels.Remove(channel);
+        }
+
+        public void SwitchChannel(Session session, Channel chan) {
+            if(session.LastChannel != null)
+                LeaveChannel(session.User, session.LastChannel);
+            JoinChannel(session.User, chan);
         }
 
         public void PruneSessionlessUsers() {

@@ -4,7 +4,6 @@ using SharpChat.Users;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 
 namespace SharpChat.Channels {
     public class ChannelException : Exception { }
@@ -107,10 +106,10 @@ namespace SharpChat.Channels {
                 Channels.Remove(channel);
 
                 // Move all users back to the main channel
-                // TODO: Replace this with a kick. SCv2 supports being in 0 channels, SCv1 should force the user back to DefaultChannel.
-                foreach(ChatUser user in channel.GetUsers()) {
-                    Context.SwitchChannel(user, DefaultChannel, string.Empty);
-                }
+                // TODO:!!!!!!!!! Replace this with a kick. SCv2 supports being in 0 channels, SCv1 should force the user back to DefaultChannel.
+                //foreach(ChatUser user in channel.GetUsers()) {
+                //    Context.SwitchChannel(user, DefaultChannel);
+                //}
 
                 // Broadcast deletion of channel
                 foreach(ChatUser user in Context.Users.OfHierarchy(channel.MinimumRank))

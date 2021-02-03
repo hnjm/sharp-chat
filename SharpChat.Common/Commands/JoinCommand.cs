@@ -1,5 +1,6 @@
 ﻿using SharpChat.Channels;
 using SharpChat.Events;
+using SharpChat.Users;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -17,14 +18,33 @@ namespace SharpChat.Commands {
 
             Channel channel = ctx.Chat.Channels.Get(channelName);
 
+            // the original server sends ForceChannel before sending the error message, but this order probably makes more sense.
+
             if(channel == null) {
-                // technically in the wrong order, but it might make more sense in the long run
-                ctx.User.ForceChannel();
+                ctx.Session.ForceChannel();
                 throw new ChannelNotFoundCommandException(channelName);
             }
 
+            if(ctx.User.InChannel(channel)) {
+                ctx.Session.ForceChannel();
+                throw new AlreadyInChannelCommandException(channel);
+            }
+
             string password = string.Join(' ', ctx.Args.Skip(2));
-            ctx.Chat.SwitchChannel(ctx.User, channel, password);
+
+            if(!ctx.User.Can(UserPermissions.JoinAnyChannel) && channel.Owner != ctx.User) {
+                if(channel.MinimumRank > ctx.User.Rank) {
+                    ctx.Session.ForceChannel();
+                    throw new ChannelRankCommandException(channel);
+                }
+
+                if(channel.Password != password) {
+                    ctx.Session.ForceChannel();
+                    throw new ChannelPasswordCommandException(channel);
+                }
+            }
+
+            ctx.Chat.SwitchChannel(ctx.Session, channel);
 
             return null;
         }
