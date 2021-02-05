@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SharpChat.Packets;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -19,6 +20,7 @@ namespace SharpChat.PacketHandlers {
                         caps |= (ClientCapabilities)cap;
 
             ctx.Session.Capabilities = caps;
+            ctx.Session.Send(new CapabilityConfirmationPacket(caps));
         }
     }
 }

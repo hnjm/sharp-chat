@@ -14,7 +14,7 @@ namespace SharpChat.Packets {
         public override string Pack() {
             StringBuilder sb = new StringBuilder();
 
-            sb.Append((int)ServerPacket.UserSwitch);
+            sb.Append((int)ServerPacket.UserMove);
             sb.Append(IServerPacket.SEPARATOR);
             sb.Append((int)ServerMovePacket.UserLeft);
             sb.Append(IServerPacket.SEPARATOR);

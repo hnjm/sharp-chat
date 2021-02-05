@@ -57,7 +57,9 @@ namespace SharpChat.Database {
             => Backend.UnicodeCollation;
 
         public void RunCommand(object query, Action<IDatabaseCommand> action, params IDatabaseParameter[] @params) {
+#if LOG_SQL
             Logger.Debug(query);
+#endif
             using IDatabaseConnection conn = Backend.CreateConnection();
             using IDatabaseCommand comm = conn.CreateCommand(query);
             if(@params.Any()) {

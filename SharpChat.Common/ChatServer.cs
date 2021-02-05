@@ -80,7 +80,7 @@ namespace SharpChat {
         }
 
         private void OnOpen(IConnection conn) {
-            Logger.Debug($@"[{conn}] Connection oepened");
+            Logger.Debug($@"[{conn}] Connection opened");
 
             if(!AcceptingConnections) {
                 conn.Dispose();

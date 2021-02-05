@@ -92,7 +92,7 @@ namespace SharpChat.Channels {
                     DefaultChannel = channel;
 
                 // Broadcast creation of channel
-                foreach(ChatUser user in Context.Users.OfHierarchy(channel.MinimumRank))
+                foreach(ChatUser user in Context.Users.OfRank(channel.MinimumRank))
                     user.Send(new ChannelCreatePacket(channel));
             }
         }
@@ -112,7 +112,7 @@ namespace SharpChat.Channels {
                 //}
 
                 // Broadcast deletion of channel
-                foreach(ChatUser user in Context.Users.OfHierarchy(channel.MinimumRank))
+                foreach(ChatUser user in Context.Users.OfRank(channel.MinimumRank))
                     user.Send(new ChannelDeletePacket(channel));
             }
         }
@@ -157,7 +157,7 @@ namespace SharpChat.Channels {
                     channel.Password = password;
 
                 // Users that no longer have access to the channel/gained access to the channel by the hierarchy change should receive delete and create packets respectively
-                foreach(ChatUser user in Context.Users.OfHierarchy(channel.MinimumRank)) {
+                foreach(ChatUser user in Context.Users.OfRank(channel.MinimumRank)) {
                     user.Send(new ChannelUpdatePacket(prevName, channel));
 
                     if(nameUpdated)

@@ -15,7 +15,7 @@ namespace SharpChat.Packets {
         public override string Pack() {
             StringBuilder sb = new StringBuilder();
 
-            sb.Append((int)ServerPacket.Typing);
+            sb.Append((int)ServerPacket.TypingInfo);
             sb.Append(IServerPacket.SEPARATOR);
             sb.Append(Channel.Name);
             sb.Append(IServerPacket.SEPARATOR);

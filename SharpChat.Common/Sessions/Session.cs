@@ -38,6 +38,9 @@ namespace SharpChat.Sessions {
             user.AddSession(this);
         }
 
+        public bool HasCapability(ClientCapabilities capability)
+            => (Capabilities & capability) == capability;
+
         public void Send(IServerPacket packet) {
             lock(Sync) {
                 if(!HasConnection) {

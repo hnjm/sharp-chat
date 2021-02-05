@@ -121,12 +121,38 @@ Commands are described lower in the document.
         <td>Message text, may not contain <code>\t</code></td>
         <td></td>
     </tr>
+    <tr>
+        <td><code>string</code></td>
+        <td>Name of the target channel</td>
+        <td>Added in version 2 through the <code>MCHAN</code> capability. May be omitted to target the last addressed channel.</td>
+    </tr>
 </table>
 
-### Packet `3`: Typing
-Informs the currently focussed channel that this client is writing a message.
+### Packet `3`: Capabilities
+Informs the server what capabilities this client supports. Capabilities can be adjusted at any time.
 
 Added in Version 2.
+
+<table>
+    <tr>
+        <td><code>string</code></td>
+        <td>A space separated list of capability strings.</td>
+        <td></td>
+    </tr>
+</table>
+
+### Packet `4`: Typing
+Informs the currently focussed channel that this client is writing a message.
+
+Added in Version 2 through the <code>TYPING</code> capability.
+
+<table>
+    <tr>
+        <td><code>string</code></td>
+        <td>Name of the target channel. May be omitted to target the last addressed channel.</td>
+        <td></td>
+    </tr>
+</table>
 
 ## Server Packets
 These are the packets sent from the server to the client.
@@ -745,10 +771,23 @@ Informs that another user's details have been updated.
     </tr>
 </table>
 
-### Packet `11`: Typing
+### Packet `11`: Capability confirmation
+Informs the client what capabilities the server understood from the Packet `3`.
+
+Added in Version 2.
+
+<table>
+    <td>
+        <td><code>string</code></td>
+        <td>A space separated string of accepted capability strings.</td>
+        <td></td>
+    </td>
+</table>
+
+### Packet `12`: Typing Info
 Informs the client that a user is typing.
 
-Added in version 2.
+Added in Version 2.
 
 <table>
     <tr>
@@ -767,6 +806,17 @@ Added in version 2.
         <td></td>
     </tr>
 </table>
+
+## Capabilities
+Capability strings sent in Client Packet `3` and Server Packet `11`.
+If you wish to add your own unofficial capabilities please prefix them with `X_` to avoid conflicts.
+Capability strings MUST be all uppercase, MUST only contain alphanumeric characters and underscores and MUST NOT start with a number. (Regular Expression: `[A-Z_][A-Z0-9_]+`)
+
+### `TYPING`: Support for the Typing packets
+While Client Packet `4` and Server Packet `12` are core features of Version 2, some people dislike typing indicators and this provides an easy way for servers to skip sending the packets to these users. The client may still inform the server the it is typing though ClientPacket `4`, but it won't receive Server Packet `12`.
+
+### `MCHAN`: Multi-channel support
+Allows the client to be present in multiple channels at once. Issuing `/join` will not cause the server to automatically make the user leave the channel.
 
 ## Bot Messages
 Formatting IDs sent by user -1.

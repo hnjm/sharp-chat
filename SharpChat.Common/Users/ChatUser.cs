@@ -1,5 +1,4 @@
 ﻿using SharpChat.Channels;
-using SharpChat.Packets;
 using SharpChat.Sessions;
 using SharpChat.Users.Auth;
 using SharpChat.WebSocket;
@@ -19,6 +18,9 @@ namespace SharpChat.Users {
         public UserPermissions Permissions { get; set; }
         public UserStatus Status { get; set; } = UserStatus.Online;
         public string StatusMessage { get; set; }
+
+        private object SyncChannels { get; } = new object();
+        private object SyncSessions { get; } = new object();
 
         public string DisplayName {
             get {
@@ -48,12 +50,11 @@ namespace SharpChat.Users {
 
         public IEnumerable<IPAddress> RemoteAddresses {
             get {
-                lock(Sessions)
+                lock(SyncSessions)
                     return Sessions.Select(c => c.RemoteAddress).Distinct().ToArray();
             }
         }
 
-        public ChatUser() { }
         public ChatUser(IUserAuthResponse auth) {
             UserId = auth.UserId;
             ApplyAuth(auth, true);
@@ -75,6 +76,11 @@ namespace SharpChat.Users {
 
         public bool Can(UserPermissions perm)
             => (Permissions & perm) == perm;
+
+        public bool HasCapability(ClientCapabilities capability) {
+            lock(SyncSessions)
+                return Sessions.Any(s => s.HasCapability(capability));
+        }
 
         public string Pack() {
             StringBuilder sb = new StringBuilder();
@@ -99,13 +105,13 @@ namespace SharpChat.Users {
         }
 
         public void Send(IServerPacket packet) {
-            lock(Sessions)
+            lock(SyncSessions)
                 foreach(Session conn in Sessions)
                     conn.Send(packet);
         }
 
         public void Close() {
-            lock(Sessions) {
+            lock(SyncSessions) {
                 foreach(Session conn in Sessions)
                     conn.Dispose();
                 Sessions.Clear();
@@ -113,32 +119,32 @@ namespace SharpChat.Users {
         }
 
         public void ForceChannel(Channel chan = null) {
-            lock(Sessions) {
+            lock(SyncSessions) {
                 foreach(Session session in Sessions)
                     session.ForceChannel(chan);
             }
         }
 
         public bool InChannel(Channel chan) {
-            lock(Channels)
+            lock(SyncChannels)
                 return Channels.Contains(chan);
         }
 
         public void JoinChannel(Channel chan) {
-            lock(Channels) {
+            lock(SyncChannels) {
                 if(!InChannel(chan))
                     Channels.Add(chan);
             }
         }
 
         public void LeaveChannel(Channel chan) {
-            lock(Channels) {
+            lock(SyncChannels) {
                 Channels.Remove(chan);
             }
         }
 
         public IEnumerable<Channel> GetChannels() {
-            lock(Channels)
+            lock(SyncChannels)
                 return Channels.ToList();
         }
 
@@ -146,7 +152,7 @@ namespace SharpChat.Users {
             if(sess == null)
                 return;
             sess.User = this;
-            lock(Sessions)
+            lock(SyncSessions)
                 Sessions.Add(sess);
         }
 
@@ -154,21 +160,21 @@ namespace SharpChat.Users {
             if(sess == null)
                 return;
             sess.User = null;
-            lock(Sessions)
+            lock(SyncSessions)
                 Sessions.Remove(sess);
         }
 
         public bool HasSession(Session sess) {
             if(sess == null)
                 throw new ArgumentNullException(nameof(sess));
-            lock(Sessions)
+            lock(SyncSessions)
                 return Sessions.Contains(sess);
         }
 
         public bool HasConnection(IConnection conn) {
             if(conn == null)
                 throw new ArgumentNullException(nameof(conn));
-            lock(Sessions)
+            lock(SyncSessions)
                 return Sessions.Any(s => s.Connection == conn);
         }
     }
