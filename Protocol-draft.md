@@ -872,6 +872,9 @@ Formatting IDs sent by user -1.
 #### `say`: Broadcast
 Just echo whatever is specified in the first argument.
 
+##### Arguments
+ - `string`: Message to be broadcast.
+
 
 #### `silence`: Silence notice
 Informs the client that they've been silenced.
@@ -884,13 +887,15 @@ Informs the client that their silence has been revoked.
 #### `silok`: Silence confirmation
 Informs the client that they have successfully silenced another user.
 
-The first argument contains the target username.
+##### Arguments
+ - `string`: Username of the user.
 
 
 #### `usilok`: Silence revocation confirmation
 Informs the client that they have successfully revoked another user's silence.
 
-The first argument contains the target username.
+##### Arguments
+ - `string`: Username of the user.
 
 
 #### `flwarn`: Flood protection warning
@@ -904,37 +909,43 @@ Informs the client that they have successfully revoked a ban on a user or an IP 
 #### `banlist`: List of banned entities
 Provides the client with a list of all banned users and IP addresses.
 
-The first argument contains HTML with the information on the users with the following format: "<code>&lt;a href="javascript:void(0);" onclick="Chat.SendMessageWrapper('/unban '+ this.innerHTML);"&gt;{0}&lt;/a&gt;</code>" where {0} is the username of the banned user or the banned IP address. The set is separated by "<code>, </code>".
+##### Arguments
+ - `string`: HTML with the information on the users with the following format: "<code>&lt;a href="javascript:void(0);" onclick="Chat.SendMessageWrapper('/unban '+ this.innerHTML);"&gt;{0}&lt;/a&gt;</code>" where {0} is the username of the banned user or the banned IP address. The set is separated by "<code>, </code>".
 
 
 #### `who`: List of online users
 Provides the client with a list of users currently online on the server.
 
-The first argument contains HTML with the information on the users with the following format: "<code>&lt;a href="javascript:void(0);" onclick="UI.InsertChatText(this.innerHTML);"&gt;{0}&lt;/a&gt;</code>" where {0} is the username of a user. The current online user is highlighted with "<code> style="font-weight: bold;"</code>" before the closing &gt; of the opening &lt;a&gt; tag. The set is separated by "<code>, </code>".
+##### Arguments
+ - `string`: HTML with the information on the users with the following format: "<code>&lt;a href="javascript:void(0);" onclick="UI.InsertChatText(this.innerHTML);"&gt;{0}&lt;/a&gt;</code>" where {0} is the username of a user. The current online user is highlighted with "<code> style="font-weight: bold;"</code>" before the closing &gt; of the opening &lt;a&gt; tag. The set is separated by "<code>, </code>".
 
 
 #### `whochan`: List of users in a channel.
 Provides the client with a list of users currently online in a channel.
 
-The first argument contins HTML with the information on the users with the following format: "<code>&lt;a href="javascript:void(0);" onclick="UI.InsertChatText(this.innerHTML);"&gt;{0}&lt;/a&gt;</code>" where {0} is the username of a user. The current online user is highlighted with "<code> style="font-weight: bold;"</code>" before the closing &gt; of the opening &lt;a&gt; tag. The set is separated by "<code>, </code>"
+##### Arguments
+ - `string`: HTML with the information on the users with the following format: "<code>&lt;a href="javascript:void(0);" onclick="UI.InsertChatText(this.innerHTML);"&gt;{0}&lt;/a&gt;</code>" where {0} is the username of a user. The current online user is highlighted with "<code> style="font-weight: bold;"</code>" before the closing &gt; of the opening &lt;a&gt; tag. The set is separated by "<code>, </code>"
 
 
 #### `join`: User connected
 Informs the client that a user just connected to the server.
 
-The first argument contains the username of the user.
+##### Arguments
+ - `string`: Username of the user.
 
 
 #### `jchan`: User joined channel
 Informs the client that a user just joined a channel they're in.
 
-The first argument contains the username of the user.
+##### Arguments
+ - `string`: Username of the user.
 
 
 #### `leave`: User disconnected
 Informs the client that a user just disconnected from the server.
 
-The first argument contains the username of the user.
+##### Arguments
+ - `string`: Username of the user.
 
 
 #### `lchan`: User left channel
@@ -944,38 +955,44 @@ Informs the client that a user just left a channel they're in.
 #### `kick`: User has been kicked
 Informs the client that another user has just been kicked.
 
-The first argument contains the username of the user.
+##### Arguments
+ - `string`: Username of the user.
 
 
 #### `flood`: User exceeded flood limit
 Informs the client that another user has just been kicked for exceeding the flood protection limit.
 
-The first argument contains the username of the user.
+##### Arguments
+ - `string`: Username of the user.
 
 
 #### `timeout`: User has timed out
 Informs the client that another user has been disconnected from the server automatically.
 
-The first argument contains the username of the user.
+##### Arguments
+ - `string`: Username of the user.
 
 
 #### `nick`: User has changed their nickname
 Informs the client that a user has changed their nickname.
 
-The first argument contains the previous username of the user.
-The second argument contains the new username of the user.
+##### Arguments
+ - `string`: Previous username of the user.
+ - `string`: New username of the user.
 
 
 #### `crchan`: Channel creation confirmation
 Informs the client that the channel they attempted to create has been successfully created.
 
-The first argument contains the name of the channel.
+##### Arguments
+ - `string`: Name of the target channel.
 
 
 #### `delchan`: Channel deletion confirmation
 Informs the client that the channel they attempted to delete has been successfully deleted.
 
-The first argument contains the name of the channel.
+##### Arguments
+ - `string`: Name of the target channel.
 
 
 #### `cpwdchan`: Channel password update confirmation
@@ -989,8 +1006,9 @@ Informs the client that they've successfully changed the minimum required rank t
 #### `ipaddr`: IP address
 Shows the IP address of another user to a user with moderation privileges.
 
-The first argument contains the username of the user.
-The second argument contains the IP address of the user.
+##### Arguments
+ - `string`: Name of the target user.
+ - `string`: IP address.
 
 
 ### Errors
