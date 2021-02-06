@@ -6,29 +6,37 @@ Newer versions of the protocol are implemented as extensions, a client for Versi
 
 The current stable version of the protocol is **Version 1**.
 
+
 ## Types
 
 ### `bool`
 A value that indicates a true or a false state. `0` represents false and anything non-`0` represents true, please stick to `1` for representing true though.
 
+
 ### `int`
 Any number ranging from `-9007199254740991` to `9007199254740991`, `Number.MAX_SAFE_INTEGER` and `Number.MIN_SAFE_INTEGER` in JavaScript.
+
 
 ### `string`
 Any printable unicode character, except `\t` which is used to separate packets.
 
+
 ### `timestamp`
 Extends `int`, contains a second based UNIX timestamp.
+
 
 ### `channel name`
 A `string` containing only alphanumeric characters (any case), `-` or `_`.
 
+
 ### `session id`
 A `string` containing only alphanumeric characters (any case), `-` or `_`.
+
 
 ### `color`
 Any valid value for the CSS `color` property.
 Further documentation can be found [on MDN](https://developer.mozilla.org/en-US/docs/Web/CSS/color_value).
+
 
 ### `message flags`
 Message flags alter how a message should be displayed to the client, these are all `bool` values.
@@ -41,6 +49,7 @@ The parts are as follows:
  - The message was sent privately, directly to the current user.
 
 As an example, the most common message flagset is `10010`. This indicates a bold username with a colon separator.
+
 
 ### `user permissions`
 User permissions are a set of flags separated by either the form feed character (`\f` / `0x0C`) or a space (<code> </code> / `0x20`).
@@ -75,6 +84,7 @@ Which of the methods is used remains consistent per server however, so the resul
     </tr>
 </table>
 
+
 ## Client Packets
 These are the packets sent from the client to the server.
 
@@ -94,6 +104,7 @@ Used to prevent the client from closing the session due to inactivity.
     </tr>
 </table>
 
+
 ### Packet `1`: Authentication
 Takes a variable number of parameters that are fed into the authentication script associated with the chat.
 
@@ -104,6 +115,7 @@ Takes a variable number of parameters that are fed into the authentication scrip
         <td></td>
     </tr>
 </table>
+
 
 ### Packet `2`: Message
 Informs the server that the user has sent a message.
@@ -128,6 +140,7 @@ Commands are described lower in the document.
     </tr>
 </table>
 
+
 ### Packet `3`: Capabilities
 Informs the server what capabilities this client supports. Capabilities can be adjusted at any time.
 
@@ -140,6 +153,7 @@ Added in Version 2.
         <td></td>
     </tr>
 </table>
+
 
 ### Packet `4`: Typing
 Informs the currently focussed channel that this client is writing a message.
@@ -159,6 +173,7 @@ Added in Version 2 through the <code>TYPING</code> capability.
     </tr>
 </table>
 
+
 ## Server Packets
 These are the packets sent from the server to the client.
 
@@ -172,6 +187,7 @@ Response to client packet `0`: Ping.
         <td>Originally this field contained the string <code>pong</code>, but this value was completely unused and can be safely replaced.</td>
     </tr>
 </table>
+
 
 ### Packet `1`: Join/Auth
 While authenticated this packet indicates that a new user has joined the server/channel. Before authentication this packet serves as a response to client packet `1`: Authentication.
@@ -227,6 +243,7 @@ Informs the client that authentication has succeeded.
     </tr>
 </table>
 
+
 #### Failed authentication response
 Informs the client that authentication has failed.
 
@@ -255,6 +272,7 @@ Informs the client that authentication has failed.
         <td></td>
     </tr>
 </table>
+
 
 #### User joining
 Informs the client that a user has joined.
@@ -291,6 +309,7 @@ Informs the client that a user has joined.
         <td></td>
     </tr>
 </table>
+
 
 ### Packet `2`: Chat message
 Informs the client that a chat message has been received.
@@ -356,6 +375,7 @@ Informs the client that a chat message has been received.
     </tr>
 </table>
 
+
 ### Packet `3`: User disconnect
 Informs the client that a user has disconnected.
 
@@ -395,6 +415,7 @@ Informs the client that a user has disconnected.
     </tr>
 </table>
 
+
 ### Packet `4`: Channel event
 This packet informs the user about channel related updates. The only consistent parameter across sub-packets is the first one described as follows.
 
@@ -412,6 +433,7 @@ This packet informs the user about channel related updates. The only consistent 
         <td></td>
     </tr>
 </table>
+
 
 #### Sub-packet `0`: Channel creation
 Informs the client that a channel has been created.
@@ -433,6 +455,7 @@ Informs the client that a channel has been created.
         <td></td>
     </tr>
 </table>
+
 
 #### Sub-packet `1`: Channel update
 Informs the client that details of a channel has changed.
@@ -460,6 +483,7 @@ Informs the client that details of a channel has changed.
     </tr>
 </table>
 
+
 #### Sub-packet `2`: Channel deletion
 Informs the client that a channel has been deleted
 
@@ -470,6 +494,7 @@ Informs the client that a channel has been deleted
         <td></td>
     </tr>
 </table>
+
 
 ### Packet `5`: Channel switching
 This packet informs the client about channel switching.
@@ -488,6 +513,7 @@ This packet informs the client about channel switching.
         <td></td>
     </tr>
 </table>
+
 
 #### Sub-packet `0`: Channel join
 Informs the client that a user has joined the channel.
@@ -515,6 +541,7 @@ Informs the client that a user has joined the channel.
     </tr>
 </table>
 
+
 #### Sub-packet `1`: Channel departure
 Informs the client that a user has left the channel.
 
@@ -531,6 +558,7 @@ Informs the client that a user has left the channel.
     </tr>
 </table>
 
+
 #### Sub-packet `2`: Forced channel switch
 Informs the client that it has been forcibly switched to a different channel.
 
@@ -542,6 +570,7 @@ Informs the client that it has been forcibly switched to a different channel.
     </tr>
 </table>
 
+
 ### Packet `6`: Message deletion
 Informs the client that a message has been deleted.
 
@@ -552,6 +581,7 @@ Informs the client that a message has been deleted.
         <td></td>
     </tr>
 </table>
+
 
 ### Packet `7`: Context information
 Informs the client about the context of a channel before the client was present.
@@ -617,6 +647,7 @@ Informs the client about users already present in the channel.
     </tr>
 </table>
 
+
 #### Sub-packet `1`: Existing message
 Informs the client about an existing message in a channel.
 
@@ -668,6 +699,7 @@ Informs the client about an existing message in a channel.
     </tr>
 </table>
 
+
 #### Sub-packet `2`: Channels
 Informs the client about the channels on the server.
 
@@ -704,6 +736,7 @@ Informs the client about the channels on the server.
     </tr>
 </table>
 
+
 ### Packet `8`: Context clearing
 Informs the client that the context has been cleared.
 
@@ -729,6 +762,7 @@ Informs the client that the context has been cleared.
     </tr>
 </table>
 
+
 ### Packet `9`: Forced disconnect
 Informs the client that they have either been banned or kicked from the server.
 
@@ -749,6 +783,7 @@ Informs the client that they have either been banned or kicked from the server.
         <td></td>
     </tr>
 </table>
+
 
 ### Packet `10`: User update
 Informs that another user's details have been updated.
@@ -776,6 +811,7 @@ Informs that another user's details have been updated.
     </tr>
 </table>
 
+
 ### Packet `11`: Capability confirmation
 Informs the client what capabilities the server understood from the Packet `3`.
 
@@ -788,6 +824,7 @@ Added in Version 2.
         <td></td>
     </tr>
 </table>
+
 
 ### Packet `12`: Typing Info
 Informs the client that a user is typing.
@@ -812,589 +849,632 @@ Added in Version 2.
     </tr>
 </table>
 
+
 ## Capabilities
 Capability strings sent in Client Packet `3` and Server Packet `11`.
 If you wish to add your own unofficial capabilities please prefix them with `X_` to avoid conflicts.
 Capability strings MUST be all uppercase, MUST only contain alphanumeric characters and underscores and MUST NOT start with a number. (Regular Expression: `[A-Z_][A-Z0-9_]+`)
 
+
 ### `TYPING`: Support for the Typing packets
 While Client Packet `4` and Server Packet `12` are core features of Version 2, some people dislike typing indicators and this provides an easy way for servers to skip sending the packets to these users. The client may still inform the server the it is typing though ClientPacket `4`, but it won't receive Server Packet `12`.
+
 
 ### `MCHAN`: Multi-channel support
 Allows the client to be present in multiple channels at once. Issuing `/join` will not cause the server to automatically make the user leave the channel.
 
+
 ## Bot Messages
 Formatting IDs sent by user -1.
 
-<table>
-    <tr>
-        <th colspan="3">Informational</th>
-    </tr>
-    <tr>
-        <th>String</th>
-        <th>Description</th>
-        <th>Arguments</th>
-    </tr>
-    <tr>
-        <td><code>say</code></td>
-        <td>Just echoes the arguments in a message.</td>
-        <td>The message.</td>
-    </tr>
-    <tr>
-        <td><code>silence</code></td>
-        <td>Informs the client that they have been silenced.</td>
-        <td></td>
-    </tr>
-    <tr>
-        <td><code>unsil</code></td>
-        <td>Informs the client that they are no longer silenced.</td>
-        <td></td>
-    </tr>
-    <tr>
-        <td><code>silok</code></td>
-        <td>Informs the client that they have successfully silenced another user.</td>
-        <td>The username of the silenced user.</td>
-    </tr>
-    <tr>
-        <td><code>usilok</code></td>
-        <td>Informs the client that they have successfully removed the silencing from another user.</td>
-        <td>The username of the unsilenced user.</td>
-    </tr>
-    <tr>
-        <td><code>flwarn</code></td>
-        <td>Informs the client that they are risking being kicking for flood protection (spam).</td>
-        <td></td>
-    </tr>
-    <tr>
-        <td><code>unban</code></td>
-        <td>Informs the client that they have successfully removed the ban from a user or ip address.</td>
-        <td></td>
-    </tr>
-    <tr>
-        <td><code>banlist</code></td>
-        <td>Provides a list with banned users and IP addresses.</td>
-        <td>
-            Sets of "<code>&lt;a href="javascript:void(0);" onclick="Chat.SendMessageWrapper('/unban '+ this.innerHTML);"&gt;{0}&lt;/a&gt;</code>" where {0} is the username of the banned user or the banned IP address. The set is separated by "<code>, </code>"
-        </td>
-    </tr>
-    <tr>
-        <td><code>who</code></td>
-        <td>Provides a list of users currently online.</td>
-        <td>
-            Sets of "<code>&lt;a href="javascript:void(0);" onclick="UI.InsertChatText(this.innerHTML);"&gt;{0}&lt;/a&gt;</code>" where {0} is the username of a user. The current online user is highlighted with "<code> style="font-weight: bold;"</code>" before the closing &gt; of the opening &lt;a&gt; tag. The set is separated by "<code>, </code>"
-        </td>
-    </tr>
-    <tr>
-        <td><code>whochan</code></td>
-        <td>Provides a list of users currently online in a specific channel.</td>
-        <td>
-            Sets of "<code>&lt;a href="javascript:void(0);" onclick="UI.InsertChatText(this.innerHTML);"&gt;{0}&lt;/a&gt;</code>" where {0} is the username of a user. The current online user is highlighted with "<code> style="font-weight: bold;"</code>" before the closing &gt; of the opening &lt;a&gt; tag. The set is separated by "<code>, </code>"
-        </td>
-    </tr>
-    <tr>
-        <td><code>join</code></td>
-        <td>Informs the client that a user connected with the server.</td>
-        <td>The username of said user.</td>
-    </tr>
-    <tr>
-        <td><code>jchan</code></td>
-        <td>Informs the client that a user moved into the channel.</td>
-        <td>The username of said user.</td>
-    </tr>
-    <tr>
-        <td><code>leave</code></td>
-        <td>Informs the client that a user disconnected from the server.</td>
-        <td>The username of said user.</td>
-    </tr>
-    <tr>
-        <td><code>lchan</code></td>
-        <td>Informs the client that a user moved out of the channel.</td>
-        <td>The username of said user.</td>
-    </tr>
-    <tr>
-        <td><code>kick</code></td>
-        <td>Informs the client that a user has disconnect because they got kicked.</td>
-        <td>The username of said user.</td>
-    </tr>
-    <tr>
-        <td><code>flood</code></td>
-        <td>Informs the client that a user has disconnect because they got kicked for flood protection.</td>
-        <td>The username of said user.</td>
-    </tr>
-    <tr>
-        <td><code>nick</code></td>
-        <td>Informs the client that a user has changed their nickname.</td>
-        <td>The first argument is the previous username of said user, the second argument is their new username.</td>
-    </tr>
-    <tr>
-        <td><code>crchan</code></td>
-        <td>Informs the client that they have successfully created a channel.</td>
-        <td>The name of the channel.</td>
-    </tr>
-    <tr>
-        <td><code>delchan</code></td>
-        <td>Informs the client that they have successfully deleted a channel.</td>
-        <td>The name of the channel.</td>
-    </tr>
-    <tr>
-        <td><code>cpwdchan</code></td>
-        <td>Informs the client that they have successfully changed the password of the channel.</td>
-        <td></td>
-    </tr>
-    <tr>
-        <td><code>cprivchan</code></td>
-        <td>Informs the client that they have successfully changed the rank level required for the channel.</td>
-        <td></td>
-    </tr>
-    <tr>
-        <td><code>ipaddr</code></td>
-        <td>Shows the IP address of another user.</td>
-        <td>First argument is the username, second argument is the IP address.</td>
-    </tr>
-    <tr>
-        <th colspan="3">Error</th>
-    </tr>
-    <tr>
-        <th>String</th>
-        <th>Description</th>
-        <th>Arguments</th>
-    </tr>
-    <tr>
-        <td><code>generr</code></td>
-        <td>Generic fallback error.</td>
-        <td></td>
-    </tr>
-    <tr>
-        <td><code>silerr</code></td>
-        <td>Informs the client that the user they tried to silence had already been silenced.</td>
-        <td></td>
-    </tr>
-    <tr>
-        <td><code>usilerr</code></td>
-        <td>Informs the client that the user whose silence they tried to revoke hasn't been silenced.</td>
-        <td></td>
-    </tr>
-    <tr>
-        <td><code>silperr</code></td>
-        <td>Informs the client that they are not allowed to silence that user.</td>
-        <td></td>
-    </tr>
-    <tr>
-        <td><code>usilperr</code></td>
-        <td>Informs the client that they are not allowed to remove the silence from that user.</td>
-        <td></td>
-    </tr>
-    <tr>
-        <td><code>silself</code></td>
-        <td>Informs the client that they cannot silence themselves.</td>
-        <td></td>
-    </tr>
-    <tr>
-        <td><code>delerr</code></td>
-        <td>Informs the client that they are not allowed to delete a message.</td>
-        <td></td>
-    </tr>
-    <tr>
-        <td><code>notban</code></td>
-        <td>Informs the client that a username or IP address is not banned.</td>
-        <td>The provided username or IP address.</td>
-    </tr>
-    <tr>
-        <td><code>whoerr</code></td>
-        <td>Informs the client that they do not have access to the channel they specified for the /who command.</td>
-        <td>The provided channel name.</td>
-    </tr>
-    <tr>
-        <td><code>cmdna</code></td>
-        <td>Tells the client they're not allowed to use a command.</td>
-        <td>First argument is the name of the command.</td>
-    </tr>
-    <tr>
-        <td><code>nocmd</code></td>
-        <td>Tells the client the command they tried to run does not exist.</td>
-        <td>First argument is the name of the command.</td>
-    </tr>
-    <tr>
-        <td><code>cmderr</code></td>
-        <td>Tells the client that they formatted the last command incorrectly.</td>
-        <td></td>
-    </tr>
-    <tr>
-        <td><code>usernf</code></td>
-        <td>Tells the client that the user they requested was not found on the server.</td>
-        <td>The requested username.</td>
-    </tr>
-    <tr>
-        <td><code>kickna</code></td>
-        <td>Tells the client that they are not allowed to kick a given user.</td>
-        <td>Username of the user they tried to kick.</td>
-    </tr>
-    <tr>
-        <td><code>samechan</code></td>
-        <td>Tells the client that they are already in the channel they are trying to switch to.</td>
-        <td>The name of the channel.</td>
-    </tr>
-    <tr>
-        <td><code>ipchan</code></td>
-        <td>Tells the client that they aren't allowed to switch to the provided channel.</td>
-        <td>The name of the channel.</td>
-    </tr>
-    <tr>
-        <td><code>nochan</code></td>
-        <td>Tells the client that the channel they tried to switch to does not exist.</td>
-        <td>The name of the channel.</td>
-    </tr>
-    <tr>
-        <td><code>nopwchan</code></td>
-        <td>Tells the client that the channel they tried to switch to requires a password.</td>
-        <td>The name of the channel.</td>
-    </tr>
-    <tr>
-        <td><code>ipwchan</code></td>
-        <td>Tells the client that the password to tried to switch to the channel to was invalid.</td>
-        <td>The name of the channel.</td>
-    </tr>
-    <tr>
-        <td><code>inchan</code></td>
-        <td>Informs the client that the channel name contained invalid characters.</td>
-        <td></td>
-    </tr>
-    <tr>
-        <td><code>nischan</code></td>
-        <td>Tells the client that a channel with that name already exists.</td>
-        <td>The name of the channel.</td>
-    </tr>
-    <tr>
-        <td><code>ndchan</code></td>
-        <td>Tells the client that they're not allowed to delete that channel.</td>
-        <td>The name of the channel.</td>
-    </tr>
-    <tr>
-        <td><code>namchan</code></td>
-        <td>Tells the client that they're not allowed to edit that channel.</td>
-        <td>The name of the channel.</td>
-    </tr>
-    <tr>
-        <td><code>nameinuse</code></td>
-        <td>Tells the client that the nickname they tried to use is already being used by someone else.</td>
-        <td>The name.</td>
-    </tr>
-    <tr>
-        <td><code>rankerr</code></td>
-        <td>Tells the client that they're not allowed to do something to a user because they have a higher rank than them.</td>
-        <td></td>
-    </tr>
-</table>
+### Informational
+
+#### `say`: Broadcast
+Just echo whatever is specified in the first argument.
+
+
+#### `silence`: Silence notice
+Informs the client that they've been silenced.
+
+
+#### `unsil`: Silence revocation notice
+Informs the client that their silence has been revoked.
+
+
+#### `silok`: Silence confirmation
+Informs the client that they have successfully silenced another user.
+
+The first argument contains the target username.
+
+
+#### `usilok`: Silence revocation confirmation
+Informs the client that they have successfully revoked another user's silence.
+
+The first argument contains the target username.
+
+
+#### `flwarn`: Flood protection warning
+Informs the client that they are risking getting kicked for flood protection (spam) if they continue sending messages at the same rate.
+
+
+#### `unban`: Ban revocation confirmation
+Informs the client that they have successfully revoked a ban on a user or an IP address.
+
+
+#### `banlist`: List of banned entities
+Provides the client with a list of all banned users and IP addresses.
+
+The first argument contains HTML with the information on the users with the following format: "<code>&lt;a href="javascript:void(0);" onclick="Chat.SendMessageWrapper('/unban '+ this.innerHTML);"&gt;{0}&lt;/a&gt;</code>" where {0} is the username of the banned user or the banned IP address. The set is separated by "<code>, </code>".
+
+
+#### `who`: List of online users
+Provides the client with a list of users currently online on the server.
+
+The first argument contains HTML with the information on the users with the following format: "<code>&lt;a href="javascript:void(0);" onclick="UI.InsertChatText(this.innerHTML);"&gt;{0}&lt;/a&gt;</code>" where {0} is the username of a user. The current online user is highlighted with "<code> style="font-weight: bold;"</code>" before the closing &gt; of the opening &lt;a&gt; tag. The set is separated by "<code>, </code>".
+
+
+#### `whochan`: List of users in a channel.
+Provides the client with a list of users currently online in a channel.
+
+The first argument contins HTML with the information on the users with the following format: "<code>&lt;a href="javascript:void(0);" onclick="UI.InsertChatText(this.innerHTML);"&gt;{0}&lt;/a&gt;</code>" where {0} is the username of a user. The current online user is highlighted with "<code> style="font-weight: bold;"</code>" before the closing &gt; of the opening &lt;a&gt; tag. The set is separated by "<code>, </code>"
+
+
+#### `join`: User connected
+Informs the client that a user just connected to the server.
+
+The first argument contains the username of the user.
+
+
+#### `jchan`: User joined channel
+Informs the client that a user just joined a channel they're in.
+
+The first argument contains the username of the user.
+
+
+#### `leave`: User disconnected
+Informs the client that a user just disconnected from the server.
+
+The first argument contains the username of the user.
+
+
+#### `lchan`: User left channel
+Informs the client that a user just left a channel they're in.
+
+
+#### `kick`: User has been kicked
+Informs the client that another user has just been kicked.
+
+The first argument contains the username of the user.
+
+
+#### `flood`: User exceeded flood limit
+Informs the client that another user has just been kicked for exceeding the flood protection limit.
+
+The first argument contains the username of the user.
+
+
+#### `timeout`: User has timed out
+Informs the client that another user has been disconnected from the server automatically.
+
+The first argument contains the username of the user.
+
+
+#### `nick`: User has changed their nickname
+Informs the client that a user has changed their nickname.
+
+The first argument contains the previous username of the user.
+The second argument contains the new username of the user.
+
+
+#### `crchan`: Channel creation confirmation
+Informs the client that the channel they attempted to create has been successfully created.
+
+The first argument contains the name of the channel.
+
+
+#### `delchan`: Channel deletion confirmation
+Informs the client that the channel they attempted to delete has been successfully deleted.
+
+The first argument contains the name of the channel.
+
+
+#### `cpwdchan`: Channel password update confirmation
+Informs the client that they've successfully changed the password of a channel.
+
+
+#### `cprivchan`: Channel rank update confirmation
+Informs the client that they've successfully changed the minimum required rank to join a channel.
+
+
+#### `ipaddr`: IP address
+Shows the IP address of another user to a user with moderation privileges.
+
+The first argument contains the username of the user.
+The second argument contains the IP address of the user.
+
+
+### Errors
+
+#### `generr`: Generic Error
+Informs the client that Something went Wrong.
+
+
+#### `nocmd`: Command not found
+Informs the client that the command they tried to run does not exist.
+
+##### Arguments
+ - `string`: Name of the command.
+
+
+#### `cmdna`: Command not allowed
+Informs the client that they are not allowed to use a command.
+
+##### Arguments
+ - `string`: Name of the command.
+
+
+#### `cmderr`: Command format error
+Informs the client that the command they tried to run was incorrectly formatted.
+
+##### Arguments
+ - `string`: Name of the command.
+
+
+#### `usernf`: User not found
+Informs the client that the user argument of a command contains a user that is not known by the server.
+
+##### Arguments
+ - `string`: Name of the target user.
+
+
+#### `rankerr`: Rank error
+Informs the client that they are not allowed to do something because their ranking is too low.
+
+
+#### `nameinuse`: Name in use
+Informs the the client that the name they attempted to choose is already in use by another user.
+
+##### Arguments
+ - `string`: Name that is in use.
+
+
+#### `whoerr`: User listing error
+Informs the client that they do not have access to the channel they tried to query.
+
+##### Arguments
+ - `string`: Name of the channel.
+
+
+#### `kickna`: Kick or ban not allowed
+Informs the client that they are not allowed to kick a user.
+
+##### Arguments
+ - `string`: Username of the user in question.
+
+
+#### `notban`: Not banned
+Informs the client that the ban they tried to revoke was not in place.
+
+##### Arguments
+ - `string`: Username or IP address in question.
+
+
+#### `nochan`: Channel not found
+Informs the client that the channel they tried to join does not exist.
+
+##### Arguments
+ - `string`: Name of the channel.
+
+
+#### `samechan`: Already in channel
+Informs the client that they attempted to join a channel they are already in.
+
+##### Arguments
+ - `string`: Name of the channel.
+
+
+#### `ipchan`: Channel join not allowed
+Informs the client that they do not have sufficient rank or permissions to join a channel.
+
+##### Arguments
+ - `string`: Name of the channel.
+
+
+#### `nopwchan`: No password provided
+Informs the client that they must specify a password to join a channel.
+
+##### Arguments
+ - `string`: Name of the channel.
+
+
+#### `ipwchan`: No password provided
+Informs the client that the password they provided to join a channel was invalid.
+
+##### Arguments
+ - `string`: Name of the channel.
+
+
+#### `inchan`: Invalid channel name
+Informs the client that the name they tried to give to a channel contains invalid characters.
+
+
+#### `nischan`: Channel name in use
+Informs the client that the name they tried to give to a channel is already used by another channel.
+
+The first argument contains the name of the channel.
+
+
+#### `ndchan`: Channel deletion error
+Informs the client that they are not allowed to delete a channel.
+
+The first argument contains the name of the channel.
+
+
+#### `namchan`: Channel edit error
+Informs the client that they are not allowed to edit a channel.
+
+The first argument contains the name of the channel.
+
+
+#### `delerr`: Message deletion error
+Informs the client that they are not allowed to delete a message.
+
+
+#### `silerr`: Already silenced
+Informs the client that the user they attempted to silence has already been silenced.
+
+
+#### `usilerr`: Not silenced
+Informs the client that the user whose silence they attempted to revoke has not been silenced.
+
+
+#### `silperr`: Silence permission error
+Informs the client that they are not allowed to silence the other user.
+
+
+#### `usilperr`: Silence revocation permission error
+Informs the client that they are not allowed to revoke the silence on the other user.
+
+
+#### `silself`: Self silence
+Informs the client that they are not allowed to silence themselves.
+
 
 ## Commands
 Actions sent through messages prefixed with `/`. Arguments are described as `[name]`, optional arguments as `[name?]`.
 
-<table>
-    <tr>
-        <th>Name</th>
-        <th>Action</th>
-        <th>Expected bot messages</th>
-        <th>Additional Notes</th>
-    </tr>
-    <tr>
-        <td><code>/afk [reason?]</code></td>
-        <td>Marks the current user as afk, the first 5 characters from the user string are prefixed uppercase to the current username prefixed by <code>&amp;lt;</code> and suffixed by <code>&amp;gt;_</code> resulting in a username that looks like <code>&lt;AWAY&gt;_flash</code> if <code>/afk away</code> is ran by the user <code>flash</code>. If no reason is specified "<code>AFK</code>" is used.</td>
-        <td></td>
-        <td></td>
-    </tr>
-    <tr>
-        <td><code>/nick [name?]</code></td>
-        <td>Temporarily changes the user's nickname prefixed with <code>~</code>. If the user's original name or no argument at all is specified the command returns the user's name to its original state without the prefix.</td>
-        <td>
-            <ul>
-                <li><code>cmdna</code>: Not allowed to change own nickname.</li>
-                <li><code>nameinuse</code>: Someone else is using the username.</li>
-                <li><code>nick</code>: Username has changed.</li>
-            </ul>
-        </td>
-        <td></td>
-    </tr>
-    <tr>
-        <td>
-            <code>/msg [username] [message]</code><br>
-            <code>/whisper [username] [message]</code>
-        </td>
-        <td>Sends a private message to another user.</td>
-        <td>
-            <ul>
-                <li><code>cmderr</code>: Missing username and/or message arguments.</li>
-                <li><code>usernf</code>: User not found.</li>
-            </ul>
-        </td>
-        <td></td>
-    </tr>
-    <tr>
-        <td>
-            <code>/me [message]</code><br>
-            <code>/action [message]</code>
-        </td>
-        <td>Sends a message but with flags <code>11000</code> instead of the regular <code>10010</code>, used to describe an action.</td>
-        <td></td>
-        <td></td>
-    </tr>
-    <tr>
-        <td>
-            <code>/who [channel?]</code>
-        </td>
-        <td>If no argument is specified it'll return all users on the server, if a channel is specified it'll return all users in that channel.</td>
-        <td>
-            <ul>
-                <li><code>nochan</code>: The given channel does not exist.</li>
-                <li><code>whoerr</code>: The user does not have access to the channel.</li>
-                <li><code>whochan</code>: Listing of users in a channel.</li>
-                <li><code>who</code>: Listing of users.</li>
-            </ul>
-        </td>
-        <td></td>
-    </tr>
-    <tr>
-        <td>
-            <code>/delete [channel name or message id]</code>
-        </td>
-        <td>If the argument is entirely numeric this function acts as an alias for <code>/delmsg</code>, otherwise <code>/delchan</code>.</td>
-        <td></td>
-        <td></td>
-    </tr>
-    <tr>
-        <td>
-            <code>/join [channel] [password?]</code>
-        </td>
-        <td>Switches the current user to a different channel.</td>
-        <td>
-            <ul>
-                <li><code>nochan</code>: The given channel does not exist.</li>
-                <li><code>ipchan</code>: The user does not have access to the channel.</li>
-                <li><code>ipwchan</code>: The provided password was invalid.</li>
-                <li><code>nopwchan</code>: A password is required to enter the given channel.</li>
-            </ul>
-        </td>
-        <td>In Version 2 with the MCHAN capability a user can be in more than one channel so the behaviour of this command changes to just joining the new channel rather than also immediately leaving previous channel.</td>
-    </tr>
-    <tr>
-        <td>
-            <code>/leave [channel]</code>
-        </td>
-        <td>Leave a channel the user is currently in.</td>
-        <td></td>
-        <td>Added in Version 2 through the MCHAN capability. The command should pretend it doesn't exist if MCHAN isn't part of the session's capabilities.</td>
-    </tr>
-    <tr>
-        <td>
-            <code>/create [rank?] [name]</code>
-        </td>
-        <td>Creates a new channel.</td>
-        <td>
-            <ul>
-                <li><code>cmdna</code>: Not allowed to create channels.</li>
-                <li><code>cmderr</code>: Command isn't formatted correctly.</li>
-                <li><code>rankerr</code>: Tried to set channel rank higher than own.</li>
-                <li><code>inchan</code>: Given name contained invalid characters.</li>
-                <li><code>nischan</code>: A channel with the given name already exists.</li>
-                <li><code>crchan</code>: Successfully created channel.</li>
-            </ul>
-        </td>
-        <td></td>
-    </tr>
-    <tr>
-        <td>
-            <code>/delchan [name]</code>
-        </td>
-        <td>Deletes an existing channel.</td>
-        <td>
-            <ul>
-                <li><code>cmderr</code>: Command isn't formatted correctly.</li>
-                <li><code>nochan</code>: No channel with the given name exists.</li>
-                <li><code>ndchan</code>: Not allowed to delete this channel.</li>
-                <li><code>delchan</code>: Deleted channel.</li>
-            </ul>
-        </td>
-        <td></td>
-    </tr>
-    <tr>
-        <td>
-            <code>/password [password?]</code><br>
-            <code>/pwd [password?]</code>
-        </td>
-        <td>Changes the password for a channel. Specify no argument to remove the password.</td>
-        <td>
-            <ul>
-                <li><code>cmdna</code>: Not allowed to change the password.</li>
-                <li><code>cpwdchan</code>: Success.</li>
-            </ul>
-        </td>
-        <td></td>
-    </tr>
-    <tr>
-        <td>
-            <code>/privilege [rank]</code><br>
-            <code>/rank [rank]</code><br>
-            <code>/priv [rank]</code>
-        </td>
-        <td>Changes what user rank is required to enter a channel.</td>
-        <td>
-            <ul>
-                <li><code>cmdna</code>: Not allowed to change rank.</li>
-                <li><code>rankerr</code>: Missing rank argument or trying to set rank to one higher than their own.</li>
-                <li><code>cprivchan</code>: Success.</li>
-            </ul>
-        </td>
-        <td></td>
-    </tr>
-    <tr>
-        <td>
-            <code>/say [message]</code>
-        </td>
-        <td>Broadcasts a message as the server to all users in all channels.</td>
-        <td>
-            <ul>
-                <li><code>cmdna</code>: Not allowed to broadcast.</li>
-                <li><code>say</code>: Broadcast message.</li>
-            </ul>
-        </td>
-        <td></td>
-    </tr>
-    <tr>
-        <td>
-            <code>/delmsg [message id]</code>
-        </td>
-        <td>Deletes a message.</td>
-        <td>
-            <ul>
-                <li><code>cmdna</code>: Not allowed to delete messages.</li>
-                <li><code>cmderr</code>: Invalid arguments.</li>
-                <li><code>delerr</code>: The message does not exist, or the user's rank is lower than the sender.</li>
-            </ul>
-        </td>
-        <td></td>
-    </tr>
-    <tr>
-        <td>
-            <code>/kick [user] [time?]</code>
-        </td>
-        <td>Kicks a user from the server. If no time is specified the kick expires immediately.</td>
-        <td>
-            <ul>
-                <li><code>cmdna</code>: Not allowed to kick users.</li>
-                <li><code>usernf</code>: User not found.</li>
-                <li><code>kickna</code>: Sender is trying to kick themselves, someone with a higher rank or someone that's already banned.</li>
-                <li><code>cmderr</code>: Provided time is invalid.</li>
-            </ul>
-        </td>
-        <td></td>
-    </tr>
-    <tr>
-        <td>
-            <code>/ban [user] [time?]</code>
-        </td>
-        <td>Kicks a user and IP address from the server. If no time is specified the kick will never expire.</td>
-        <td>
-            <ul>
-                <li><code>cmdna</code>: Not allowed to kick users.</li>
-                <li><code>usernf</code>: User not found.</li>
-                <li><code>kickna</code>: Sender is trying to kick themselves, someone with a higher rank or someone that's already banned.</li>
-                <li><code>cmderr</code>: Provided time is invalid.</li>
-            </ul>
-        </td>
-        <td></td>
-    </tr>
-    <tr>
-        <td>
-            <code>/unban [user]</code><br>
-            <code>/pardon [user]</code>
-        </td>
-        <td>Revokes the ban of a user.</td>
-        <td>
-            <ul>
-                <li><code>cmdna</code>: Not allowed to revoke user bans.</li>
-                <li><code>notban</code>: User is not banned.</li>
-                <li><code>unban</code>: Success.</li>
-            </ul>
-        </td>
-        <td></td>
-    </tr>
-    <tr>
-        <td>
-            <code>/unbanip [user]</code><br>
-            <code>/pardonip [user]</code>
-        </td>
-        <td>Revokes the ban of an ip address.</td>
-        <td>
-            <ul>
-                <li><code>cmdna</code>: Not allowed to revoke ip bans.</li>
-                <li><code>notban</code>: IP address is not banned.</li>
-                <li><code>unban</code>: Success.</li>
-            </ul>
-        </td>
-        <td></td>
-    </tr>
-    <tr>
-        <td>
-            <code>/bans</code><br>
-            <code>/banned</code>
-        </td>
-        <td>Retrieves the list of banned users and ip addresses.</td>
-        <td>
-            <ul>
-                <li><code>cmdna</code>: Not allowed to revoke ip bans.</li>
-                <li><code>banlist</code>: List of bans.</li>
-            </ul>
-        </td>
-        <td></td>
-    </tr>
-    <tr>
-        <td>
-            <code>/silence [username] [time?]</code>
-        </td>
-        <td>Silences a user. If the time argument is not specified the silence is indefinite.</td>
-        <td>
-            <ul>
-                <li><code>cmdna</code>: Not allowed to silence users.</li>
-                <li><code>usernf</code>: User not found.</li>
-                <li><code>silself</code>: Tried to silence self.</li>
-                <li><code>silperr</code>: Tried to silence user of higher rank.</li>
-                <li><code>silerr</code>: User is already silenced.</li>
-                <li><code>cmderr</code>: Time isn't formatted correctly.</li>
-                <li><code>silence</code>: Informs the user they have been silenced.</li>
-                <li><code>silok</code>: Tells the sender that the user has been silenced.</li>
-            </ul>
-        </td>
-        <td></td>
-    </tr>
-    <tr>
-        <td>
-            <code>/unsilence [username]</code>
-        </td>
-        <td>Revokes a silence.</td>
-        <td>
-            <ul>
-                <li><code>cmdna</code>: Not allowed to revoke silences.</li>
-                <li><code>usernf</code>: User not found.</li>
-                <li><code>usilperr</code>: Tried to revoke silence of user of higher rank.</li>
-                <li><code>usilerr</code>: User isn't silenced.</li>
-                <li><code>unsil</code>: Informs the user that their silence has been revoked.</li>
-                <li><code>usilok</code>: Tells the sender that the user's silence has been revoked.</li>
-            </ul>
-        </td>
-        <td></td>
-    </tr>
-    <tr>
-        <td>
-            <code>/ip [username]</code><br>
-            <code>/whois [username]</code>
-        </td>
-        <td>Gets a user's IP address.</td>
-        <td>
-            <ul>
-                <li><code>cmdna</code>: Not allowed to view IP addresses.</li>
-                <li><code>usernf</code>: User not found.</li>
-                <li><code>ipaddr</code>: IP address of user.</li>
-            </ul>
-        </td>
-        <td></td>
-    </tr>
-</table>
+### `/afk`: Setting status to away
+Marks the current user as afk, the first 5 characters from the user string are prefixed uppercase to the current username prefixed by `&amp;lt;` and suffixed by `&amp;gt;_` resulting in a username that looks like `&lt;AWAY&gt;_flash` if `/afk away` is ran by the user `flash`. If no reason is specified "`AFK`" is used.
+
+#### Format
+```
+/afk [reason?]
+```
+
+
+### `/nick`: Change nickname
+Temporarily changes the user's nickname, generally with a prefix such as `~` to avoid name clashing with real users. If the user's original name or no argument at all is specified, the command returns the user's name to its original state without the prefix.
+
+#### Format
+```
+/nick [name?]
+```
+
+#### Responses
+ - `cmdna`: User is not allowed to change their own nickname.
+ - `nameinuse`: The specified nickname is already in use by another user.
+ - `nick`: Username has changed.
+
+
+### `/msg`: Sending a Private Message
+Sends a private message to another user. In implementations of Version 2 or above this should create a private channel that the user can actually join.
+
+#### Format
+```
+/msg [username] [message]
+```
+
+#### Aliases
+ - `/whisper`
+
+#### Responses
+ - `cmderr`: Missing username and/or message arguments.
+ - `usernf`: Target user could not be found by the server.
+
+
+### `/me`: Describing an action
+Sends a message but with flags `11000` instead of the regular `10010`, used to describe an action.
+
+#### Format
+```
+/me [message]
+```
+
+#### Aliases
+ - `/action`
+
+
+### `/who`: Requesting a user list
+Requests a list of users either currently online on the server in general or in a channel. If no argument is specified it'll return all users on the server, if a channel is specified it'll return all users in that channel.
+
+#### Format
+```
+/who [channel?]
+```
+
+#### Responses
+ - `nochan`: The given channel does not exist.
+ - `whoerr`: The user does not have access to the channel.
+ - `whochan`: Listing of users in the channel.
+ - `who`: Listing of users in the server.
+
+
+### `/delete`: Deleting a message or channel
+Due to an oversight in the original implementation, this command was specified to be both the command for deleting messages and for channels. Fortunately messages always have numeric IDs and channels must start with an alphabetic character. Thus if the argument is entirely numeric this function acts as an alias for `/delmsg`, otherwise `/delchan`.
+
+#### Format
+```
+/delete [channel name or message id]
+```
+
+#### Responses
+Inherits the responses of whichever command is forwarded to.
+
+
+### `/join`: Joining a channel
+Switches or joins the current user to a different channel.
+
+In Version 2 with the MCHAN capability a user can be in more than one channel so the behaviour of this command changes to just joining the new channel rather than also immediately leaving previous channel.
+
+#### Format
+```
+/join [channel] [password?]
+```
+
+#### Responses
+ - `nochan`: The given channel does not exist.
+ - `ipchan`: The client does not have the required rank to enter the given channel.
+ - `nopwchan`: A password is required to enter the given channel.
+ - `ipwchan`: The password provided was invalid.
+
+
+### `/leave`: Leaving a channel
+Leave a specified channel.
+
+Added in Version 2 through the MCHAN capability. The command should pretend it doesn't exist if MCHAN isn't part of the session's capabilities.
+
+#### Format
+```
+/leave [channel]
+```
+
+#### Responses
+ - `nocmd`: The client tried to run this command without specifying the `MCHAN` capability.
+
+
+### `/create`: Creating a channel
+Creates a new channel.
+
+#### Format
+```
+/create [rank?] [name...]
+```
+
+If the first argument is numeric, it is taken as the minimum required rank to join the channel. All further arguments are glued with underscores to create the channel name.
+
+#### Responses
+ - `cmdna`: The client is not allowed to create channels.
+ - `cmderr`: The command is formatted incorrectly.
+ - `rankerr`: The specified rank is higher than the client's own rank.
+ - `inchan`: The given channel name contains invalid characters.
+ - `nischan`: A channel with this name already exists.
+ - `crchan`: The channel has been created successfully.
+
+
+### `/delchan`: Deleting a channel
+Deletes an existing channel.
+
+#### Format
+```
+/delchan [name]
+```
+
+#### Responses
+ - `cmderr`: The command is formatted incorrectly.
+ - `nochan`: No channel exists with this name.
+ - `ndchan`: The client is not allowed to delete this channel.
+ - `delchan`: The target channel has been deleted.
+
+
+### `/password`: Update channel password
+Changes the password for a channel. Removes the password if no argument is given.
+
+#### Format
+```
+/password [password?]
+```
+
+#### Aliases
+ - `/pwd`
+
+#### Responses
+ - `cmdna`: The client is not allowed to change the password for this channel.
+ - `cpwdchan`: The password of the channel has been successfully updated.
+
+
+### `/rank`: Update channel minimum rank
+Changes what user rank is required to enter a channel.
+
+#### Format
+```
+/rank [rank]
+```
+
+#### Aliases
+ - `/privilege`
+ - `/priv`
+
+#### Responses
+ - `cmdna`: The client is not allowed to change the rank of the target channel.
+ - `rankerr`: Missing rank argument or the given rank is higher than the client's own rank.
+ - `cprivchan`: The minimum rank of the channel has been successfully updated.
+
+
+### `/say`: Broadcast a message
+Broadcasts a message as the server/chatbot to all users in all channels.
+
+#### Format
+```
+/say [message]
+```
+
+#### Responses
+ - `cmdna`: The client is not allowed to broadcast messages.
+ - `say`: The broadcasted message.
+
+
+### `/delmsg`: Deleting a message
+Deletes a given message.
+
+#### Format
+```
+/delmsg [message id]
+```
+
+#### Responses
+ - `cmdna`: The client is not allowed to delete messages.
+ - `cmderr`: The given message ID was invalid.
+ - `delerr`: The target message does not exist or the client is not allowed to delete this message.
+
+
+### `/kick`: Kick a user
+Kicks a user from the serer. If not time is specified, then kick expires immediately.
+
+#### Format
+```
+/kick [username] [time?]
+```
+
+#### Responses
+ - `cmdna`: The client is not allowed to kick others.
+ - `usernf`: The target user could not be found on the server.
+ - `kickna`: The client is trying to kick someone who they are not allowed to kick, or someone that is currently banned.
+ - `cmderr`: The provided time is invalid.
+
+
+### `/ban`: Bans a user
+Bans a user and their IP addresses from the server. If no time is specified the ban will never expire.
+
+#### Format
+```
+/ban [user] [time?]
+```
+
+#### Responses
+ - `cmdna`: The client is not allowed to kick others.
+ - `usernf`: The target user could not be found on the server.
+ - `kickna`: The client is trying to kick someone who they are not allowed to kick, or someone that is currently banned.
+ - `cmderr`: The provided time is invalid.
+
+
+### `/pardon`: Revokes a user ban
+Revokes a ban currently placed on a user.
+
+#### Format
+```
+/pardon [user]
+```
+
+### Aliases
+ - `/unban`
+
+#### Responses
+ - `cmdna`: The client is not allowed to revoke user bans.
+ - `notban`: The target user is not banned.
+ - `unban`: The ban on the target user has been successfully revoked.
+
+
+### `/pardonip`: Revokes an IP address ban
+Revokes a ban currently placed on an IP address.
+
+#### Format
+```
+/pardonip [address]
+```
+
+#### Aliases
+ - `/unbanip`
+
+#### Responses
+ - `cmdna`: The client is not allowed to revoke IP bans.
+ - `notban`: The target address is not banned.
+ - `unban`: The ban on the target address has been successfully revoked.
+
+
+### `/bans`: List of bans
+Retrieves a list of banned users and IP addresses.
+
+#### Format
+```
+/bans
+```
+
+#### Aliases
+ - `/banned`
+
+#### Responses
+ - `cmdna`: Not allowed to view banned users and IP addresses.
+ - `banlist`: The list of banned users and IP addresses.
+
+
+### `/silence`: Silence a user
+Silences a user. If the time argument is not specified, the silence is indefinite.
+
+#### Format
+```
+/silence [username] [time?]
+```
+
+#### Responses
+ - `cmdna`: The client is not allowed to silence users.
+ - `usernf`: The target user could not be found on the server.
+ - `silself`: The client tried to silence themselves.
+ - `silperr`: The target user has a higher rank that the client.
+ - `silerr`: The target user is already silenced.
+ - `cmderr`: The time argument is formatted incorrectly.
+ - `silence`: Informs the target user that they have been silenced.
+ - `silok`: The target has been successfully silenced.
+
+
+### `/unsilence`: Revokes a user silence
+Revokes a user's silenced status.
+
+#### Format
+```
+/unsilence [username]
+```
+
+#### Responses
+ - `cmdna`: The client is not allowed to revoke silences.
+ - `usernf`: The target user could not be found.
+ - `usilperr`: The target user has a higher rank than the client.
+ - `usilerr`: The target user isn't silenced.
+ - `unsil`: Informs the target user that their silenced status has been revoked.
+ - `usilok`: The silenced status placed on the target has been successfully revoked.
+
+
+### `/ip`: Retrieve IP addresses
+Retrieves a user's IP addresses. If the user has multiple connections, multiple `ipaddr` responses may be sent.
+
+#### Format
+```
+/ip [username]
+```
+
+#### Aliases
+ - `whois`
+
+#### Responses
+ - `cmdna`: The client is not allowed to view IP addresses.
+ - `usernf`: The target user is not connected to the server.
+ - `ipaddr`: (One of) The target user's IP address(es).
