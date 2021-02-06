@@ -9,5 +9,6 @@ namespace SharpChat.WebSocket {
         bool IsAvailable { get; }
 
         void Send(object obj);
+        void Send(IServerPacket obj);
     }
 }

@@ -65,7 +65,10 @@ namespace SharpChat {
             };
 
             if(VERSION >= 2)
-                handlers.Add(new TypingPacketHandler());
+                handlers.AddRange(new IPacketHandler[] {
+                    new CapabilitiesPacketHandler(),
+                    new TypingPacketHandler(),
+                });
 
             PacketHandlers = handlers.ToArray();
 

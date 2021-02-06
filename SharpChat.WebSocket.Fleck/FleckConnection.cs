@@ -26,6 +26,9 @@ namespace SharpChat.WebSocket.Fleck {
         public void Send(object obj)
             => Connection.Send(obj.ToString());
 
+        public void Send(IServerPacket packet)
+            => Connection.Send(packet.Pack());
+
         public override string ToString() {
             return string.Format(@"{0}:{1}", RemoteAddress, Port);
         }

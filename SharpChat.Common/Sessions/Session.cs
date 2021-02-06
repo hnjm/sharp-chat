@@ -16,7 +16,7 @@ namespace SharpChat.Sessions {
         public DateTimeOffset LastPing { get; set; }
         public ChatUser User { get; set; }
 
-        public TimeSpan IdleTime => DateTimeOffset.Now - LastPing;
+        public TimeSpan IdleTime => LastPing - DateTimeOffset.Now;
 
         public bool HasConnection
             => Connection != null;

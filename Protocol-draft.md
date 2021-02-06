@@ -777,11 +777,11 @@ Informs the client what capabilities the server understood from the Packet `3`.
 Added in Version 2.
 
 <table>
-    <td>
+    <tr>
         <td><code>string</code></td>
         <td>A space separated string of accepted capability strings.</td>
         <td></td>
-    </td>
+    </tr>
 </table>
 
 ### Packet `12`: Typing Info
@@ -792,7 +792,7 @@ Added in Version 2.
 <table>
     <tr>
         <td><code>channel name</code></td>
-        <td>Name of the channel in which the user is typing. If this field is empty, assume it has been sent to the user directly for private messaging.</td>
+        <td>Name of the channel in which the user is typing.</td>
         <td></td>
     </tr>
     <tr>
