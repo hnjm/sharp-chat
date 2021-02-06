@@ -68,7 +68,7 @@ namespace SharpChat.PacketHandlers {
                 try {
                     message = HandleCommand(text, ctx.Chat, ctx.User, channel, ctx.Session);
                 } catch(CommandException ex) {
-                    ctx.User.Send(ex.ToPacket(Context.Bot));
+                    ctx.Session.Send(ex.ToPacket(Context.Bot));
                 }
 
                 if(message == null)

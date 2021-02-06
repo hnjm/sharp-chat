@@ -4,15 +4,19 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 
+// this shitheap needs a rewrite
+
 namespace SharpChat.Bans {
     public interface IBan {
         DateTimeOffset Expires { get; }
+        bool IsPermanent { get; }
         string ToString();
     }
 
     public class BannedUser : IBan {
         public long UserId { get; set; }
         public DateTimeOffset Expires { get; set; }
+        public bool IsPermanent { get; set; }
         public string Username { get; set; }
 
         public BannedUser() {
@@ -21,6 +25,7 @@ namespace SharpChat.Bans {
         public BannedUser(IBanRecord banRecord) {
             UserId = banRecord.UserId;
             Expires = banRecord.Expires;
+            IsPermanent = banRecord.IsPermanent;
             Username = banRecord.Username;
         }
 
@@ -30,6 +35,7 @@ namespace SharpChat.Bans {
     public class BannedIPAddress : IBan {
         public IPAddress Address { get; set; }
         public DateTimeOffset Expires { get; set; }
+        public bool IsPermanent { get; set; }
 
         public BannedIPAddress() {
         }
@@ -37,6 +43,7 @@ namespace SharpChat.Bans {
         public BannedIPAddress(IBanRecord banRecord) {
             Address = banRecord.UserIP;
             Expires = banRecord.Expires;
+            IsPermanent = banRecord.IsPermanent;
         }
 
         public override string ToString() => Address.ToString();
@@ -56,7 +63,7 @@ namespace SharpChat.Bans {
             RefreshRemoteBans();
         }
 
-        public void Add(ChatUser user, DateTimeOffset expires) {
+        public void Add(ChatUser user, DateTimeOffset expires, bool isPermanent = false) {
             if (expires <= DateTimeOffset.Now)
                 return;
 
@@ -64,13 +71,13 @@ namespace SharpChat.Bans {
                 BannedUser ban = BanList.OfType<BannedUser>().FirstOrDefault(x => x.UserId == user.UserId);
 
                 if (ban == null)
-                    Add(new BannedUser { UserId = user.UserId, Expires = expires, Username = user.UserName });
+                    Add(new BannedUser { UserId = user.UserId, Expires = expires, Username = user.UserName, IsPermanent = isPermanent });
                 else
                     ban.Expires = expires;
             }
         }
 
-        public void Add(IPAddress addr, DateTimeOffset expires) {
+        public void Add(IPAddress addr, DateTimeOffset expires, bool isPermanent = false) {
             if (expires <= DateTimeOffset.Now)
                 return;
 
@@ -78,7 +85,7 @@ namespace SharpChat.Bans {
                 BannedIPAddress ban = BanList.OfType<BannedIPAddress>().FirstOrDefault(x => x.Address.Equals(addr));
 
                 if (ban == null)
-                    Add(new BannedIPAddress { Address = addr, Expires = expires });
+                    Add(new BannedIPAddress { Address = addr, Expires = expires, IsPermanent = isPermanent });
                 else
                     ban.Expires = expires;
             }
@@ -112,16 +119,20 @@ namespace SharpChat.Bans {
             if (user == null)
                 return DateTimeOffset.MinValue;
 
-            lock(BanList)
-                return BanList.OfType<BannedUser>().Where(x => x.UserId == user.UserId).FirstOrDefault()?.Expires ?? DateTimeOffset.MinValue;
+            lock(BanList) {
+                BannedUser bu = BanList.OfType<BannedUser>().Where(x => x.UserId == user.UserId).FirstOrDefault();
+                return bu == null ? DateTimeOffset.MinValue : (bu.IsPermanent ? DateTimeOffset.MaxValue : bu.Expires);
+            }
         }
 
         public DateTimeOffset Check(IPAddress addr) {
             if (addr == null)
                 return DateTimeOffset.MinValue;
 
-            lock (BanList)
-                return BanList.OfType<BannedIPAddress>().Where(x => x.Address.Equals(addr)).FirstOrDefault()?.Expires ?? DateTimeOffset.MinValue;
+            lock(BanList) {
+                BannedIPAddress ba = BanList.OfType<BannedIPAddress>().Where(x => x.Address.Equals(addr)).FirstOrDefault();
+                return ba == null ? DateTimeOffset.MinValue : (ba.IsPermanent ? DateTimeOffset.MaxValue : ba.Expires);
+            }
         }
 
         public BannedUser GetUser(string username) {
@@ -142,7 +153,7 @@ namespace SharpChat.Bans {
 
         public void RemoveExpired() {
             lock(BanList)
-                BanList.RemoveAll(x => x.Expires <= DateTimeOffset.Now);
+                BanList.RemoveAll(x => !x.IsPermanent && x.Expires <= DateTimeOffset.Now);
         }
 
         public void RefreshRemoteBans() {

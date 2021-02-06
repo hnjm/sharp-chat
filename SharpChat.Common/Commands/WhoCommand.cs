@@ -18,7 +18,7 @@ namespace SharpChat.Commands {
             => name == @"who";
 
         private static void WhoServer(IUser sender, IChatCommandContext ctx) {
-            ctx.User.Send(new UserListResponsePacket(sender, ctx.User, ctx.Chat.Users.All()));
+            ctx.Session.Send(new UserListResponsePacket(sender, ctx.User, ctx.Chat.Users.All()));
         }
 
         private static void WhoChannel(IUser sender, IChatCommandContext ctx, string channelName) {
@@ -30,7 +30,7 @@ namespace SharpChat.Commands {
             if(whoChan.MinimumRank > ctx.User.Rank || (whoChan.HasPassword && !ctx.User.Can(UserPermissions.JoinAnyChannel)))
                 throw new UserListChannelNotFoundCommandException(channelName);
 
-            ctx.User.Send(new UserListResponsePacket(sender, whoChan, ctx.User, whoChan.GetUsers()));
+            ctx.Session.Send(new UserListResponsePacket(sender, whoChan, ctx.User, whoChan.GetUsers()));
         }
 
         public IMessageEvent DispatchCommand(IChatCommandContext ctx) {

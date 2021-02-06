@@ -148,8 +148,13 @@ Added in Version 2 through the <code>TYPING</code> capability.
 
 <table>
     <tr>
+        <td><code>int</code></td>
+        <td>User ID</td>
+        <td></td>
+    </tr>
+    <tr>
         <td><code>string</code></td>
-        <td>Name of the target channel. May be omitted to target the last addressed channel.</td>
+        <td>Name of the target channel.</td>
         <td></td>
     </tr>
 </table>
@@ -938,7 +943,7 @@ Formatting IDs sent by user -1.
     </tr>
     <tr>
         <td><code>cprivchan</code></td>
-        <td>Informs the client that they have successfully changed the hierarchy level required for the channel.</td>
+        <td>Informs the client that they have successfully changed the rank level required for the channel.</td>
         <td></td>
     </tr>
     <tr>
@@ -1076,7 +1081,7 @@ Formatting IDs sent by user -1.
     </tr>
     <tr>
         <td><code>rankerr</code></td>
-        <td>Tells the client that they're not allowed to do something to a user because they have a higher hierarchy than them.</td>
+        <td>Tells the client that they're not allowed to do something to a user because they have a higher rank than them.</td>
         <td></td>
     </tr>
 </table>
@@ -1089,10 +1094,12 @@ Actions sent through messages prefixed with `/`. Arguments are described as `[na
         <th>Name</th>
         <th>Action</th>
         <th>Expected bot messages</th>
+        <th>Additional Notes</th>
     </tr>
     <tr>
         <td><code>/afk [reason?]</code></td>
         <td>Marks the current user as afk, the first 5 characters from the user string are prefixed uppercase to the current username prefixed by <code>&amp;lt;</code> and suffixed by <code>&amp;gt;_</code> resulting in a username that looks like <code>&lt;AWAY&gt;_flash</code> if <code>/afk away</code> is ran by the user <code>flash</code>. If no reason is specified "<code>AFK</code>" is used.</td>
+        <td></td>
         <td></td>
     </tr>
     <tr>
@@ -1105,6 +1112,7 @@ Actions sent through messages prefixed with `/`. Arguments are described as `[na
                 <li><code>nick</code>: Username has changed.</li>
             </ul>
         </td>
+        <td></td>
     </tr>
     <tr>
         <td>
@@ -1118,6 +1126,7 @@ Actions sent through messages prefixed with `/`. Arguments are described as `[na
                 <li><code>usernf</code>: User not found.</li>
             </ul>
         </td>
+        <td></td>
     </tr>
     <tr>
         <td>
@@ -1125,6 +1134,7 @@ Actions sent through messages prefixed with `/`. Arguments are described as `[na
             <code>/action [message]</code>
         </td>
         <td>Sends a message but with flags <code>11000</code> instead of the regular <code>10010</code>, used to describe an action.</td>
+        <td></td>
         <td></td>
     </tr>
     <tr>
@@ -1140,12 +1150,14 @@ Actions sent through messages prefixed with `/`. Arguments are described as `[na
                 <li><code>who</code>: Listing of users.</li>
             </ul>
         </td>
+        <td></td>
     </tr>
     <tr>
         <td>
             <code>/delete [channel name or message id]</code>
         </td>
         <td>If the argument is entirely numeric this function acts as an alias for <code>/delmsg</code>, otherwise <code>/delchan</code>.</td>
+        <td></td>
         <td></td>
     </tr>
     <tr>
@@ -1161,22 +1173,32 @@ Actions sent through messages prefixed with `/`. Arguments are described as `[na
                 <li><code>nopwchan</code>: A password is required to enter the given channel.</li>
             </ul>
         </td>
+        <td>In Version 2 with the MCHAN capability a user can be in more than one channel so the behaviour of this command changes to just joining the new channel rather than also immediately leaving previous channel.</td>
     </tr>
     <tr>
         <td>
-            <code>/create [hierarchy?] [name]</code>
+            <code>/leave [channel]</code>
+        </td>
+        <td>Leave a channel the user is currently in.</td>
+        <td></td>
+        <td>Added in Version 2 through the MCHAN capability. The command should pretend it doesn't exist if MCHAN isn't part of the session's capabilities.</td>
+    </tr>
+    <tr>
+        <td>
+            <code>/create [rank?] [name]</code>
         </td>
         <td>Creates a new channel.</td>
         <td>
             <ul>
                 <li><code>cmdna</code>: Not allowed to create channels.</li>
                 <li><code>cmderr</code>: Command isn't formatted correctly.</li>
-                <li><code>rankerr</code>: Tried to set channel hierarchy higher than own.</li>
+                <li><code>rankerr</code>: Tried to set channel rank higher than own.</li>
                 <li><code>inchan</code>: Given name contained invalid characters.</li>
                 <li><code>nischan</code>: A channel with the given name already exists.</li>
                 <li><code>crchan</code>: Successfully created channel.</li>
             </ul>
         </td>
+        <td></td>
     </tr>
     <tr>
         <td>
@@ -1191,6 +1213,7 @@ Actions sent through messages prefixed with `/`. Arguments are described as `[na
                 <li><code>delchan</code>: Deleted channel.</li>
             </ul>
         </td>
+        <td></td>
     </tr>
     <tr>
         <td>
@@ -1204,21 +1227,23 @@ Actions sent through messages prefixed with `/`. Arguments are described as `[na
                 <li><code>cpwdchan</code>: Success.</li>
             </ul>
         </td>
+        <td></td>
     </tr>
     <tr>
         <td>
-            <code>/privilege [hierarchy]</code><br>
-            <code>/rank [hierarchy]</code><br>
-            <code>/priv [hierarchy]</code>
+            <code>/privilege [rank]</code><br>
+            <code>/rank [rank]</code><br>
+            <code>/priv [rank]</code>
         </td>
-        <td>Changes what user hierarchy is required to enter a channel.</td>
+        <td>Changes what user rank is required to enter a channel.</td>
         <td>
             <ul>
-                <li><code>cmdna</code>: Not allowed to change hierarchy.</li>
-                <li><code>rankerr</code>: Missing rank argument or trying to set hierarchy to one higher than their own.</li>
+                <li><code>cmdna</code>: Not allowed to change rank.</li>
+                <li><code>rankerr</code>: Missing rank argument or trying to set rank to one higher than their own.</li>
                 <li><code>cprivchan</code>: Success.</li>
             </ul>
         </td>
+        <td></td>
     </tr>
     <tr>
         <td>
@@ -1231,6 +1256,7 @@ Actions sent through messages prefixed with `/`. Arguments are described as `[na
                 <li><code>say</code>: Broadcast message.</li>
             </ul>
         </td>
+        <td></td>
     </tr>
     <tr>
         <td>
@@ -1241,9 +1267,10 @@ Actions sent through messages prefixed with `/`. Arguments are described as `[na
             <ul>
                 <li><code>cmdna</code>: Not allowed to delete messages.</li>
                 <li><code>cmderr</code>: Invalid arguments.</li>
-                <li><code>delerr</code>: The message does not exist, or the user's hierarchy is lower than the sender.</li>
+                <li><code>delerr</code>: The message does not exist, or the user's rank is lower than the sender.</li>
             </ul>
         </td>
+        <td></td>
     </tr>
     <tr>
         <td>
@@ -1254,10 +1281,11 @@ Actions sent through messages prefixed with `/`. Arguments are described as `[na
             <ul>
                 <li><code>cmdna</code>: Not allowed to kick users.</li>
                 <li><code>usernf</code>: User not found.</li>
-                <li><code>kickna</code>: Sender is trying to kick themselves, someone with a higher hierarchy or someone that's already banned.</li>
+                <li><code>kickna</code>: Sender is trying to kick themselves, someone with a higher rank or someone that's already banned.</li>
                 <li><code>cmderr</code>: Provided time is invalid.</li>
             </ul>
         </td>
+        <td></td>
     </tr>
     <tr>
         <td>
@@ -1268,10 +1296,11 @@ Actions sent through messages prefixed with `/`. Arguments are described as `[na
             <ul>
                 <li><code>cmdna</code>: Not allowed to kick users.</li>
                 <li><code>usernf</code>: User not found.</li>
-                <li><code>kickna</code>: Sender is trying to kick themselves, someone with a higher hierarchy or someone that's already banned.</li>
+                <li><code>kickna</code>: Sender is trying to kick themselves, someone with a higher rank or someone that's already banned.</li>
                 <li><code>cmderr</code>: Provided time is invalid.</li>
             </ul>
         </td>
+        <td></td>
     </tr>
     <tr>
         <td>
@@ -1286,6 +1315,7 @@ Actions sent through messages prefixed with `/`. Arguments are described as `[na
                 <li><code>unban</code>: Success.</li>
             </ul>
         </td>
+        <td></td>
     </tr>
     <tr>
         <td>
@@ -1300,6 +1330,7 @@ Actions sent through messages prefixed with `/`. Arguments are described as `[na
                 <li><code>unban</code>: Success.</li>
             </ul>
         </td>
+        <td></td>
     </tr>
     <tr>
         <td>
@@ -1313,6 +1344,7 @@ Actions sent through messages prefixed with `/`. Arguments are described as `[na
                 <li><code>banlist</code>: List of bans.</li>
             </ul>
         </td>
+        <td></td>
     </tr>
     <tr>
         <td>
@@ -1324,13 +1356,14 @@ Actions sent through messages prefixed with `/`. Arguments are described as `[na
                 <li><code>cmdna</code>: Not allowed to silence users.</li>
                 <li><code>usernf</code>: User not found.</li>
                 <li><code>silself</code>: Tried to silence self.</li>
-                <li><code>silperr</code>: Tried to silence user of higher hierarchy.</li>
+                <li><code>silperr</code>: Tried to silence user of higher rank.</li>
                 <li><code>silerr</code>: User is already silenced.</li>
                 <li><code>cmderr</code>: Time isn't formatted correctly.</li>
                 <li><code>silence</code>: Informs the user they have been silenced.</li>
                 <li><code>silok</code>: Tells the sender that the user has been silenced.</li>
             </ul>
         </td>
+        <td></td>
     </tr>
     <tr>
         <td>
@@ -1341,12 +1374,13 @@ Actions sent through messages prefixed with `/`. Arguments are described as `[na
             <ul>
                 <li><code>cmdna</code>: Not allowed to revoke silences.</li>
                 <li><code>usernf</code>: User not found.</li>
-                <li><code>usilperr</code>: Tried to revoke silence of user of higher hierarchy.</li>
+                <li><code>usilperr</code>: Tried to revoke silence of user of higher rank.</li>
                 <li><code>usilerr</code>: User isn't silenced.</li>
                 <li><code>unsil</code>: Informs the user that their silence has been revoked.</li>
                 <li><code>usilok</code>: Tells the sender that the user's silence has been revoked.</li>
             </ul>
         </td>
+        <td></td>
     </tr>
     <tr>
         <td>
@@ -1361,5 +1395,6 @@ Actions sent through messages prefixed with `/`. Arguments are described as `[na
                 <li><code>ipaddr</code>: IP address of user.</li>
             </ul>
         </td>
+        <td></td>
     </tr>
 </table>

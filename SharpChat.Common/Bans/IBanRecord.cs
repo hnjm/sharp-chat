@@ -6,6 +6,7 @@ namespace SharpChat.Bans {
         long UserId { get; }
         IPAddress UserIP { get; }
         DateTimeOffset Expires { get; }
+        bool IsPermanent { get; }
         string Username { get; }
     }
 }

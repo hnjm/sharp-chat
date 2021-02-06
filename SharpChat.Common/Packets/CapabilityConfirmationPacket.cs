@@ -15,7 +15,7 @@ namespace SharpChat.Packets {
 
         private static IEnumerable<string> GetStrings(int caps) {
             for(int i = 0; i < Values.Length; ++i)
-                if((caps & i) > 0)
+                if((caps & Values[i]) > 0)
                     yield return Names[i];
         }
 

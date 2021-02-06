@@ -112,9 +112,8 @@ namespace SharpChat.Users {
 
         public void Close() {
             lock(SyncSessions) {
-                foreach(Session conn in Sessions)
-                    conn.Dispose();
-                Sessions.Clear();
+                while(Sessions.Any())
+                    Sessions.First().Dispose();
             }
         }
 

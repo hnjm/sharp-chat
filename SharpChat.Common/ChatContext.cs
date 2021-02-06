@@ -68,13 +68,13 @@ namespace SharpChat {
             PruneSessionlessUsers(); // this function also needs to go
         }
 
-        public void BanUser(ChatUser user, DateTimeOffset? until = null, bool banIPs = false, UserDisconnectReason reason = UserDisconnectReason.Kicked) {
+        public void BanUser(ChatUser user, DateTimeOffset? until = null, bool banIPs = false, UserDisconnectReason reason = UserDisconnectReason.Kicked, bool isPermanent = false) {
             if (until.HasValue && until.Value <= DateTimeOffset.Now)
                 until = null;
 
             if (until.HasValue) {
-                user.Send(new ForceDisconnectPacket(ForceDisconnectReason.Banned, until.Value));
-                Bans.Add(user, until.Value);
+                user.Send(new ForceDisconnectPacket(ForceDisconnectReason.Banned, until.Value, isPermanent));
+                Bans.Add(user, until.Value, isPermanent);
 
                 if (banIPs) {
                     foreach (IPAddress ip in user.RemoteAddresses)

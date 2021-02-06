@@ -15,9 +15,13 @@ namespace SharpChat.PacketHandlers {
 
             IEnumerable<string> capStrs = ctx.Args.ElementAtOrDefault(1)?.Split(' ');
             if(capStrs != null && capStrs.Any())
-                foreach(string capStr in capStrs)
+                foreach(string capStr in capStrs) {
+                    Logger.Debug(capStr);
                     if(Enum.TryParse(typeof(ClientCapabilities), capStr.ToUpperInvariant(), out object cap))
                         caps |= (ClientCapabilities)cap;
+                }
+
+            Logger.Debug(caps);
 
             ctx.Session.Capabilities = caps;
             ctx.Session.Send(new CapabilityConfirmationPacket(caps));

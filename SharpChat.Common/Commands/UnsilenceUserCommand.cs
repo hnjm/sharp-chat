@@ -33,7 +33,7 @@ namespace SharpChat.Commands {
 
             user.SilencedUntil = DateTimeOffset.MinValue;
             user.Send(new SilenceRevokeNoticePacket(Sender));
-            ctx.User.Send(new SilenceRevokeResponsePacket(Sender, user));
+            ctx.Session.Send(new SilenceRevokeResponsePacket(Sender, user));
             return null;
         }
     }

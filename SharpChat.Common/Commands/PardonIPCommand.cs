@@ -30,7 +30,7 @@ namespace SharpChat.Commands {
                 throw new NotBannedCommandException(banRecord?.Address.ToString() ?? ipAddress ?? @"::");
 
             ctx.Chat.Bans.Remove(banRecord.Address);
-            ctx.User.Send(new PardonResponsePacket(Sender, banRecord));
+            ctx.Session.Send(new PardonResponsePacket(Sender, banRecord));
             return null;
         }
     }

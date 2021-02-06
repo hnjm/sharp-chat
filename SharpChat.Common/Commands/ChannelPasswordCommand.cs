@@ -26,7 +26,7 @@ namespace SharpChat.Commands {
                 password = string.Empty;
 
             ctx.Chat.Channels.Update(ctx.Channel, password: password);
-            ctx.User.Send(new ChannelPasswordResponsePacket(Sender));
+            ctx.Session.Send(new ChannelPasswordResponsePacket(Sender));
             return null;
         }
     }

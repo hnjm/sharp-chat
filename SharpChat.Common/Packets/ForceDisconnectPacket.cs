@@ -8,16 +8,18 @@ namespace SharpChat.Packets {
     }
 
     public class ForceDisconnectPacket : ServerPacketBase {
-        public ForceDisconnectReason Reason { get; private set; }
-        public DateTimeOffset Expires { get; private set; }
+        public ForceDisconnectReason Reason { get; }
+        public DateTimeOffset Expires { get; }
+        public bool IsPermanent { get; }
 
-        public ForceDisconnectPacket(ForceDisconnectReason reason, DateTimeOffset? expires = null) {
+        public ForceDisconnectPacket(ForceDisconnectReason reason, DateTimeOffset? expires = null, bool isPermanent = false) {
             Reason = reason;
 
             if (reason == ForceDisconnectReason.Banned) {
                 if (!expires.HasValue)
                     throw new ArgumentNullException(nameof(expires));
                 Expires = expires.Value;
+                IsPermanent = isPermanent;
             }
         }
 
@@ -30,7 +32,10 @@ namespace SharpChat.Packets {
 
             if (Reason == ForceDisconnectReason.Banned) {
                 sb.Append(IServerPacket.SEPARATOR);
-                sb.Append(Expires.ToUnixTimeSeconds());
+                if(IsPermanent)
+                    sb.Append(-1);
+                else
+                    sb.Append((int)Expires.ToUnixTimeSeconds());
             }
 
             return sb.ToString();

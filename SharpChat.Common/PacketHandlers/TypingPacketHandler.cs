@@ -10,13 +10,14 @@ namespace SharpChat.PacketHandlers {
             if(!ctx.HasUser)
                 return;
 
-            Channel channel;
-            string channelName = ctx.Args.ElementAtOrDefault(1)?.ToLowerInvariant();
-            if(string.IsNullOrWhiteSpace(channelName))
-                channel = ctx.Session.LastChannel;
-            else
-                channel = ctx.User.GetChannels().FirstOrDefault(c => c.Name.ToLowerInvariant() == channelName);
+            if(!long.TryParse(ctx.Args.ElementAtOrDefault(1), out long userId) || ctx.User.UserId != userId)
+                return;
 
+            string channelName = ctx.Args.ElementAtOrDefault(2)?.ToLowerInvariant();
+            if(!string.IsNullOrWhiteSpace(channelName))
+                return;
+
+            Channel channel = ctx.User.GetChannels().FirstOrDefault(c => c.Name.ToLowerInvariant() == channelName);
             if(channel == null || !channel.CanType(ctx.User))
                 return;
 
