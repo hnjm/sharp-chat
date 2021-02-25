@@ -91,7 +91,7 @@ namespace SharpChat {
                 return;
             IsDisposed = true;
 
-            Events.Clear();
+            Events?.Clear();
 
             if (disposing)
                 GC.SuppressFinalize(this);

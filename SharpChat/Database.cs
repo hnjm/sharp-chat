@@ -13,6 +13,8 @@ namespace SharpChat {
             => !string.IsNullOrWhiteSpace(ConnectionString);
 
         public static void ReadConfig() {
+            if(!File.Exists(@"mariadb.txt"))
+                return;
             string[] config = File.ReadAllLines(@"mariadb.txt");
             if (config.Length < 4)
                 return;
@@ -196,7 +198,7 @@ namespace SharpChat {
         public static IChatEvent GetEvent(long seqId) {
             try {
                 using MySqlDataReader reader = RunQuery(
-                    @"SELECT `event_id`, `event_type`, `event_flags`, `event_data`"
+                    @"SELECT `event_id`, `event_type`, `event_flags`, `event_data`, `event_target`"
                     + @", `event_sender`, `event_sender_name`, `event_sender_colour`, `event_sender_rank`, `event_sender_nick`, `event_sender_perms`"
                     + @", UNIX_TIMESTAMP(`event_created`) AS `event_created`"
                     + @" FROM `sqc_events`"
