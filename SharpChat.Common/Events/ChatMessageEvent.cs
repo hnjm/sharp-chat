@@ -7,7 +7,7 @@ using System.Text.Json.Serialization;
 namespace SharpChat.Events {
     public class ChatMessageEvent : ChatEvent, IMessageEvent {
         [JsonPropertyName(@"text")]
-        public string Text { get; set; }
+        public string Text { get; }
 
         public ChatMessageEvent(IEvent evt, JsonElement elem) : base(evt, elem) {
             if(elem.TryGetProperty(@"text", out JsonElement textElem))

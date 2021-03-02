@@ -41,7 +41,7 @@ namespace SharpChat.Sessions {
         public bool HasCapability(ClientCapabilities capability)
             => (Capabilities & capability) == capability;
 
-        public void Send(IServerPacket packet) {
+        public void SendPacket(IServerPacket packet) {
             lock(Sync) {
                 if(!HasConnection) {
                     PacketQueue.Enqueue(packet);
@@ -68,7 +68,7 @@ namespace SharpChat.Sessions {
                 Connection = conn;
 
                 while(PacketQueue.TryDequeue(out IServerPacket packet))
-                    Send(packet);
+                    SendPacket(packet);
             }
         }
 
@@ -80,7 +80,7 @@ namespace SharpChat.Sessions {
                 LastChannel = channel;
             if(LastChannel == null)
                 return;
-            Send(new UserChannelForceJoinPacket(LastChannel));
+            SendPacket(new UserChannelForceJoinPacket(LastChannel));
         }
 
         public override string ToString() {

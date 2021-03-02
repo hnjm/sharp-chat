@@ -7,22 +7,22 @@ using System.Text.Json.Serialization;
 namespace SharpChat.Events {
     public abstract class ChatEvent : IEvent {
         [JsonIgnore]
-        public long EventId { get; set; }
+        public long EventId { get; }
 
         [JsonIgnore]
-        public DateTimeOffset DateTime { get; set; }
+        public DateTimeOffset DateTime { get; }
 
         [JsonIgnore]
-        public IUser Sender { get; set; }
+        public IUser Sender { get; }
 
         [JsonIgnore]
-        public Channel Target { get; set; }
+        public Channel Target { get; }
 
         [JsonIgnore]
-        public string TargetName { get; set; }
+        public string TargetName { get; }
 
         [JsonIgnore]
-        public EventFlags Flags { get; set; }
+        public EventFlags Flags { get; }
 
         private const long SEQ_ID_EPOCH = 1588377600000;
         private static int SequenceIdCounter = 0;

@@ -20,6 +20,10 @@ namespace SharpChat.Commands {
         }
     }
 
+    public class CommandGenericException : CommandException {
+        public CommandGenericException() : base(@"generr") { }
+    }
+
     public class CommandNotFoundException : CommandException {
         public CommandNotFoundException(string commandName) : base(@"nocmd", commandName) { }
     }

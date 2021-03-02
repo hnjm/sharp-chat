@@ -24,7 +24,7 @@ namespace SharpChat.PacketHandlers {
             Logger.Debug(caps);
 
             ctx.Session.Capabilities = caps;
-            ctx.Session.Send(new CapabilityConfirmationPacket(caps));
+            ctx.Session.SendPacket(new CapabilityConfirmationPacket(caps));
         }
     }
 }

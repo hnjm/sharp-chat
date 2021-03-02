@@ -1,5 +1,4 @@
-﻿using SharpChat.Bans;
-using SharpChat.Channels;
+﻿using SharpChat.Channels;
 using SharpChat.Configuration;
 using SharpChat.Database;
 using SharpChat.DataProvider;
@@ -11,12 +10,10 @@ using SharpChat.Sessions;
 using SharpChat.Users;
 using System;
 using System.Collections.Generic;
-using System.Net;
 using System.Threading;
 
 namespace SharpChat {
-    public class ChatContext : IDisposable, IServerPacketTarget {
-        public BanManager Bans { get; }
+    public class ChatContext : IDisposable, IEventTarget, IServerPacketTarget {
         public ChannelManager Channels { get; }
         public UserManager Users { get; }
         public SessionManager Sessions { get; }
@@ -31,7 +28,6 @@ namespace SharpChat {
         public ChatBot Bot { get; } = new ChatBot(); 
 
         private Timer BumpTimer { get; }
-        private Timer BansTimer { get; }
 
         public const int DEFAULT_MSG_LENGTH_MAX = 2100;
         private CachedValue<int> MessageTextMaxLengthValue { get; }
@@ -41,7 +37,6 @@ namespace SharpChat {
             Config = config ?? throw new ArgumentNullException(nameof(config));
             Database = new DatabaseWrapper(databaseBackend ?? throw new ArgumentNullException(nameof(databaseBackend)));
             DataProvider = dataProvider ?? throw new ArgumentNullException(nameof(dataProvider));
-            Bans = new BanManager(this);
             Users = new UserManager(this);
             Channels = new ChannelManager(this, config);
             Sessions = new SessionManager(config.ScopeTo(@"sessions"));
@@ -57,32 +52,38 @@ namespace SharpChat {
                 Logger.Write(@"Bumping last online times...");
                 DataProvider.UserBumpClient.SubmitBumpUsers(Users.WithActiveConnections());
             }, null, TimeSpan.Zero, TimeSpan.FromMinutes(1));
-            BansTimer = new Timer(e => {
-                Bans.RefreshRemoteBans();
-            }, null, TimeSpan.Zero, TimeSpan.FromMinutes(15));
         }
 
         public void Update() { // this should probably not exist, or at least not called the way it is
             Sessions.DisposeTimedOut();
-            Bans.RemoveExpired();
             PruneSessionlessUsers(); // this function also needs to go
         }
 
-        public void BanUser(ChatUser user, DateTimeOffset? until = null, bool banIPs = false, UserDisconnectReason reason = UserDisconnectReason.Kicked, bool isPermanent = false) {
-            if (until.HasValue && until.Value <= DateTimeOffset.Now)
-                until = null;
+        public void BanUser(
+            ChatUser user,
+            TimeSpan duration,
+            UserDisconnectReason reason = UserDisconnectReason.Kicked,
+            bool isPermanent = false,
+            IUser modUser = null,
+            string textReason = null
+        ) {
+            ForceDisconnectPacket packet;
 
-            if (until.HasValue) {
-                user.Send(new ForceDisconnectPacket(ForceDisconnectReason.Banned, until.Value, isPermanent));
-                Bans.Add(user, until.Value, isPermanent);
+            if(duration != TimeSpan.Zero || isPermanent) {
+                if(string.IsNullOrWhiteSpace(textReason))
+                    textReason = reason switch {
+                        UserDisconnectReason.Kicked => @"User was banned.",
+                        UserDisconnectReason.Flood => @"User was kicked for flood protection.",
+                        _ => @"Unknown reason given.",
+                    };
 
-                if (banIPs) {
-                    foreach (IPAddress ip in user.RemoteAddresses)
-                        Bans.Add(ip, until.Value);
-                }
+                DataProvider.BanClient.CreateBan(user.UserId, modUser?.UserId ?? -1, isPermanent, duration, textReason);
+
+                packet = new ForceDisconnectPacket(ForceDisconnectReason.Banned, duration, isPermanent);
             } else
-                user.Send(new ForceDisconnectPacket(ForceDisconnectReason.Kicked));
+                packet = new ForceDisconnectPacket(ForceDisconnectReason.Kicked);
 
+            user.SendPacket(packet);
             user.Close();
 
             foreach(Channel chan in user.GetChannels())
@@ -103,20 +104,20 @@ namespace SharpChat {
                 Channels.Remove(chan);
 
             chan.UserLeave(user);
-            chan.Send(new UserDisconnectPacket(DateTimeOffset.Now, user, reason));
-            Events.AddEvent(new UserDisconnectEvent(DateTimeOffset.Now, user, chan, reason));
+            chan.SendPacket(new UserDisconnectPacket(DateTimeOffset.Now, user, reason));
+            Events.DispatchEvent(new UserDisconnectEvent(DateTimeOffset.Now, user, chan, reason));
         }
 
         public void JoinChannel(ChatUser user, Channel channel) {
             // These two should be combined into just an event broadcast
-            channel.Send(new UserChannelJoinPacket(user));
-            Events.AddEvent(new UserChannelJoinEvent(DateTimeOffset.Now, user, channel));
+            channel.SendPacket(new UserChannelJoinPacket(user));
+            Events.DispatchEvent(new UserChannelJoinEvent(DateTimeOffset.Now, user, channel));
 
-            user.Send(new ContextClearPacket(channel, ContextClearMode.MessagesUsers));
-            user.Send(new ContextUsersPacket(channel.GetUsers(new[] { user })));
+            user.SendPacket(new ContextClearPacket(channel, ContextClearMode.MessagesUsers));
+            user.SendPacket(new ContextUsersPacket(channel.GetUsers(new[] { user })));
             IEnumerable<IEvent> msgs = Events.GetEventsForTarget(channel);
             foreach(IEvent msg in msgs)
-                user.Send(new ContextMessagePacket(msg));
+                user.SendPacket(new ContextMessagePacket(msg));
 
             channel.UserJoin(user);
             user.ForceChannel(channel);
@@ -126,8 +127,8 @@ namespace SharpChat {
             channel.UserLeave(user);
 
             // These two should be combined into just an event broadcast
-            channel.Send(new UserChannelLeavePacket(user));
-            Events.AddEvent(new UserChannelLeaveEvent(DateTimeOffset.Now, user, channel));
+            channel.SendPacket(new UserChannelLeavePacket(user));
+            Events.DispatchEvent(new UserChannelLeaveEvent(DateTimeOffset.Now, user, channel));
 
             if(channel.IsTemporary && channel.Owner == user)
                 Channels.Remove(channel);
@@ -146,9 +147,13 @@ namespace SharpChat {
                         UserLeave(null, user, UserDisconnectReason.TimeOut);
         }
 
-        public void Send(IServerPacket packet) {
+        public void SendPacket(IServerPacket packet) {
             foreach (ChatUser user in Users.All())
-                user.Send(packet);
+                user.SendPacket(packet);
+        }
+
+        public void DispatchEvent(IEvent evt) {
+            //
         }
 
         private bool IsDisposed;
@@ -163,7 +168,6 @@ namespace SharpChat {
                 return;
             IsDisposed = true;
 
-            BansTimer.Dispose();
             BumpTimer.Dispose();
         }
     }

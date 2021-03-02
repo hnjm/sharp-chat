@@ -1,5 +1,5 @@
 ﻿namespace SharpChat {
     public interface IServerPacketTarget {
-        void Send(IServerPacket packet);
+        void SendPacket(IServerPacket packet);
     }
 }

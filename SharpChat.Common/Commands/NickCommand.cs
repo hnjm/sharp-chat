@@ -57,8 +57,8 @@ namespace SharpChat.Commands {
 
             string previousName = targetUser == ctx.User ? (targetUser.NickName ?? targetUser.UserName) : null;
             targetUser.NickName = nickStr;
-            ctx.Channel.Send(new UserNickChangePacket(Sender, previousName, targetUser.DisplayName));
-            ctx.Channel.Send(new UserUpdatePacket(targetUser));
+            ctx.Channel.SendPacket(new UserNickChangePacket(Sender, previousName, targetUser.DisplayName));
+            ctx.Channel.SendPacket(new UserUpdatePacket(targetUser));
             return null;
         }
     }

@@ -13,7 +13,7 @@ namespace SharpChat.PacketHandlers {
             //    timestamp = -1;
 
             ctx.Session.BumpPing();
-            ctx.Session.Send(new PongPacket(ctx.Session.LastPing));
+            ctx.Session.SendPacket(new PongPacket(ctx.Session.LastPing));
         }
     }
 }

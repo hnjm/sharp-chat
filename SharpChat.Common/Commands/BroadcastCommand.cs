@@ -22,7 +22,7 @@ namespace SharpChat.Commands {
             if(!ctx.User.Can(UserPermissions.Broadcast))
                 throw new CommandNotAllowedException(NAME);
 
-            ctx.Chat.Send(new BroadcastMessagePacket(Sender, string.Join(' ', ctx.Args.Skip(1))));
+            ctx.Chat.SendPacket(new BroadcastMessagePacket(Sender, string.Join(' ', ctx.Args.Skip(1))));
             return null;
         }
     }

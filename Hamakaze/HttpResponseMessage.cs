@@ -26,6 +26,8 @@ namespace Hamakaze {
         public HttpMediaType ContentType
             => Headers.Where(x => x.Name == HttpContentTypeHeader.NAME).Cast<HttpContentTypeHeader>().FirstOrDefault()?.MediaType
             ?? HttpMediaType.OctetStream;
+        public Encoding ResponseEncoding
+            => Encoding.GetEncoding(ContentType.GetParamValue(@"charset") ?? @"iso8859-1");
         public IEnumerable<string> ContentEncodings
             => Headers.Where(x => x.Name == HttpContentEncodingHeader.NAME).Cast<HttpContentEncodingHeader>().FirstOrDefault()?.Encodings
             ?? Enumerable.Empty<string>();
@@ -55,6 +57,13 @@ namespace Hamakaze {
                 Body.Seek(0, SeekOrigin.Begin);
             Body.CopyTo(ms);
             return ms.ToArray();
+        }
+
+        public string GetBodyString() {
+            byte[] bytes = GetBodyBytes();
+            if(bytes == null || bytes.Length < 1)
+                return string.Empty;
+            return ResponseEncoding.GetString(bytes);
         }
 
         // there's probably a less stupid way to do this, be my guest and call me an idiot
@@ -177,6 +186,9 @@ namespace Hamakaze {
                 headers.Add(header);
             }
 
+            if(statusCode < 200 || statusCode == 201 || statusCode == 204 || statusCode == 205)
+                contentLength = 0;
+
             Stream body = null;
             long totalRead = 0;
             const int buffer_size = 8192;
@@ -226,12 +238,12 @@ namespace Hamakaze {
                     readBuffer(chunkLength);
                     readLine();
                 }
+                readLine();
             } else if(contentLength != 0) {
                 body = new MemoryStream();
                 readBuffer(contentLength);
+                readLine();
             }
-
-            readLine();
 
             if(body != null)
                 // Check if body is empty and null it again if so

@@ -51,7 +51,7 @@ namespace SharpChat.Commands {
             }
 
             ctx.Chat.SwitchChannel(ctx.Session, createChan);
-            ctx.Session.Send(new ChannelCreateResponsePacket(Sender, createChan));
+            ctx.Session.SendPacket(new ChannelCreateResponsePacket(Sender, createChan));
             return null;
         }
     }

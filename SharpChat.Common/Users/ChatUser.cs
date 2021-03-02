@@ -104,10 +104,10 @@ namespace SharpChat.Users {
             return sb.ToString();
         }
 
-        public void Send(IServerPacket packet) {
+        public void SendPacket(IServerPacket packet) {
             lock(SyncSessions)
                 foreach(Session conn in Sessions)
-                    conn.Send(packet);
+                    conn.SendPacket(packet);
         }
 
         public void Close() {
@@ -175,6 +175,10 @@ namespace SharpChat.Users {
                 throw new ArgumentNullException(nameof(conn));
             lock(SyncSessions)
                 return Sessions.Any(s => s.Connection == conn);
+        }
+
+        public override string ToString() {
+            return $@"<ChatUser {UserId}#{UserName}>";
         }
     }
 }

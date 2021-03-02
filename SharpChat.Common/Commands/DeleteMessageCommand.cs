@@ -25,7 +25,7 @@ namespace SharpChat.Commands {
                 throw new MessageNotFoundCommandException();
 
             if(ctx.Chat.Events.RemoveEvent(delEvent))
-                ctx.Chat.Send(new ChatMessageDeletePacket(delEvent));
+                ctx.Chat.SendPacket(new ChatMessageDeletePacket(delEvent));
 
             return null;
         }

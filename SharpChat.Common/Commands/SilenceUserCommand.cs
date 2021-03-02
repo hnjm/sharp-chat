@@ -42,8 +42,8 @@ namespace SharpChat.Commands {
             }
 
             user.SilencedUntil = duration;
-            user.Send(new SilenceNoticePacket(Sender));
-            ctx.Session.Send(new SilenceResponsePacket(Sender, user));
+            user.SendPacket(new SilenceNoticePacket(Sender));
+            ctx.Session.SendPacket(new SilenceResponsePacket(Sender, user));
             return null;
         }
     }

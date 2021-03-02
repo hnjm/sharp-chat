@@ -27,7 +27,7 @@ namespace SharpChat.Commands {
                 throw new UserNotFoundCommandException(user?.UserName ?? userName);
 
             foreach(IPAddress ip in user.RemoteAddresses)
-                ctx.Session.Send(new WhoIsResponsePacket(Sender, user, ip));
+                ctx.Session.SendPacket(new WhoIsResponsePacket(Sender, user, ip));
 
             return null;
         }

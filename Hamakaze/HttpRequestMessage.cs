@@ -152,6 +152,10 @@ namespace Hamakaze {
             OwnsBodyStream = true;
         }
 
+        public void SetBody(string str, Encoding encoding = null) {
+            SetBody((encoding ?? Encoding.UTF8).GetBytes(str));
+        }
+
         public void WriteTo(Stream stream, Action<long, long> onProgress = null) {
             using(StreamWriter sw = new StreamWriter(stream, new ASCIIEncoding(), leaveOpen: true)) {
                 sw.NewLine = "\r\n";

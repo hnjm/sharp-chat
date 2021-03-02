@@ -21,26 +21,28 @@ namespace SharpChat.Commands {
             if(userName == null || (user = ctx.Chat.Users.Get(userName)) == null)
                 throw new UserNotFoundCommandException(userName);
 
-            if(user == ctx.User || user.Rank >= ctx.User.Rank || ctx.Chat.Bans.Check(user) > DateTimeOffset.Now)
+            if(user == ctx.User || user.Rank >= ctx.User.Rank)
                 throw new KickNotAllowedCommandException(user.UserName);
 
             bool isPermanent = isBan;
             string durationArg = ctx.Args.ElementAtOrDefault(2);
-            DateTimeOffset? duration = isPermanent ? (DateTimeOffset?)DateTimeOffset.MaxValue : null;
+            TimeSpan duration = TimeSpan.Zero;
 
             if(!string.IsNullOrEmpty(durationArg)) {
                 if(durationArg == @"-1") {
-                    duration = DateTimeOffset.MaxValue;
                     isPermanent = true;
                 } else {
                     if(!double.TryParse(durationArg, out double durationRaw))
                         throw new CommandFormatException();
                     isPermanent = false;
-                    duration = DateTimeOffset.Now.AddSeconds(durationRaw);
+                    duration = TimeSpan.FromSeconds(durationRaw);
                 }
             }
 
-            ctx.Chat.BanUser(user, duration, isBan, isPermanent: isPermanent);
+            // TODO: allow supplying a textReason
+
+            ctx.Chat.BanUser(user, duration, isPermanent: isPermanent, modUser: ctx.User);
+
             return null;
         }
     }

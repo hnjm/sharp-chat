@@ -16,5 +16,9 @@
 
         public string Pack() // permission part is empty for bot apparently
             => string.Join(IServerPacket.SEPARATOR, UserId, DisplayName, Colour, string.Empty);
+
+        public override string ToString() {
+            return @"<ChatBot>";
+        }
     }
 }

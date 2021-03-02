@@ -127,10 +127,10 @@ namespace SharpChat {
                 }
 
                 if(rateLimit == RateLimitState.Kick) {
-                    Context.BanUser(sess.User, DateTimeOffset.Now + Context.RateLimiter.BanDuration, false, UserDisconnectReason.Flood);
+                    Context.BanUser(sess.User, Context.RateLimiter.BanDuration, UserDisconnectReason.Flood);
                     return;
                 } else if(rateLimit == RateLimitState.Warning)
-                    sess.User.Send(new FloodWarningPacket(Context.Bot));
+                    sess.User.SendPacket(new FloodWarningPacket(Context.Bot));
             }
 
             PacketHandlers.FirstOrDefault(x => x.PacketId == opCode)?.HandlePacket(

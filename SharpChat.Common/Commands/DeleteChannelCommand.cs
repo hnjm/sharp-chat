@@ -31,7 +31,7 @@ namespace SharpChat.Commands {
                 throw new ChannelDeletionCommandException(channel.Name);
 
             ctx.Chat.Channels.Remove(channel);
-            ctx.Session.Send(new ChannelDeleteResponsePacket(Sender, channel.Name));
+            ctx.Session.SendPacket(new ChannelDeleteResponsePacket(Sender, channel.Name));
             return null;
         }
     }

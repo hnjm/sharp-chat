@@ -52,10 +52,10 @@ namespace SharpChat.Channels {
                 user.LeaveChannel(this);
         }
 
-        public void Send(IServerPacket packet) {
+        public void SendPacket(IServerPacket packet) {
             lock(Users) {
                 foreach(ChatUser user in Users)
-                    user.Send(packet);
+                    user.SendPacket(packet);
             }
         }
 

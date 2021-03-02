@@ -24,7 +24,7 @@ namespace SharpChat.Commands {
                 throw new InsufficientRankForChangeCommandException();
 
             ctx.Chat.Channels.Update(ctx.Channel, rank: rank);
-            ctx.Session.Send(new ChannelRankResponsePacket(Sender));
+            ctx.Session.SendPacket(new ChannelRankResponsePacket(Sender));
             return null;
         }
     }

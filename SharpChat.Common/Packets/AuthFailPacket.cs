@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SharpChat.Bans;
+using System;
 using System.Text;
 
 namespace SharpChat.Packets {
@@ -10,15 +11,15 @@ namespace SharpChat.Packets {
 
     public class AuthFailPacket : ServerPacketBase {
         public AuthFailReason Reason { get; private set; }
-        public DateTimeOffset Expires { get; private set; }
+        public IBanRecord BanInfo { get; private set; }
 
-        public AuthFailPacket(AuthFailReason reason, DateTimeOffset? expires = null) {
+        public AuthFailPacket(AuthFailReason reason, IBanRecord banInfo = null) {
             Reason = reason;
 
             if (reason == AuthFailReason.Banned) {
-                if (!expires.HasValue)
-                    throw new ArgumentNullException(nameof(expires));
-                Expires = expires.Value;
+                if (banInfo == null)
+                    throw new ArgumentNullException(nameof(banInfo));
+                BanInfo = banInfo;
             }
         }
 
@@ -46,10 +47,10 @@ namespace SharpChat.Packets {
             if (Reason == AuthFailReason.Banned) {
                 sb.Append(IServerPacket.SEPARATOR);
 
-                if (Expires == DateTimeOffset.MaxValue)
+                if (BanInfo.IsPermanent)
                     sb.Append(@"-1");
                 else
-                    sb.Append(Expires.ToUnixTimeSeconds());
+                    sb.Append(BanInfo.Expires.ToUnixTimeSeconds());
             }
 
             return sb.ToString();

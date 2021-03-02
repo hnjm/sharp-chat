@@ -27,7 +27,7 @@ namespace SharpChat.PacketHandlers {
             if(info == null)
                 return;
 
-            channel.Send(new TypingPacket(channel, info));
+            channel.SendPacket(new TypingPacket(channel, info));
         }
     }
 }

@@ -29,14 +29,6 @@ namespace SharpChat.PacketHandlers {
             if(ctx.HasSession)
                 return;
 
-            DateTimeOffset banDuration = ctx.Chat.Bans.Check(ctx.Connection.RemoteAddress);
-
-            if(banDuration > DateTimeOffset.Now) {
-                ctx.Connection.Send(new AuthFailPacket(AuthFailReason.Banned, banDuration));
-                ctx.Connection.Dispose();
-                return;
-            }
-
             if(!long.TryParse(ctx.Args.ElementAtOrDefault(1), out long userId) || userId < 1)
                 return;
 
@@ -44,9 +36,15 @@ namespace SharpChat.PacketHandlers {
             if(string.IsNullOrEmpty(token))
                 return;
 
+            Action<Exception> exceptionHandler = new Action<Exception>(ex => {
+                Logger.Debug($@"<{ctx.Connection.RemoteAddress}> Auth fail: {ex.Message}");
+                ctx.Connection.Send(new AuthFailPacket(AuthFailReason.AuthInvalid));
+                ctx.Connection.Dispose();
+            });
+
             ctx.Chat.DataProvider.UserAuthClient.AttemptAuth(
                 new UserAuthRequest(userId, token, ctx.Connection.RemoteAddress),
-                onSuccess: res => {
+                res => {
                     ChatUser user = ctx.Chat.Users.Get(res.UserId);
 
                     if(user == null)
@@ -56,65 +54,61 @@ namespace SharpChat.PacketHandlers {
 
                         IServerPacket userUpdate = new UserUpdatePacket(user);
                         foreach(Channel uc in user.GetChannels())
-                            uc.Send(userUpdate);
+                            uc.SendPacket(userUpdate);
                     }
 
-                    banDuration = ctx.Chat.Bans.Check(user);
+                    ctx.Chat.DataProvider.BanClient.CheckBan(user.UserId, ctx.Connection.RemoteAddress, ban => {
+                        if(ban.IsPermanent || ban.Expires > DateTimeOffset.Now) {
+                            ctx.Connection.Send(new AuthFailPacket(AuthFailReason.Banned, ban));
+                            ctx.Connection.Dispose();
+                            return;
+                        }
 
-                    if(banDuration > DateTimeOffset.Now) {
-                        ctx.Connection.Send(new AuthFailPacket(AuthFailReason.Banned, banDuration));
-                        ctx.Connection.Dispose();
-                        return;
-                    }
+                        // Enforce a maximum amount of connections per user
+                        if(Sessions.GetAvailableSessionCount(user) < 1) {
+                            ctx.Connection.Send(new AuthFailPacket(AuthFailReason.MaxSessions));
+                            ctx.Connection.Dispose();
+                            return;
+                        }
 
-                    // Enforce a maximum amount of connections per user
-                    if(Sessions.GetAvailableSessionCount(user) < 1) {
-                        ctx.Connection.Send(new AuthFailPacket(AuthFailReason.MaxSessions));
-                        ctx.Connection.Dispose();
-                        return;
-                    }
+                        Session sess = new Session(ctx.Connection, user);
+                        Sessions.Add(sess);
 
-                    Session sess = new Session(ctx.Connection, user);
-                    Sessions.Add(sess);
+                        sess.SendPacket(new WelcomeMessagePacket(Sender, $@"Welcome to Flashii Chat, {user.UserName}!"));
 
-                    sess.Send(new WelcomeMessagePacket(Sender, $@"Welcome to Flashii Chat, {user.UserName}!"));
+                        if(File.Exists(WELCOME)) {
+                            IEnumerable<string> lines = File.ReadAllLines(WELCOME).Where(x => !string.IsNullOrWhiteSpace(x));
+                            string line = lines.ElementAtOrDefault(RNG.Next(lines.Count()));
 
-                    if(File.Exists(WELCOME)) {
-                        IEnumerable<string> lines = File.ReadAllLines(WELCOME).Where(x => !string.IsNullOrWhiteSpace(x));
-                        string line = lines.ElementAtOrDefault(RNG.Next(lines.Count()));
+                            if(!string.IsNullOrWhiteSpace(line))
+                                sess.SendPacket(new WelcomeMessagePacket(Sender, line));
+                        }
 
-                        if(!string.IsNullOrWhiteSpace(line))
-                            sess.Send(new WelcomeMessagePacket(Sender, line));
-                    }
+                        Channel chan = ctx.Chat.Channels.DefaultChannel;
 
-                    Channel chan = ctx.Chat.Channels.DefaultChannel;
+                        if(!chan.HasUser(user)) {
+                            chan.SendPacket(new UserConnectPacket(DateTimeOffset.Now, user));
+                            ctx.Chat.Events.DispatchEvent(new UserConnectEvent(DateTimeOffset.Now, user, chan));
+                        }
 
-                    if(!chan.HasUser(user)) {
-                        chan.Send(new UserConnectPacket(DateTimeOffset.Now, user));
-                        ctx.Chat.Events.AddEvent(new UserConnectEvent(DateTimeOffset.Now, user, chan));
-                    }
+                        sess.SendPacket(new AuthSuccessPacket(user, chan, sess, Version, ctx.Chat.MessageTextMaxLength));
+                        sess.SendPacket(new ContextUsersPacket(chan.GetUsers(new[] { user })));
 
-                    sess.Send(new AuthSuccessPacket(user, chan, sess, Version, ctx.Chat.MessageTextMaxLength));
-                    sess.Send(new ContextUsersPacket(chan.GetUsers(new[] { user })));
+                        IEnumerable<IEvent> msgs = ctx.Chat.Events.GetEventsForTarget(chan);
 
-                    IEnumerable<IEvent> msgs = ctx.Chat.Events.GetEventsForTarget(chan);
+                        foreach(IEvent msg in msgs)
+                            sess.SendPacket(new ContextMessagePacket(msg));
 
-                    foreach(IEvent msg in msgs)
-                        sess.Send(new ContextMessagePacket(msg));
+                        sess.SendPacket(new ContextChannelsPacket(ctx.Chat.Channels.OfHierarchy(user.Rank)));
 
-                    sess.Send(new ContextChannelsPacket(ctx.Chat.Channels.OfHierarchy(user.Rank)));
+                        if(!chan.HasUser(user))
+                            chan.UserJoin(user);
 
-                    if(!chan.HasUser(user))
-                        chan.UserJoin(user);
-
-                    if(!ctx.Chat.Users.Contains(user))
-                        ctx.Chat.Users.Add(user);
+                        if(!ctx.Chat.Users.Contains(user))
+                            ctx.Chat.Users.Add(user);
+                    }, exceptionHandler);
                 },
-                onFailure: ex => {
-                    Logger.Debug($@"<{ctx.Connection.RemoteAddress}> Auth fail: {ex.Message}");
-                    ctx.Connection.Send(new AuthFailPacket(AuthFailReason.AuthInvalid));
-                    ctx.Connection.Dispose();
-                }
+                exceptionHandler
             );
         }
     }

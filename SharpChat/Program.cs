@@ -135,6 +135,7 @@ namespace SharpChat {
                 sw.WriteLine(@"dp misuzu");
                 sw.WriteLine();
                 sw.WriteLine(@"# Misuzu DataProvider settings");
+                sw.WriteLine(@"#db:misuzu:userId  61");
                 sw.Write(@"dp:misuzu:secret   ");
                 sw.Write(File.ReadAllText(msz_config).Trim());
                 sw.WriteLine();

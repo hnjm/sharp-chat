@@ -30,6 +30,13 @@ namespace Hamakaze {
             Params = args ?? Enumerable.Empty<Param>();
         }
 
+        public string GetParamValue(string name) {
+            foreach(Param param in Params)
+                if(param.Name.ToLowerInvariant() == name)
+                    return param.Value;
+            return null;
+        }
+
         public static explicit operator HttpMediaType(string mediaTypeString) => Parse(mediaTypeString);
 
         public static HttpMediaType Parse(string mediaTypeString) {

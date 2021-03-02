@@ -15,7 +15,7 @@ namespace SharpChat.Events.Storage {
             RunMigrations();
         }
 
-        public void AddEvent(IEvent evt) {
+        public void DispatchEvent(IEvent evt) {
             Wrapper.RunCommand(
                 @"INSERT INTO `sqc_events` (`event_id`, `event_created`, `event_type`, `event_target`, `event_flags`, `event_data`"
                 + @", `event_sender`, `event_sender_name`, `event_sender_colour`, `event_sender_rank`, `event_sender_nick`, `event_sender_perms`)"

@@ -12,6 +12,9 @@ namespace SharpChat.Packets {
         public DateTimeOffset Expires { get; }
         public bool IsPermanent { get; }
 
+        public ForceDisconnectPacket(ForceDisconnectReason reason, TimeSpan duration, bool isPermanent = false)
+            : this(reason, DateTimeOffset.Now + duration, isPermanent) {}
+
         public ForceDisconnectPacket(ForceDisconnectReason reason, DateTimeOffset? expires = null, bool isPermanent = false) {
             Reason = reason;
 

@@ -20,7 +20,7 @@ namespace SharpChat.DataProvider.Misuzu.Bans {
         [JsonPropertyName(@"username")]
         public string Username { get; set; }
 
-        [JsonIgnore]
+        [JsonPropertyName(@"is_permanent")]
         public bool IsPermanent { get; set; }
     }
 }

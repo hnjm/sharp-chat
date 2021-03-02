@@ -1,5 +1,4 @@
 ﻿using SharpChat.Channels;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -8,7 +7,7 @@ namespace SharpChat.Events.Storage {
         private object Lock { get; } = new object();
         private List<IEvent> Events { get; } = new List<IEvent>();
 
-        public void AddEvent(IEvent evt) {
+        public void DispatchEvent(IEvent evt) {
             lock(Lock)
                 Events.Add(evt);
         }

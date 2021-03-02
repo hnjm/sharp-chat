@@ -18,12 +18,15 @@ namespace SharpChat.DataProvider.Misuzu {
 
         private CachedValue<string> SecretKey { get; }
         private CachedValue<string> BaseURL { get; }
-        
+        private CachedValue<long> ActorIdValue { get; }
+
         public IBanClient BanClient { get; }
         public IUserAuthClient UserAuthClient { get; }
         public IUserBumpClient UserBumpClient { get; }
 
         private const string DEFAULT_SECRET = @"woomy";
+
+        public long ActorId => ActorIdValue;
 
         public MisuzuDataProvider(IConfig config, HttpClient httpClient) {
             Config = config ?? throw new ArgumentNullException(nameof(config));
@@ -31,6 +34,7 @@ namespace SharpChat.DataProvider.Misuzu {
 
             SecretKey = Config.ReadCached(@"secret", DEFAULT_SECRET, TimeSpan.FromMinutes(1));
             BaseURL = Config.ReadCached(@"endpoint", string.Empty, TimeSpan.FromMinutes(1));
+            ActorIdValue = Config.ReadCached(@"userId", 61L);
 
             BanClient = new MisuzuBanClient(this, HttpClient);
             UserAuthClient = new MisuzuUserAuthClient(this, HttpClient);

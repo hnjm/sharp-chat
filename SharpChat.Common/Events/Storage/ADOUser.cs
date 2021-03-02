@@ -64,5 +64,9 @@ namespace SharpChat.Events.Storage {
 
             return sb.ToString();
         }
+
+        public override string ToString() {
+            return $@"<ADOUser {UserId}#{UserName}>";
+        }
     }
 }

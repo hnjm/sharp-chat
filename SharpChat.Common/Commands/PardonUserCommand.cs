@@ -1,5 +1,4 @@
-﻿using SharpChat.Bans;
-using SharpChat.Events;
+﻿using SharpChat.Events;
 using SharpChat.Packets;
 using SharpChat.Users;
 using System;
@@ -22,15 +21,16 @@ namespace SharpChat.Commands {
                 throw new CommandNotAllowedException(ctx.Args);
 
             string userName = ctx.Args.ElementAtOrDefault(1);
-            BannedUser banRecord = null;
+            if(string.IsNullOrEmpty(userName))
+                throw new NotBannedCommandException(userName ?? @"User");
 
-            if(string.IsNullOrEmpty(userName)
-                || (banRecord = ctx.Chat.Bans.GetUser(userName)) == null
-                || banRecord.Expires <= DateTimeOffset.Now)
-                throw new NotBannedCommandException(banRecord?.Username ?? userName ?? @"User");
+            ctx.Chat.DataProvider.BanClient.RemoveBan(userName, success => {
+                if(success)
+                    ctx.Session.SendPacket(new PardonResponsePacket(Sender, userName));
+                else
+                    ctx.Session.SendPacket(new NotBannedCommandException(userName).ToPacket(Sender));
+            }, ex => ctx.Session.SendPacket(new CommandGenericException().ToPacket(Sender)));
 
-            ctx.Chat.Bans.Remove(banRecord);
-            ctx.Session.Send(new PardonResponsePacket(Sender, banRecord));
             return null;
         }
     }

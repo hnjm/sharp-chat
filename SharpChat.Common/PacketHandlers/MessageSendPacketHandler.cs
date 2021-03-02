@@ -48,7 +48,7 @@ namespace SharpChat.PacketHandlers {
 
             if(ctx.User.Status != UserStatus.Online) {
                 ctx.User.Status = UserStatus.Online;
-                channel.Send(new UserUpdatePacket(ctx.User));
+                channel.SendPacket(new UserUpdatePacket(ctx.User));
             }
 
             // there's a very miniscule chance that this will return a different value on second read
@@ -68,7 +68,7 @@ namespace SharpChat.PacketHandlers {
                 try {
                     message = HandleCommand(text, ctx.Chat, ctx.User, channel, ctx.Session);
                 } catch(CommandException ex) {
-                    ctx.Session.Send(ex.ToPacket(Context.Bot));
+                    ctx.Session.SendPacket(ex.ToPacket(Context.Bot));
                 }
 
                 if(message == null)
@@ -78,8 +78,8 @@ namespace SharpChat.PacketHandlers {
             if(message == null)
                 message = new ChatMessageEvent(ctx.User, channel, text);
 
-            ctx.Chat.Events.AddEvent(message);
-            channel.Send(new ChatMessageAddPacket(message));
+            ctx.Chat.Events.DispatchEvent(message);
+            channel.SendPacket(new ChatMessageAddPacket(message));
         }
 
         public IMessageEvent HandleCommand(string message, ChatContext context, ChatUser user, Channel channel, Session session) {

@@ -18,7 +18,15 @@ namespace SharpChat.Commands {
         public IMessageEvent DispatchCommand(IChatCommandContext ctx) {
             if(!ctx.User.Can(UserPermissions.BanUser | UserPermissions.KickUser))
                 throw new CommandNotAllowedException(ctx.Args);
-            ctx.Session.Send(new BanListPacket(Sender, ctx.Chat.Bans.All()));
+
+            ctx.Chat.DataProvider.BanClient.GetBanList(b => {
+                ctx.Session.SendPacket(new BanListPacket(Sender, b));
+            }, ex => {
+                Logger.Write(@"Error during ban list retrieval.");
+                Logger.Write(ex);
+                ctx.Session.SendPacket(new CommandGenericException().ToPacket(Sender));
+            });
+
             return null;
         }
     }

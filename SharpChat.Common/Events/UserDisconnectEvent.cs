@@ -8,7 +8,7 @@ using System.Text.Json.Serialization;
 namespace SharpChat.Events {
     public class UserDisconnectEvent : ChatEvent {
         [JsonPropertyName(@"reason")]
-        public UserDisconnectReason Reason { get; set; }
+        public UserDisconnectReason Reason { get; }
 
         public UserDisconnectEvent(IEvent evt, JsonElement elem) : base(evt, elem) {
             if(elem.TryGetProperty(@"reason", out JsonElement reasonElem) && reasonElem.TryGetInt32(out int reason))

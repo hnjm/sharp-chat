@@ -1159,7 +1159,7 @@ Informs the client that they are not allowed to silence themselves.
 
 
 ## Commands
-Actions sent through messages prefixed with `/`. Arguments are described as `[name]`, optional arguments as `[name?]`.
+Actions sent through messages prefixed with `/`. Arguments are described as `[name]`, optional arguments as `[name?]`. The `.` character is ignored in command names (replaced by nothing).
 
 ### `/afk`: Setting status to away
 Marks the current user as afk, the first 5 characters from the user string are prefixed uppercase to the current username prefixed by `&amp;lt;` and suffixed by `&amp;gt;_` resulting in a username that looks like `&lt;AWAY&gt;_flash` if `/afk away` is ran by the user `flash`. If no reason is specified "`AFK`" is used.
