@@ -11,10 +11,12 @@ namespace SharpChat.WebSocket.Fleck {
 
         public bool IsLocal => IPAddress.IsLoopback(OriginalRemoteAddress);
         public bool IsAvailable => Connection.IsAvailable;
+        public string Id { get; }
 
         private IWebSocketConnection Connection { get; init; }
 
         public FleckConnection(IWebSocketConnection conn) {
+            Id = RNG.NextString(32);
             Connection = conn ?? throw new ArgumentNullException(nameof(conn));
             Port = (ushort)Connection.ConnectionInfo.ClientPort;
             OriginalRemoteAddress = IPAddress.Parse(Connection.ConnectionInfo.ClientIpAddress);
@@ -30,7 +32,7 @@ namespace SharpChat.WebSocket.Fleck {
             => Connection.Send(packet.Pack());
 
         public override string ToString() {
-            return string.Format(@"{0}:{1}", RemoteAddress, Port);
+            return $@"C#{Id}#{RemoteAddress}:{Port}";
         }
 
         private bool IsDisposed;

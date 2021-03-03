@@ -7,6 +7,7 @@ namespace SharpChat.WebSocket {
         IPAddress OriginalRemoteAddress { get; }
         bool IsLocal { get; }
         bool IsAvailable { get; }
+        string Id { get; }
 
         void Send(object obj);
         void Send(IServerPacket obj);

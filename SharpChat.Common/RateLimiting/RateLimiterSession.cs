@@ -1,26 +1,41 @@
-﻿using SharpChat.Users;
-using SharpChat.WebSocket;
+﻿using SharpChat.WebSocket;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace SharpChat.RateLimiting {
     public class RateLimiterSession {
-        public IHasSessions User { get; }
         public IConnection Connection { get; }
-        public Queue<DateTimeOffset> TimePoints { get; } = new Queue<DateTimeOffset>();
-        public object Sync { get; } = new object();
 
-        public RateLimiterSession(IHasSessions user) {
-            User = user ?? throw new ArgumentNullException(nameof(user));
-        }
+        private Queue<DateTimeOffset> TimePoints { get; } = new Queue<DateTimeOffset>();
+        private readonly object Sync = new object();
 
-        public RateLimiterSession(IConnection conn) {
+        private RateLimiter Limiter { get; }
+
+        public RateLimiterSession(RateLimiter limiter, IConnection conn) {
+            Limiter = limiter ?? throw new ArgumentNullException(nameof(limiter));
             Connection = conn ?? throw new ArgumentNullException(nameof(conn));
         }
 
-        public bool IsMatch(IHasSessions user)
-            => user != null && User == user;
-        public bool IsMatch(IConnection conn)
-            => conn != null ? Connection == conn : User.HasConnection(conn);
+        public RateLimitState Bump() {
+            lock(Sync) {
+                int backlogSize = Limiter.BacklogSize;
+
+                while(TimePoints.Count >= backlogSize)
+                    TimePoints.Dequeue();
+                TimePoints.Enqueue(DateTimeOffset.Now);
+
+                if(TimePoints.Count >= backlogSize) {
+                    TimeSpan threshold = Limiter.Threshold;
+
+                    if((TimePoints.Last() - TimePoints.First()) <= threshold)
+                        return RateLimitState.Drop;
+                    if((TimePoints.Last() - TimePoints.Skip(Limiter.WarnWithin).First()) <= threshold)
+                        return RateLimitState.Warn;
+                }
+
+                return RateLimitState.None;
+            }
+        }
     }
 }

@@ -95,6 +95,7 @@ namespace SharpChat {
 
         private void OnClose(IConnection conn) {
             Logger.Debug($@"[{conn}] Connection closed");
+            Context.RateLimiter.ClearConnection(conn);
             Context.Update();
         }
 
@@ -107,9 +108,15 @@ namespace SharpChat {
         private void OnMessage(IConnection conn, string msg) {
             Context.Update();
 
-            RateLimitState rateLimit = Context.RateLimiter.Bump(conn);
+            Session sess = Context.Sessions.ByConnection(conn);
+            bool hasUser = sess?.HasUser == true;
+
+            RateLimitState rateLimit = RateLimitState.None;
+            if(!hasUser || !Context.RateLimiter.HasRankException(sess.User))
+                rateLimit = Context.RateLimiter.BumpConnection(conn);
+            
             Logger.Debug($@"[{conn}] {rateLimit}");
-            if(rateLimit == RateLimitState.Disconnect) {
+            if(!hasUser && rateLimit == RateLimitState.Drop) {
                 conn.Dispose();
                 return;
             }
@@ -118,18 +125,14 @@ namespace SharpChat {
             if(!Enum.TryParse(args.ElementAtOrDefault(0), out ClientPacket opCode))
                 return;
 
-            Session sess = Context.Sessions.ByConnection(conn);
-
             if(opCode != ClientPacket.Authenticate) {
-                if(sess == null) {
-                    conn.Dispose();
+                if(!hasUser) 
                     return;
-                }
 
-                if(rateLimit == RateLimitState.Kick) {
+                if(rateLimit == RateLimitState.Drop) {
                     Context.BanUser(sess.User, Context.RateLimiter.BanDuration, UserDisconnectReason.Flood);
                     return;
-                } else if(rateLimit == RateLimitState.Warning)
+                } else if(rateLimit == RateLimitState.Warn)
                     sess.User.SendPacket(new FloodWarningPacket(Context.Bot));
             }
 

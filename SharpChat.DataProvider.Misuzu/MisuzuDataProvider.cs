@@ -34,7 +34,7 @@ namespace SharpChat.DataProvider.Misuzu {
 
             SecretKey = Config.ReadCached(@"secret", DEFAULT_SECRET, TimeSpan.FromMinutes(1));
             BaseURL = Config.ReadCached(@"endpoint", string.Empty, TimeSpan.FromMinutes(1));
-            ActorIdValue = Config.ReadCached(@"userId", 61L);
+            ActorIdValue = Config.ReadCached(@"userId", 0L);
 
             BanClient = new MisuzuBanClient(this, HttpClient);
             UserAuthClient = new MisuzuUserAuthClient(this, HttpClient);

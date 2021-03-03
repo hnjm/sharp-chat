@@ -14,127 +14,61 @@ namespace SharpChat.RateLimiting {
         public const int DEFAULT_WARN_WITHIN = 5;
 
         private CachedValue<int> BanDurationValue { get; }
-        private CachedValue<int> RankException { get; }
-        private CachedValue<int> BacklogSize { get; }
-        private CachedValue<int> Threshold { get; }
-        private CachedValue<int> WarnWithin { get; }
+        private CachedValue<int> RankExceptionValue { get; }
+        private CachedValue<int> BacklogSizeValue { get; }
+        private CachedValue<int> ThresholdValue { get; }
+        private CachedValue<int> WarnWithinValue { get; }
+
+        public int BacklogSize => BacklogSizeValue;
+        public int WarnWithin => WarnWithinValue;
+        public TimeSpan Threshold => TimeSpan.FromSeconds(ThresholdValue);
+        public TimeSpan BanDuration => TimeSpan.FromSeconds(BanDurationValue);
 
         private List<RateLimiterSession> Sessions { get; } = new List<RateLimiterSession>();
-        private object Sync { get; } = new object();
-
-        public TimeSpan BanDuration => TimeSpan.FromSeconds(BanDurationValue);
+        private readonly object Sync = new object();
 
         public RateLimiter(IConfig config) {
             BanDurationValue = config.ReadCached(@"banDuration", DEFAULT_BAN_DURATION);
-            RankException = config.ReadCached(@"exceptRank", DEFAULT_RANK_EXCEPT);
-            BacklogSize = config.ReadCached(@"backlog", DEFAULT_BAN_DURATION);
-            Threshold = config.ReadCached(@"threshold", DEFAULT_RANK_EXCEPT);
-            WarnWithin = config.ReadCached(@"warnWithin", DEFAULT_RANK_EXCEPT);
+            RankExceptionValue = config.ReadCached(@"exceptRank", DEFAULT_RANK_EXCEPT);
+            BacklogSizeValue = config.ReadCached(@"backlog", DEFAULT_BAN_DURATION);
+            ThresholdValue = config.ReadCached(@"threshold", DEFAULT_THRESHOLD);
+            WarnWithinValue = config.ReadCached(@"warnWithin", DEFAULT_WARN_WITHIN);
         }
 
-        public RateLimitState Bump(IHasSessions user) {
+        public bool HasRankException(IUser user) {
             if(user == null)
                 throw new ArgumentNullException(nameof(user));
-            if(BanDurationValue == 0)
-                return RateLimitState.None;
-            return BumpInternal(GetSession(user));
-        }
-
-        public RateLimitState Bump(IConnection conn) {
-            if(conn == null)
-                throw new ArgumentNullException(nameof(conn));
-            if(BanDurationValue == 0)
-                return RateLimitState.None;
-            return BumpInternal(GetSession(conn));
-        }
-
-        private RateLimitState BumpInternal(RateLimiterSession sess) {
-            lock(sess.Sync) {
-                if(CheckException(sess))
-                    return RateLimitState.None;
-                if(sess.TimePoints.Count >= BacklogSize)
-                    sess.TimePoints.Dequeue();
-                sess.TimePoints.Enqueue(DateTimeOffset.Now);
-                return GetStateInternal(sess);
-            }
-        }
-
-        public RateLimitState GetState(IHasSessions user) {
-            if(user == null)
-                throw new ArgumentNullException(nameof(user));
-            if(BanDurationValue == 0)
-                return RateLimitState.None;
-            return GetStateInternal(GetSession(user));
-        }
-
-        public RateLimitState GetState(IConnection conn) {
-            if(conn == null)
-                throw new ArgumentNullException(nameof(conn));
-            if(BanDurationValue == 0)
-                return RateLimitState.None;
-            return GetStateInternal(GetSession(conn));
-        }
-
-        public RateLimitState GetStateInternal(RateLimiterSession sess) {
-            lock(sess.Sync) {
-                if(CheckException(sess))
-                    return RateLimitState.None;
-
-                if(sess.TimePoints.Count >= BacklogSize) {
-                    int threshold = Threshold;
-                    bool hasUser = sess.User != null,
-                        hitThreshold = (sess.TimePoints.Last() - sess.TimePoints.First()).TotalSeconds <= threshold;
-
-                    if(hasUser) {
-                        if(hitThreshold)
-                            return RateLimitState.Kick;
-                        if((sess.TimePoints.Last() - sess.TimePoints.Skip(WarnWithin).First()).TotalSeconds <= threshold)
-                            return RateLimitState.Warning;
-                    } else if(hitThreshold)
-                        return RateLimitState.Disconnect;
-                }
-            }
-
-            return RateLimitState.None;
-        }
-
-        private bool CheckException(RateLimiterSession sess) {
-            int exceptRank = RankException;
-            return exceptRank > 0 && sess.User is IUser user && user.Rank >= exceptRank;
-        }
-
-        private RateLimiterSession GetSession(IHasSessions user) {
-            lock(Sync) {
-                RateLimiterSession sess = Sessions.Find(s => s.IsMatch(user));
-                if(sess == null)
-                    Sessions.Add(sess = new RateLimiterSession(user));
-                return sess;
-            }
+            int except = RankExceptionValue;
+            return except > 0 && user.Rank >= except;
         }
 
         private RateLimiterSession GetSession(IConnection conn) {
+            if(conn == null)
+                throw new ArgumentNullException(nameof(conn));
             lock(Sync) {
-                RateLimiterSession sess = Sessions.Find(s => s.IsMatch(conn));
+                RateLimiterSession sess = Sessions.FirstOrDefault(s => s.Connection == conn);
                 if(sess == null)
-                    Sessions.Add(sess = new RateLimiterSession(conn));
+                    Sessions.Add(sess = new RateLimiterSession(this, conn));
                 return sess;
             }
         }
 
-        public void Remove(IHasSessions user) {
-            if(user == null)
-                throw new ArgumentNullException(nameof(user));
-            lock(Sync) {
-                Sessions.RemoveAll(s => s.IsMatch(user));
-            }
-        }
-
-        public void Remove(IConnection conn) {
+        public void ClearConnection(IConnection conn) {
             if(conn == null)
                 throw new ArgumentNullException(nameof(conn));
-            lock(Sync) {
-                Sessions.RemoveAll(s => s.IsMatch(conn));
-            }
+            lock(Sync)
+                Sessions.RemoveAll(s => s.Connection == conn);
+        }
+
+        public RateLimitState BumpConnection(IConnection conn) {
+            if(conn == null)
+                throw new ArgumentNullException(nameof(conn));
+            if(BanDurationValue == 0)
+                return RateLimitState.None;
+            RateLimiterSession sess;
+            lock(Sync)
+                sess = GetSession(conn);
+            return sess.Bump();
         }
     }
 }

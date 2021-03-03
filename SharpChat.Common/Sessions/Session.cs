@@ -20,6 +20,8 @@ namespace SharpChat.Sessions {
 
         public bool HasConnection
             => Connection != null;
+        public bool HasUser
+            => User != null;
 
         public IPAddress RemoteAddress
             => Connection?.RemoteAddress;
@@ -84,7 +86,7 @@ namespace SharpChat.Sessions {
         }
 
         public override string ToString() {
-            return Id;
+            return $@"S#{Id}";
         }
 
         private bool IsDisposed;
