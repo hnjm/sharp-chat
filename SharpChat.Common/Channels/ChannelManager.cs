@@ -1,4 +1,5 @@
 ﻿using SharpChat.Configuration;
+using SharpChat.Events;
 using SharpChat.Packets;
 using SharpChat.Users;
 using System;
@@ -10,7 +11,7 @@ namespace SharpChat.Channels {
     public class ChannelExistException : ChannelException { }
     public class ChannelInvalidNameException : ChannelException { }
 
-    public class ChannelManager {
+    public class ChannelManager : IEventHandler {
         private List<Channel> Channels { get; } = new List<Channel>();
 
         private IConfig Config { get; }
@@ -124,6 +125,10 @@ namespace SharpChat.Channels {
             lock(Sync) {
                 return Channels.Contains(chan) || Channels.Any(c => c.Name.ToLowerInvariant() == chan.Name.ToLowerInvariant());
             }
+        }
+
+        public void HandleEvent(IEvent evt) {
+            //
         }
 
         // Should be replaced by an event

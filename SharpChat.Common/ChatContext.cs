@@ -13,17 +13,14 @@ using System.Collections.Generic;
 using System.Threading;
 
 namespace SharpChat {
-    public class ChatContext : IDisposable, IEventTarget, IServerPacketTarget {
+    public class ChatContext : IDisposable, IEventHandler, IServerPacketTarget {
         public ChannelManager Channels { get; }
         public UserManager Users { get; }
         public SessionManager Sessions { get; }
         public RateLimiter RateLimiter { get; }
 
-        public DatabaseWrapper Database { get; }
-
         public IChatEventStorage Events { get; }
         public IDataProvider DataProvider { get; }
-        public IConfig Config { get; }
 
         public ChatBot Bot { get; } = new ChatBot(); 
 
@@ -34,18 +31,21 @@ namespace SharpChat {
         public int MessageTextMaxLength => MessageTextMaxLengthValue;
 
         public ChatContext(IConfig config, IDatabaseBackend databaseBackend, IDataProvider dataProvider) {
-            Config = config ?? throw new ArgumentNullException(nameof(config));
-            Database = new DatabaseWrapper(databaseBackend ?? throw new ArgumentNullException(nameof(databaseBackend)));
+            if(config == null)
+                throw new ArgumentNullException(nameof(config));
+
+            DatabaseWrapper db = new DatabaseWrapper(databaseBackend ?? throw new ArgumentNullException(nameof(databaseBackend)));
+            Events = db.IsNullBackend
+                ? new MemoryChatEventStorage()
+                : new ADOChatEventStorage(db);
+
             DataProvider = dataProvider ?? throw new ArgumentNullException(nameof(dataProvider));
             Users = new UserManager(this);
             Channels = new ChannelManager(this, config);
             Sessions = new SessionManager(config.ScopeTo(@"sessions"));
-            RateLimiter = new RateLimiter(Config.ScopeTo(@"flood"));
-            Events = Database.IsNullBackend
-                ? new MemoryChatEventStorage()
-                : new ADOChatEventStorage(Database);
+            RateLimiter = new RateLimiter(config.ScopeTo(@"flood"));
 
-            MessageTextMaxLengthValue = Config.ReadCached(@"messages:maxLength", DEFAULT_MSG_LENGTH_MAX);
+            MessageTextMaxLengthValue = config.ReadCached(@"messages:maxLength", DEFAULT_MSG_LENGTH_MAX);
 
             // Should probably not rely on Timers in the future
             BumpTimer = new Timer(e => {
@@ -105,13 +105,13 @@ namespace SharpChat {
 
             chan.UserLeave(user);
             chan.SendPacket(new UserDisconnectPacket(DateTimeOffset.Now, user, reason));
-            Events.DispatchEvent(new UserDisconnectEvent(DateTimeOffset.Now, user, chan, reason));
+            HandleEvent(new UserDisconnectEvent(DateTimeOffset.Now, user, chan, reason));
         }
 
         public void JoinChannel(ChatUser user, Channel channel) {
             // These two should be combined into just an event broadcast
             channel.SendPacket(new UserChannelJoinPacket(user));
-            Events.DispatchEvent(new UserChannelJoinEvent(DateTimeOffset.Now, user, channel));
+            HandleEvent(new UserChannelJoinEvent(DateTimeOffset.Now, user, channel));
 
             user.SendPacket(new ContextClearPacket(channel, ContextClearMode.MessagesUsers));
             user.SendPacket(new ContextUsersPacket(channel.GetUsers(new[] { user })));
@@ -128,7 +128,7 @@ namespace SharpChat {
 
             // These two should be combined into just an event broadcast
             channel.SendPacket(new UserChannelLeavePacket(user));
-            Events.DispatchEvent(new UserChannelLeaveEvent(DateTimeOffset.Now, user, channel));
+            HandleEvent(new UserChannelLeaveEvent(DateTimeOffset.Now, user, channel));
 
             if(channel.IsTemporary && channel.Owner == user)
                 Channels.Remove(channel);
@@ -152,8 +152,10 @@ namespace SharpChat {
                 user.SendPacket(packet);
         }
 
-        public void DispatchEvent(IEvent evt) {
-            //
+        public void HandleEvent(IEvent evt) {
+            Events.HandleEvent(evt);
+            Channels.HandleEvent(evt);
+            Users.HandleEvent(evt);
         }
 
         private bool IsDisposed;

@@ -1,9 +1,10 @@
-﻿using System;
+﻿using SharpChat.Events;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace SharpChat.Users {
-    public class UserManager {
+    public class UserManager : IEventHandler {
         private List<ChatUser> Users { get; } = new List<ChatUser>();
         private ChatContext Context { get; }
         private object Sync { get; } = new object();
@@ -61,6 +62,10 @@ namespace SharpChat.Users {
         public IEnumerable<ChatUser> WithActiveConnections() {
             lock(Sync)
                 return Users.Where(u => Context.Sessions.GetSessionCount(u) > 0).ToList();
+        }
+
+        public void HandleEvent(IEvent evt) {
+            //
         }
 
         public IEnumerable<ChatUser> All() {

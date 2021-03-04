@@ -78,7 +78,7 @@ namespace SharpChat.PacketHandlers {
             if(message == null)
                 message = new ChatMessageEvent(ctx.User, channel, text);
 
-            ctx.Chat.Events.DispatchEvent(message);
+            ctx.Chat.HandleEvent(message);
             channel.SendPacket(new ChatMessageAddPacket(message));
         }
 

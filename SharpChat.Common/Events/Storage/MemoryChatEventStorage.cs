@@ -7,7 +7,7 @@ namespace SharpChat.Events.Storage {
         private object Lock { get; } = new object();
         private List<IEvent> Events { get; } = new List<IEvent>();
 
-        public void DispatchEvent(IEvent evt) {
+        public void HandleEvent(IEvent evt) {
             lock(Lock)
                 Events.Add(evt);
         }
