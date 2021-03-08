@@ -115,6 +115,11 @@ namespace SharpChat {
         /// Informs the client that another user is typing.
         /// </summary>
         TypingInfo = 12,
+
+        /// <summary>
+        /// Tells the client that it should switch to a different server.
+        /// </summary>
+        SwitchServer = 13,
     }
 
     /// <summary>

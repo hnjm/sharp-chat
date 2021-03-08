@@ -45,7 +45,7 @@ namespace SharpChat {
                     new WhisperCommand(),
                     new ActionCommand(),
                     new WhoCommand(Context.Bot),
-                    new DeleteMessageCommand(),
+                    new DeleteMessageCommand(Context.Events),
 
                     new NickCommand(Context.Bot),
                     new CreateChannelCommand(Context.Bot),

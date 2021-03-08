@@ -1,6 +1,8 @@
 ﻿using SharpChat.Events;
+using SharpChat.Events.Storage;
 using SharpChat.Packets;
 using SharpChat.Users;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -8,6 +10,12 @@ namespace SharpChat.Commands {
     public class DeleteMessageCommand : IChatCommand {
         public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == @"delmsg" || (name == @"delete" && args.ElementAtOrDefault(1)?.All(char.IsDigit) == true);
+
+        private IChatEventStorage Storage { get; }
+
+        public DeleteMessageCommand(IChatEventStorage storage) {
+            Storage = storage ?? throw new ArgumentNullException(nameof(storage));
+        }
 
         public IMessageEvent DispatchCommand(IChatCommandContext ctx) {
             bool deleteAnyMessage = ctx.User.Can(UserPermissions.DeleteAnyMessage);
@@ -18,13 +26,13 @@ namespace SharpChat.Commands {
             if(!long.TryParse(ctx.Args.ElementAtOrDefault(1), out long sequenceId))
                 throw new CommandFormatException();
 
-            IEvent delEvent = ctx.Chat.Events.GetEvent(sequenceId);
+            IEvent delEvent = Storage.GetEvent(sequenceId);
 
             if(delEvent is not IMessageEvent || delEvent.Sender.Rank > ctx.User.Rank
                 || (!deleteAnyMessage && delEvent.Sender.UserId != ctx.User.UserId))
                 throw new MessageNotFoundCommandException();
 
-            if(ctx.Chat.Events.RemoveEvent(delEvent))
+            if(Storage.RemoveEvent(delEvent))
                 ctx.Chat.SendPacket(new ChatMessageDeletePacket(delEvent));
 
             return null;
