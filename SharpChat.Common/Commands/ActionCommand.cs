@@ -11,7 +11,7 @@ namespace SharpChat.Commands {
             if(ctx.Args.Count() < 2)
                 return null;
 
-            return new ChatMessageEvent(ctx.User, ctx.Channel, string.Join(' ', ctx.Args.Skip(1)), EventFlags.Action);
+            return new MessageCreateEvent(ctx.User, ctx.Channel, string.Join(' ', ctx.Args.Skip(1)), true);
         }
     }
 }

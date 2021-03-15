@@ -2,6 +2,10 @@
 
 namespace SharpChat.Events.Storage {
     public partial class ADOChatEventStorage {
+        private const string CREATE_EVENTS = @"create_events_table";
+        private const string ENSURE_COLLATION = @"ensure_collation";
+        private const string GENERALISE_EVENTS = @"update_events_20210313";
+
         public void RunMigrations() {
             Wrapper.RunCommand(
                 @"CREATE TABLE IF NOT EXISTS `sqc_migrations` ("
@@ -11,16 +15,20 @@ namespace SharpChat.Events.Storage {
             );
             Wrapper.RunCommand(@"CREATE INDEX IF NOT EXISTS `sqc_migrations_completed_index` ON `sqc_migrations` (`migration_completed`);");
 
-            DoMigration(@"create_events_table", CreateEventsTable);
-            DoMigration(@"ensure_collation", EnsureCollation);
+            DoMigration(CREATE_EVENTS, CreateEventsTable);
+            DoMigration(ENSURE_COLLATION, EnsureCollation);
+            DoMigration(GENERALISE_EVENTS, GeneraliseEvents);
+        }
+
+        private bool CheckMigration(string name) {
+            return Wrapper.RunQueryValue(
+                @"SELECT `migration_completed` IS NOT NULL FROM `sqc_migrations` WHERE `migration_name` = @name LIMIT 1",
+                Wrapper.CreateParam(@"name", name)
+            ) is not null;
         }
 
         private void DoMigration(string name, Action action) {
-            bool done = (long)Wrapper.RunQueryValue(
-                @"SELECT COUNT(*) FROM `sqc_migrations` WHERE `migration_name` = @name",
-                Wrapper.CreateParam(@"name", name)
-            ) > 0;
-            if(!done) {
+            if(!CheckMigration(name)) {
                 Logger.Write($@"Running migration '{name}'...");
                 action();
                 Wrapper.RunCommand(
@@ -65,7 +73,7 @@ namespace SharpChat.Events.Storage {
                     @"ALTER TABLE `sqc_events`"
                         + @"CHANGE COLUMN `event_sender_name` `event_sender_name` " + Wrapper.VarCharType(255) + @" NULL DEFAULT NULL COLLATE " + Wrapper.UnicodeCollation + @","
                         + @"CHANGE COLUMN `event_sender_nick` `event_sender_nick` " + Wrapper.VarCharType(255) + @" NULL DEFAULT NULL COLLATE " + Wrapper.UnicodeCollation + @","
-                        + @"CHANGE COLUMN `event_target` `event_target` " + Wrapper.VarCharType(255) + @" NOT NULL COLLATE " + Wrapper.AsciiCollation + @";"
+                        + @"CHANGE COLUMN `event_target` `event_target` " + Wrapper.VarCharType(255) + @" NOT NULL COLLATE " + Wrapper.AsciiCollation + @";", 1800
                 );
             } else {
                 Wrapper.RunCommand(@"ALTER TABLE `sqc_events` RENAME TO `sqc_events_old`");
@@ -90,6 +98,22 @@ namespace SharpChat.Events.Storage {
                 Wrapper.RunCommand(@"DROP TABLE `sqc_events_old`;");
                 CreateEventsTableIndices();
             }
+        }
+
+        private void GeneraliseEvents() {
+            if(Wrapper.SupportsJson) {
+                Wrapper.RunCommand(@"DELETE FROM `sqc_events` WHERE `event_type` NOT IN ('SharpChat.Events.UserChannelJoinEvent', 'SharpChat.Events.UserChannelLeaveEvent', 'SharpChat.Events.UserConnectEvent', 'SharpChat.Events.ChatMessage', 'SharpChat.Events.ChatMessageEvent');", 1800);
+                Wrapper.RunCommand(@"UPDATE `sqc_events` SET `event_type` = 'channel:join' WHERE `event_type` = 'SharpChat.Events.UserChannelJoinEvent';", 1800);
+                Wrapper.RunCommand(@"UPDATE `sqc_events` SET `event_type` = 'channel:leave' WHERE `event_type` = 'SharpChat.Events.UserChannelLeaveEvent';", 1800);
+                Wrapper.RunCommand(@"UPDATE `sqc_events` SET `event_type` = 'user:connect' WHERE `event_type` = 'SharpChat.Events.UserConnectEvent';", 1800);
+                Wrapper.RunCommand(@"UPDATE `sqc_events` SET `event_type` = 'user:disconnect' WHERE `event_type` = 'SharpChat.Events.UserDisconnectEvent';", 1800);
+                Wrapper.RunCommand(@"UPDATE `sqc_events` SET `event_type` = 'message:create' WHERE `event_type` IN ('SharpChat.Events.ChatMessage', 'SharpChat.Events.ChatMessageEvent');", 1800);
+                Wrapper.RunCommand(@"UPDATE `sqc_events` SET `event_target` = " + Wrapper.ToLower(@"`event_target`") + @";", 1800);
+                Wrapper.RunCommand(@"UPDATE `sqc_events` SET `event_data` = " + Wrapper.JsonSet(@"`event_data`", @"$.action", @"true") + @" WHERE `event_type` = 'message:create' AND `event_flags` & 1;", 1800);
+            } else {
+                Wrapper.RunCommand(@"TRUNCATE `sqc_events`;", 1800);
+            }
+            Wrapper.RunCommand(@"ALTER TABLE `sqc_events` DROP COLUMN `event_flags`;", 1800);
         }
     }
 }

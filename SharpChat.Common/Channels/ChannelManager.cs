@@ -149,7 +149,7 @@ namespace SharpChat.Channels {
                     if(Get(name) != null)
                         throw new ChannelExistException();
 
-                    channel.Name = name;
+                    //channel.Name = name;
                 }
 
                 if(temporary.HasValue)

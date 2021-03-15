@@ -9,15 +9,18 @@ namespace SharpChat.Database.MariaDB {
         private MySqlCommand Command { get; }
 
         public string CommandString => Command.CommandText;
+        public int CommandTimeout { get => Command.CommandTimeout; set => Command.CommandTimeout = value; }
 
         public MariaDBDatabaseCommand(MariaDBDatabaseConnection connection, MySqlCommand command) {
             Connection = connection ?? throw new ArgumentNullException(nameof(connection));
             Command = command ?? throw new ArgumentNullException(nameof(command));
         }
 
-        public IDatabaseParameter AddParameter(string name, object value) {
-            return new MariaDBDatabaseParameter(Command.Parameters.AddWithValue(name, value));
-        }
+        public IDatabaseParameter AddParameter(string name, object value)
+            => new MariaDBDatabaseParameter(Command.Parameters.AddWithValue(name, value));
+
+        public IDatabaseParameter AddParameter(string name, DatabaseType type)
+            => new MariaDBDatabaseParameter(Command.Parameters.Add(name, MariaDBDatabaseParameter.MapType(type)));
 
         public IDatabaseParameter AddParameter(IDatabaseParameter param) {
             if(param is not MariaDBDatabaseParameter mdbParam)
@@ -26,17 +29,14 @@ namespace SharpChat.Database.MariaDB {
             return mdbParam;
         }
 
-        public void AddParameters(IDatabaseParameter[] @params) {
-            Command.Parameters.AddRange(@params.OfType<MariaDBDatabaseParameter>().Select(x => x.Parameter).ToArray());
-        }
+        public void AddParameters(IDatabaseParameter[] @params)
+            => Command.Parameters.AddRange(@params.OfType<MariaDBDatabaseParameter>().Select(x => x.Parameter).ToArray());
 
-        public void ClearParameters() {
-            Command.Parameters.Clear();
-        }
+        public void ClearParameters()
+            => Command.Parameters.Clear();
 
-        public void Prepare() {
-            Command.Prepare();
-        }
+        public void Prepare()
+            => Command.Prepare();
 
         public int Execute()
             => Command.ExecuteNonQuery();

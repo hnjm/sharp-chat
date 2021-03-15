@@ -1,32 +1,33 @@
-﻿using SharpChat.Channels;
-using SharpChat.Database;
+﻿using SharpChat.Database;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
 using System.Text.Json;
 
 namespace SharpChat.Events.Storage {
     public partial class ADOChatEventStorage : IChatEventStorage {
         private DatabaseWrapper Wrapper { get; }
+        private Dictionary<string, IEvent.DecodeFromJson> Constructors { get; } = new Dictionary<string, IEvent.DecodeFromJson>();
 
         public ADOChatEventStorage(DatabaseWrapper wrapper) {
             Wrapper = wrapper ?? throw new ArgumentNullException(nameof(wrapper));
             RunMigrations();
         }
 
+        public void RegisterConstructor(string type, IEvent.DecodeFromJson construct) {
+            Constructors[type] = construct;
+        }
+
         public void HandleEvent(IEvent evt) {
             Wrapper.RunCommand(
-                @"INSERT INTO `sqc_events` (`event_id`, `event_created`, `event_type`, `event_target`, `event_flags`, `event_data`"
+                @"INSERT INTO `sqc_events` (`event_id`, `event_created`, `event_type`, `event_target`, `event_data`"
                 + @", `event_sender`, `event_sender_name`, `event_sender_colour`, `event_sender_rank`, `event_sender_nick`, `event_sender_perms`)"
-                + @" VALUES (@id, " + Wrapper.FromUnixTime(@"@created") + @", @type, @target, @flags, @data"
+                + @" VALUES (@id, " + Wrapper.FromUnixTime(@"@created") + @", @type, @target, @data"
                 + @", @sender, @sender_name, @sender_colour, @sender_rank, @sender_nick, @sender_perms)",
                 Wrapper.CreateParam(@"id", evt.EventId),
                 Wrapper.CreateParam(@"created", evt.DateTime.ToUnixTimeSeconds()),
-                Wrapper.CreateParam(@"type", evt.GetType().FullName),
-                Wrapper.CreateParam(@"target", evt.Target.Name),
-                Wrapper.CreateParam(@"flags", (byte)evt.Flags),
-                Wrapper.CreateParam(@"data", JsonSerializer.SerializeToUtf8Bytes(evt, evt.GetType())),
+                Wrapper.CreateParam(@"type", evt.Type),
+                Wrapper.CreateParam(@"target", evt.Target),
+                Wrapper.CreateParam(@"data", evt.EncodeAsJson()),
                 Wrapper.CreateParam(@"sender", evt.Sender?.UserId < 1 ? null : (long?)evt.Sender.UserId),
                 Wrapper.CreateParam(@"sender_name", evt.Sender?.UserName),
                 Wrapper.CreateParam(@"sender_colour", evt.Sender?.Colour.Raw),
@@ -47,7 +48,7 @@ namespace SharpChat.Events.Storage {
             IEvent evt = null;
 
             Wrapper.RunQuery(
-                @"SELECT `event_id`, `event_type`, `event_flags`, `event_data`, `event_target`"
+                @"SELECT `event_id`, `event_type`, `event_data`, `event_target`"
                 + @", `event_sender`, `event_sender_name`, `event_sender_colour`, `event_sender_rank`, `event_sender_nick`, `event_sender_perms`"
                 + @", " + Wrapper.ToUnixTime(@"`event_created`") + @" AS `event_created`"
                 + @" FROM `sqc_events`"
@@ -62,11 +63,11 @@ namespace SharpChat.Events.Storage {
             return evt;
         }
 
-        public IEnumerable<IEvent> GetEventsForTarget(Channel target, int amount = 20, int offset = 0) {
+        public IEnumerable<IEvent> GetEventsForTarget(IEventTarget target, int amount = 20, int offset = 0) {
             List<IEvent> events = new List<IEvent>();
 
             Wrapper.RunQuery(
-                @"SELECT `event_id`, `event_type`, `event_flags`, `event_data`, `event_target`"
+                @"SELECT `event_id`, `event_type`, `event_data`, `event_target`"
                 + @", `event_sender`, `event_sender_name`, `event_sender_colour`, `event_sender_rank`, `event_sender_nick`, `event_sender_perms`"
                 + @", " + Wrapper.ToUnixTime(@"`event_created`") + @" AS `event_created`"
                 + @" FROM `sqc_events`"
@@ -75,12 +76,12 @@ namespace SharpChat.Events.Storage {
                 + @" LIMIT @amount OFFSET @offset",
                 reader => {
                     while(reader.Next()) {
-                        IEvent evt = ReadEvent(reader, target);
+                        IEvent evt = ReadEvent(reader);
                         if(evt != null)
                             events.Add(evt);
                     }
                 },
-                Wrapper.CreateParam(@"target", target.Name),
+                Wrapper.CreateParam(@"target", target.TargetName),
                 Wrapper.CreateParam(@"amount", amount),
                 Wrapper.CreateParam(@"offset", offset)
             );
@@ -89,13 +90,11 @@ namespace SharpChat.Events.Storage {
             return events;
         }
 
-        private static readonly Type[] constPropTypes = new[] { typeof(IEvent), typeof(JsonElement), };
-
-        private static IEvent ReadEvent(IDatabaseReader reader, Channel target = null) {
-            Type evtType = Type.GetType(reader.ReadString(@"event_type"));
-            ConstructorInfo evtConst = evtType.GetConstructors().FirstOrDefault(ci => ci.GetParameters().Select(pi => pi.ParameterType).SequenceEqual(constPropTypes));
-            JsonDocument jsonDoc = JsonDocument.Parse(reader.ReadString(@"event_data"));
-            return (IEvent)evtConst.Invoke(new object[] { new ADOEventReader(reader, target), jsonDoc.RootElement });
+        private IEvent ReadEvent(IDatabaseReader reader) {
+            IEvent evt = new ADOEvent(reader);
+            if(Constructors.ContainsKey(evt.Type)) // F:\Pictures\man.jpg
+                evt = Constructors[evt.Type](evt, JsonDocument.Parse((evt as ADOEvent).RawData).RootElement);
+            return evt;
         }
     }
 }

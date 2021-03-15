@@ -48,6 +48,11 @@ namespace SharpChat.Database {
         public string ToLower(string param)
             => Backend.ToLower(param);
 
+        public bool SupportsJson
+            => Backend.SupportsJson;
+        public string JsonSet(string path, string name, string value)
+            => Backend.JsonSet(path, name, value);
+
         public bool SupportsAlterTableCollate
             => Backend.SupportsAlterTableCollate;
 
@@ -56,12 +61,13 @@ namespace SharpChat.Database {
         public string UnicodeCollation
             => Backend.UnicodeCollation;
 
-        public void RunCommand(object query, Action<IDatabaseCommand> action, params IDatabaseParameter[] @params) {
+        public void RunCommand(object query, int timeout, Action<IDatabaseCommand> action, params IDatabaseParameter[] @params) {
 #if LOG_SQL
             Logger.Debug(query);
 #endif
             using IDatabaseConnection conn = Backend.CreateConnection();
             using IDatabaseCommand comm = conn.CreateCommand(query);
+            comm.CommandTimeout = timeout;
             if(@params.Any()) {
                 comm.AddParameters(@params);
                 comm.Prepare();
@@ -69,9 +75,18 @@ namespace SharpChat.Database {
             action.Invoke(comm);
         }
 
+        public void RunCommand(object query, Action<IDatabaseCommand> action, params IDatabaseParameter[] @params)
+            => RunCommand(query, 30, action, @params);
+
         public int RunCommand(object query, params IDatabaseParameter[] @params) {
             int affected = 0;
             RunCommand(query, comm => affected = comm.Execute(), @params);
+            return affected;
+        }
+
+        public int RunCommand(object query, int timeout, params IDatabaseParameter[] @params) {
+            int affected = 0;
+            RunCommand(query, timeout, comm => affected = comm.Execute(), @params);
             return affected;
         }
 

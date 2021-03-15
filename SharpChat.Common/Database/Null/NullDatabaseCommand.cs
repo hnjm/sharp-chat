@@ -5,14 +5,17 @@ namespace SharpChat.Database.Null {
         public IDatabaseConnection Connection { get; }
 
         public string CommandString => string.Empty;
+        public int CommandTimeout { get => -1; set { } }
 
         public NullDatabaseCommand(NullDatabaseConnection conn) {
             Connection = conn ?? throw new ArgumentNullException(nameof(conn));
         }
 
-        public IDatabaseParameter AddParameter(string name, object value) {
-            return new NullDatabaseParameter();
-        }
+        public IDatabaseParameter AddParameter(string name, object value)
+            => new NullDatabaseParameter();
+
+        public IDatabaseParameter AddParameter(string name, DatabaseType type)
+            => new NullDatabaseParameter();
 
         public IDatabaseParameter AddParameter(IDatabaseParameter param) {
             if(param is not NullDatabaseParameter)

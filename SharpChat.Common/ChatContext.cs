@@ -38,6 +38,7 @@ namespace SharpChat {
             Events = db.IsNullBackend
                 ? new MemoryChatEventStorage()
                 : new ADOChatEventStorage(db);
+            Event.RegisterConstructors(Events);
 
             DataProvider = dataProvider ?? throw new ArgumentNullException(nameof(dataProvider));
             Users = new UserManager(this);

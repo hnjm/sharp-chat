@@ -4,11 +4,11 @@ using System.Text;
 
 namespace SharpChat.Packets {
     public enum UserDisconnectReason : int {
-        Unknown,
-        Leave,
-        TimeOut,
-        Kicked,
-        Flood,
+        Unknown = 0,
+        Leave = 1,
+        TimeOut = 2,
+        Kicked = 3,
+        Flood = 4,
     }
 
     public class UserDisconnectPacket : ServerPacketBase {

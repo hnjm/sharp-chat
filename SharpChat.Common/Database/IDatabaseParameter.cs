@@ -1,6 +1,6 @@
 ﻿namespace SharpChat.Database {
     public interface IDatabaseParameter {
         string Name { get; }
-        object Value { get; }
+        object Value { get; set; }
     }
 }

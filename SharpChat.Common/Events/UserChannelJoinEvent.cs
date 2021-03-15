@@ -4,8 +4,16 @@ using System;
 using System.Text.Json;
 
 namespace SharpChat.Events {
-    public class UserChannelJoinEvent : ChatEvent {
-        public UserChannelJoinEvent(IEvent evt, JsonElement elem) : base(evt, elem) {}
-        public UserChannelJoinEvent(DateTimeOffset joined, IUser user, Channel target) : base(joined, user, target, EventFlags.Log) {}
+    public class UserChannelJoinEvent : Event {
+        public const string TYPE = @"channel:join";
+
+        public override string Type => TYPE;
+
+        private UserChannelJoinEvent(IEvent evt) : base(evt) {}
+        public UserChannelJoinEvent(DateTimeOffset joined, IUser user, Channel target) : base(joined, user, target) {}
+
+        public static UserChannelJoinEvent DecodeFromJson(IEvent evt, JsonElement elem) {
+            return new UserChannelJoinEvent(evt);
+        }
     }
 }

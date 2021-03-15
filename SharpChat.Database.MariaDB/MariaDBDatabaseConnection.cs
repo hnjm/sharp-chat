@@ -13,7 +13,6 @@ namespace SharpChat.Database.MariaDB {
         public IDatabaseCommand CreateCommand(object query) {
             MySqlCommand command = Connection.CreateCommand();
             command.CommandText = query.ToString();
-            command.CommandTimeout = 5;
             return new MariaDBDatabaseCommand(this, command);
         }
 

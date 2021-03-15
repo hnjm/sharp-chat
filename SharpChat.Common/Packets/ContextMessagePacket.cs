@@ -77,9 +77,9 @@ namespace SharpChat.Packets {
             sb.Append(IServerPacket.SEPARATOR);
             sb.AppendFormat(
                 "1{0}0{1}{2}",
-                Event.Flags.HasFlag(EventFlags.Action) ? '1' : '0',
-                Event.Flags.HasFlag(EventFlags.Action) ? '0' : '1',
-                Event.Flags.HasFlag(EventFlags.Private) ? '1' : '0'
+                Event is IMessageEvent evt1 && evt1.IsAction ? '1' : '0',
+                Event is IMessageEvent evt2 && evt2.IsAction ? '0' : '1',
+                /*Event.Flags.HasFlag(EventFlags.Private)*/ false ? '1' : '0'
             );
 
             return sb.ToString();

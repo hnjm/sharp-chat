@@ -8,14 +8,21 @@ namespace SharpChat.Database.SQLite {
         private SQLiteCommand Command { get; }
 
         public string CommandString => Command.CommandText;
+        public int CommandTimeout { get => Command.CommandTimeout; set => Command.CommandTimeout = value; }
 
         public SQLiteDatabaseCommand(SQLiteDatabaseConnection conn, SQLiteCommand comm) {
             Connection = conn ?? throw new ArgumentNullException(nameof(conn));
             Command = comm ?? throw new ArgumentNullException(nameof(comm));
         }
 
-        public IDatabaseParameter AddParameter(string name, object value) {
-            return new SQLiteDatabaseParameter(Command.Parameters.AddWithValue(name, value));
+        public IDatabaseParameter AddParameter(string name, object value)
+            => new SQLiteDatabaseParameter(Command.Parameters.AddWithValue(name, value));
+
+        public IDatabaseParameter AddParameter(string name, DatabaseType type) {
+            SQLiteParameter param = Command.CreateParameter();
+            param.ParameterName = name;
+            param.DbType = SQLiteDatabaseParameter.MapType(type);
+            return new SQLiteDatabaseParameter(param);
         }
 
         public IDatabaseParameter AddParameter(IDatabaseParameter param) {

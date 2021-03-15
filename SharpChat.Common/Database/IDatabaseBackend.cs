@@ -1,7 +1,9 @@
 ﻿namespace SharpChat.Database {
     public interface IDatabaseBackend {
         IDatabaseConnection CreateConnection();
+
         IDatabaseParameter CreateParameter(string name, object value);
+        IDatabaseParameter CreateParameter(string name, DatabaseType type);
 
         string TimestampType { get; }
         string BlobType { get; }
@@ -20,6 +22,9 @@
 
         string Concat(params string[] args);
         string ToLower(string param);
+
+        bool SupportsJson { get; }
+        string JsonSet(string path, string name, string value);
 
         bool SupportsAlterTableCollate { get; }
 

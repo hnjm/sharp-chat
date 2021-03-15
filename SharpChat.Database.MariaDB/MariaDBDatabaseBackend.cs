@@ -26,7 +26,7 @@ namespace SharpChat.Database.MariaDB {
                 OldGuids = false,
                 TreatTinyAsBoolean = false,
                 CharacterSet = charset,
-                TreatBlobsAsUTF8 = false
+                TreatBlobsAsUTF8 = false,
             }.ToString();
         }
 
@@ -35,6 +35,9 @@ namespace SharpChat.Database.MariaDB {
 
         public IDatabaseParameter CreateParameter(string name, object value)
             => new MariaDBDatabaseParameter(name, value);
+
+        public IDatabaseParameter CreateParameter(string name, DatabaseType type)
+            => new MariaDBDatabaseParameter(name, type);
 
         public string TimestampType
             => @"TIMESTAMP";
@@ -63,6 +66,10 @@ namespace SharpChat.Database.MariaDB {
             => string.Format(@"UNIX_TIMESTAMP({0})", param);
         public string DateTimeNow()
             => @"NOW()";
+
+        public bool SupportsJson => true;
+        public string JsonSet(string field, string path, string value)
+            => string.Format(@"JSON_SET({0}, '{1}', {2})", field, path, value);
 
         public string Concat(params string[] values)
             => string.Format(@"CONCAT({0})", string.Join(@", ", values));

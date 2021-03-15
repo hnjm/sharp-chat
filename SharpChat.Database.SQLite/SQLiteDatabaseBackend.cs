@@ -31,6 +31,9 @@ namespace SharpChat.Database.SQLite {
         public IDatabaseParameter CreateParameter(string name, object value)
             => new SQLiteDatabaseParameter(name, value);
 
+        public IDatabaseParameter CreateParameter(string name, DatabaseType type)
+            => new SQLiteDatabaseParameter(name, type);
+
         public string TimestampType
             => @"INTEGER";
         public string BlobType
@@ -58,6 +61,10 @@ namespace SharpChat.Database.SQLite {
             => param;
         public string DateTimeNow()
             => @"strftime('%s', 'now')";
+
+        public bool SupportsJson => false;
+        public string JsonSet(string path, string name, string value)
+            => string.Empty;
 
         public string Concat(params string[] args)
             => string.Join(@" || ", args);

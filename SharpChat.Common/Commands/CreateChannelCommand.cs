@@ -35,8 +35,7 @@ namespace SharpChat.Commands {
                 throw new InsufficientRankForChangeCommandException();
 
             string createChanName = string.Join('_', ctx.Args.Skip(hasRank ? 2 : 1));
-            Channel createChan = new Channel {
-                Name = createChanName,
+            Channel createChan = new Channel(createChanName) {
                 IsTemporary = !ctx.User.Can(UserPermissions.SetChannelPermanent),
                 MinimumRank = rank,
                 Owner = ctx.User,

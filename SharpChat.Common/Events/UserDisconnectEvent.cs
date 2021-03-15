@@ -3,23 +3,29 @@ using SharpChat.Packets;
 using SharpChat.Users;
 using System;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace SharpChat.Events {
-    public class UserDisconnectEvent : ChatEvent {
-        [JsonPropertyName(@"reason")]
+    public class UserDisconnectEvent : Event {
+        public const string TYPE = @"user:disconnect";
+
+        public override string Type => TYPE;
         public UserDisconnectReason Reason { get; }
 
-        public UserDisconnectEvent(IEvent evt, JsonElement elem) : base(evt, elem) {
-            if(elem.TryGetProperty(@"reason", out JsonElement reasonElem) && reasonElem.TryGetInt32(out int reason))
-                Reason = (UserDisconnectReason)reason;
-            else
-                Reason = UserDisconnectReason.Unknown;
+        private UserDisconnectEvent(IEvent evt, UserDisconnectReason reason) : base(evt) {
+            Reason = reason;
         }
 
         public UserDisconnectEvent(DateTimeOffset parted, IUser user, Channel target, UserDisconnectReason reason)
-            : base(parted, user, target, EventFlags.Log) {
+            : base(parted, user, target) {
             Reason = reason;
+        }
+
+        public static UserDisconnectEvent DecodeFromJson(IEvent evt, JsonElement elem) {
+            UserDisconnectReason reason = UserDisconnectReason.Unknown;
+            if(elem.TryGetProperty(@"reason", out JsonElement reasonElem) && reasonElem.TryGetInt32(out int intReason))
+                reason = (UserDisconnectReason)intReason;
+
+            return new UserDisconnectEvent(evt, reason);
         }
     }
 }

@@ -5,13 +5,14 @@ namespace SharpChat.Database.Null {
     public class NullDatabaseBackend : IDatabaseBackend {
         public NullDatabaseBackend(IConfig _ = null) { }
 
-        public IDatabaseConnection CreateConnection() {
-            return new NullDatabaseConnection();
-        }
+        public IDatabaseConnection CreateConnection()
+            => new NullDatabaseConnection();
 
-        public IDatabaseParameter CreateParameter(string name, object value) {
-            return new NullDatabaseParameter();
-        }
+        public IDatabaseParameter CreateParameter(string name, object value)
+            => new NullDatabaseParameter();
+
+        public IDatabaseParameter CreateParameter(string name, DatabaseType type)
+            => new NullDatabaseParameter();
 
         public string TimestampType
             => string.Empty;
@@ -45,6 +46,10 @@ namespace SharpChat.Database.Null {
         public string Concat(params string[] args)
             => string.Empty;
         public string ToLower(string param)
+            => string.Empty;
+
+        public bool SupportsJson => false;
+        public string JsonSet(string path, string name, string value)
             => string.Empty;
 
         public bool SupportsAlterTableCollate => true;

@@ -1,5 +1,4 @@
-﻿using SharpChat.Channels;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 
 namespace SharpChat.Events.Storage {
@@ -22,9 +21,9 @@ namespace SharpChat.Events.Storage {
                 return Events.FirstOrDefault(e => e.EventId == seqId);
         }
 
-        public IEnumerable<IEvent> GetEventsForTarget(Channel target, int amount = 20, int offset = 0) {
+        public IEnumerable<IEvent> GetEventsForTarget(IEventTarget target, int amount = 20, int offset = 0) {
             lock(Lock) {
-                IEnumerable<IEvent> subset = Events.Where(e => e.Target == target || e.Target == null);
+                IEnumerable<IEvent> subset = Events.Where(e => e.Target == target.TargetName || e.Target == null);
 
                 int start = subset.Count() - offset - amount;
 
@@ -35,6 +34,10 @@ namespace SharpChat.Events.Storage {
 
                 return subset.Skip(start).Take(amount).ToList();
             }
+        }
+
+        public void RegisterConstructor(string type, IEvent.DecodeFromJson construct) {
+            // No need to register, events are kept in memory
         }
     }
 }

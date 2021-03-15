@@ -1,11 +1,12 @@
-﻿using SharpChat.Users;
+﻿using SharpChat.Events;
+using SharpChat.Users;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
 namespace SharpChat.Channels {
-    public class Channel : IServerPacketTarget {
-        public string Name { get; set; }
+    public class Channel : IServerPacketTarget, IEventTarget {
+        public string Name { get; private set; }
         public string Password { get; set; } = string.Empty;
         public bool IsTemporary { get; set; } = false;
         public int MinimumRank { get; set; } = 0;
@@ -22,11 +23,11 @@ namespace SharpChat.Channels {
         public bool HasMaxCapacity
             => MaxCapacity > 0;
 
-        public Channel() {
-        }
+        public string TargetName { get; private set; }
 
         public Channel(string name) {
             Name = name;
+            TargetName = Name.ToLowerInvariant();
         }
 
         public bool HasUser(ChatUser user) {
@@ -102,6 +103,10 @@ namespace SharpChat.Channels {
             sb.Append(IsTemporary ? '1' : '0');
 
             return sb.ToString();
+        }
+
+        public void HandleEvent(IEvent evt) {
+            //
         }
     }
 }

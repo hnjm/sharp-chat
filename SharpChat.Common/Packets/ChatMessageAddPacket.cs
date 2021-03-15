@@ -1,5 +1,4 @@
-﻿using SharpChat.Channels;
-using SharpChat.Events;
+﻿using SharpChat.Events;
 using SharpChat.Users;
 using System;
 using System.Text;
@@ -8,38 +7,39 @@ namespace SharpChat.Packets {
     public class ChatMessageAddPacket : ServerPacketBase {
         protected DateTimeOffset DateTime { get; }
         protected IUser Sender { get; }
-        protected EventFlags Flags { get; }
-        protected Channel Target { get; }
+        protected string TargetName { get; }
         protected string Text { get; set; }
+        protected bool IsAction { get; }
 
-        public ChatMessageAddPacket(IUser sender, string text) {
+        public ChatMessageAddPacket(IUser sender, string text, bool isAction = false) {
             DateTime = DateTimeOffset.Now;
             Sender = sender ?? throw new ArgumentNullException(nameof(sender));
             Text = text ?? throw new ArgumentNullException(nameof(text));
+            IsAction = isAction;
         }
 
         public ChatMessageAddPacket(IMessageEvent msg)
-            : this(msg.EventId, msg.DateTime, msg.Sender, msg.Text, msg.Flags, msg.Target) { }
+            : this(msg.EventId, msg.DateTime, msg.Sender, msg.Text, msg.Target, msg.IsAction) { }
 
         public ChatMessageAddPacket(
             long eventId,
             DateTimeOffset dateTime,
             IUser sender,
             string text,
-            EventFlags flags = EventFlags.None,
-            Channel target = null
+            string target,
+            bool isAction = false
         ) : base(eventId) {
             if(text == null)
                 throw new ArgumentNullException(nameof(text));
 
             Sender = sender ?? throw new ArgumentNullException(nameof(sender));
+            TargetName = target ?? throw new ArgumentNullException(nameof(target));
             DateTime = dateTime;
-            Flags = flags;
-            Target = target;
+            IsAction = isAction;
 
             StringBuilder sb = new StringBuilder();
 
-            if(Flags.HasFlag(EventFlags.Action))
+            if(isAction)
                 sb.Append(@"<i>");
 
             sb.Append(
@@ -49,7 +49,7 @@ namespace SharpChat.Packets {
                     .Replace("\t", @"    ")
             );
 
-            if(Flags.HasFlag(EventFlags.Action))
+            if(isAction)
                 sb.Append(@"</i>");
 
             Text = sb.ToString();
@@ -70,12 +70,12 @@ namespace SharpChat.Packets {
             sb.Append(IServerPacket.SEPARATOR);
             sb.AppendFormat(
                 "1{0}0{1}{2}",
-                Flags.HasFlag(EventFlags.Action) ? '1' : '0',
-                Flags.HasFlag(EventFlags.Action) ? '0' : '1',
-                Flags.HasFlag(EventFlags.Private) ? '1' : '0'
+                IsAction ? '1' : '0',
+                IsAction ? '0' : '1',
+                /*Flags.HasFlag(EventFlags.Private)*/ false ? '1' : '0'
             );
             sb.Append(IServerPacket.SEPARATOR);
-            sb.Append(Target?.Name ?? string.Empty);
+            sb.Append(TargetName);
 
             return sb.ToString();
         }
