@@ -13,13 +13,13 @@ using System.Collections.Generic;
 using System.Threading;
 
 namespace SharpChat {
-    public class ChatContext : IDisposable, IEventHandler, IServerPacketTarget {
+    public class ChatContext : IDisposable, IEventTarget, IServerPacketTarget {
         public ChannelManager Channels { get; }
         public UserManager Users { get; }
         public SessionManager Sessions { get; }
         public RateLimiter RateLimiter { get; }
 
-        public IChatEventStorage Events { get; }
+        public IEventStorage Events { get; }
         public IDataProvider DataProvider { get; }
 
         public ChatBot Bot { get; } = new ChatBot(); 
@@ -30,14 +30,16 @@ namespace SharpChat {
         private CachedValue<int> MessageTextMaxLengthValue { get; }
         public int MessageTextMaxLength => MessageTextMaxLengthValue;
 
+        public string TargetName => @"~";
+
         public ChatContext(IConfig config, IDatabaseBackend databaseBackend, IDataProvider dataProvider) {
             if(config == null)
                 throw new ArgumentNullException(nameof(config));
 
             DatabaseWrapper db = new DatabaseWrapper(databaseBackend ?? throw new ArgumentNullException(nameof(databaseBackend)));
             Events = db.IsNullBackend
-                ? new MemoryChatEventStorage()
-                : new ADOChatEventStorage(db);
+                ? new MemoryEventStorage()
+                : new ADOEventStorage(db);
             Event.RegisterConstructors(Events);
 
             DataProvider = dataProvider ?? throw new ArgumentNullException(nameof(dataProvider));
@@ -106,13 +108,13 @@ namespace SharpChat {
 
             chan.UserLeave(user);
             chan.SendPacket(new UserDisconnectPacket(DateTimeOffset.Now, user, reason));
-            HandleEvent(new UserDisconnectEvent(DateTimeOffset.Now, user, chan, reason));
+            HandleEvent(new UserDisconnectEvent(chan, user, reason));
         }
 
         public void JoinChannel(ChatUser user, Channel channel) {
             // These two should be combined into just an event broadcast
             channel.SendPacket(new UserChannelJoinPacket(user));
-            HandleEvent(new UserChannelJoinEvent(DateTimeOffset.Now, user, channel));
+            HandleEvent(new ChannelJoinEvent(channel, user));
 
             user.SendPacket(new ContextClearPacket(channel, ContextClearMode.MessagesUsers));
             user.SendPacket(new ContextUsersPacket(channel.GetUsers(new[] { user })));
@@ -129,7 +131,7 @@ namespace SharpChat {
 
             // These two should be combined into just an event broadcast
             channel.SendPacket(new UserChannelLeavePacket(user));
-            HandleEvent(new UserChannelLeaveEvent(DateTimeOffset.Now, user, channel));
+            HandleEvent(new ChannelLeaveEvent(channel, user));
 
             if(channel.IsTemporary && channel.Owner == user)
                 Channels.Remove(channel);

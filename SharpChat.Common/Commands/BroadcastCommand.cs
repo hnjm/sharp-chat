@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 namespace SharpChat.Commands {
-    public class BroadcastCommand : IChatCommand {
+    public class BroadcastCommand : ICommand {
         private const string NAME = @"say";
 
         private IUser Sender { get; }
@@ -18,7 +18,7 @@ namespace SharpChat.Commands {
         public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == NAME;
 
-        public IMessageEvent DispatchCommand(IChatCommandContext ctx) {
+        public IMessageEvent DispatchCommand(ICommandContext ctx) {
             if(!ctx.User.Can(UserPermissions.Broadcast))
                 throw new CommandNotAllowedException(NAME);
 

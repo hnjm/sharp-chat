@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 
 namespace SharpChat.Commands {
-    public class BanListCommand : IChatCommand {
+    public class BanListCommand : ICommand {
         private IUser Sender { get; }
 
         public BanListCommand(IUser sender) {
@@ -15,7 +15,7 @@ namespace SharpChat.Commands {
         public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == @"bans" || name == @"banned";
 
-        public IMessageEvent DispatchCommand(IChatCommandContext ctx) {
+        public IMessageEvent DispatchCommand(ICommandContext ctx) {
             if(!ctx.User.Can(UserPermissions.BanUser | UserPermissions.KickUser))
                 throw new CommandNotAllowedException(ctx.Args);
 

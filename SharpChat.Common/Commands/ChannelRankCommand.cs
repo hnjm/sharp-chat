@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 namespace SharpChat.Commands {
-    public class ChannelRankCommand : IChatCommand {
+    public class ChannelRankCommand : ICommand {
         private IUser Sender { get; }
 
         public ChannelRankCommand(IUser sender) {
@@ -16,14 +16,14 @@ namespace SharpChat.Commands {
         public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == @"rank" || name == @"hierarchy" || name == @"priv";
 
-        public IMessageEvent DispatchCommand(IChatCommandContext ctx) {
+        public IMessageEvent DispatchCommand(ICommandContext ctx) {
             if(!ctx.User.Can(UserPermissions.SetChannelHierarchy) || ctx.Channel.Owner != ctx.User)
                 throw new CommandNotAllowedException(ctx.Args);
 
             if(!int.TryParse(ctx.Args.ElementAtOrDefault(1), out int rank) || rank > ctx.User.Rank)
                 throw new InsufficientRankForChangeCommandException();
 
-            ctx.Chat.Channels.Update(ctx.Channel, rank: rank);
+            ctx.Chat.Channels.Update(ctx.Channel, minRank: rank);
             ctx.Session.SendPacket(new ChannelRankResponsePacket(Sender));
             return null;
         }

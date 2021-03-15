@@ -7,17 +7,17 @@ using System.Collections.Generic;
 using System.Linq;
 
 namespace SharpChat.Commands {
-    public class DeleteMessageCommand : IChatCommand {
+    public class DeleteMessageCommand : ICommand {
         public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == @"delmsg" || (name == @"delete" && args.ElementAtOrDefault(1)?.All(char.IsDigit) == true);
 
-        private IChatEventStorage Storage { get; }
+        private IEventStorage Storage { get; }
 
-        public DeleteMessageCommand(IChatEventStorage storage) {
+        public DeleteMessageCommand(IEventStorage storage) {
             Storage = storage ?? throw new ArgumentNullException(nameof(storage));
         }
 
-        public IMessageEvent DispatchCommand(IChatCommandContext ctx) {
+        public IMessageEvent DispatchCommand(ICommandContext ctx) {
             bool deleteAnyMessage = ctx.User.Can(UserPermissions.DeleteAnyMessage);
 
             if(!deleteAnyMessage && !ctx.User.Can(UserPermissions.DeleteOwnMessage))

@@ -4,11 +4,11 @@ using System.Collections.Generic;
 using System.Text.Json;
 
 namespace SharpChat.Events.Storage {
-    public partial class ADOChatEventStorage : IChatEventStorage {
+    public partial class ADOEventStorage : IEventStorage {
         private DatabaseWrapper Wrapper { get; }
         private Dictionary<string, IEvent.DecodeFromJson> Constructors { get; } = new Dictionary<string, IEvent.DecodeFromJson>();
 
-        public ADOChatEventStorage(DatabaseWrapper wrapper) {
+        public ADOEventStorage(DatabaseWrapper wrapper) {
             Wrapper = wrapper ?? throw new ArgumentNullException(nameof(wrapper));
             RunMigrations();
         }

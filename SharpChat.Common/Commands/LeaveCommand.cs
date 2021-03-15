@@ -2,11 +2,11 @@
 using System.Collections.Generic;
 
 namespace SharpChat.Commands {
-    public class LeaveCommand : IChatCommand {
+    public class LeaveCommand : ICommand {
         public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == @"leave";
 
-        public IMessageEvent DispatchCommand(IChatCommandContext ctx) {
+        public IMessageEvent DispatchCommand(ICommandContext ctx) {
             if(!ctx.Session.HasCapability(ClientCapabilities.MCHAN))
                 throw new CommandNotFoundException(@"leave");
 

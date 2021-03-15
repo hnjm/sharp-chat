@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 namespace SharpChat.Commands {
-    public class WhoCommand : IChatCommand {
+    public class WhoCommand : ICommand {
         private IUser Sender { get; }
 
         public WhoCommand(IUser sender) {
@@ -17,11 +17,11 @@ namespace SharpChat.Commands {
         public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == @"who";
 
-        private static void WhoServer(IUser sender, IChatCommandContext ctx) {
+        private static void WhoServer(IUser sender, ICommandContext ctx) {
             ctx.Session.SendPacket(new UserListResponsePacket(sender, ctx.User, ctx.Chat.Users.All()));
         }
 
-        private static void WhoChannel(IUser sender, IChatCommandContext ctx, string channelName) {
+        private static void WhoChannel(IUser sender, ICommandContext ctx, string channelName) {
             Channel whoChan = ctx.Chat.Channels.Get(channelName);
 
             if(whoChan == null)
@@ -33,7 +33,7 @@ namespace SharpChat.Commands {
             ctx.Session.SendPacket(new UserListResponsePacket(sender, whoChan, ctx.User, whoChan.GetUsers()));
         }
 
-        public IMessageEvent DispatchCommand(IChatCommandContext ctx) {
+        public IMessageEvent DispatchCommand(ICommandContext ctx) {
             string channelName = ctx.Args.ElementAtOrDefault(1) ?? string.Empty;
 
             if(string.IsNullOrEmpty(channelName))

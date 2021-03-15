@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 namespace SharpChat.Commands {
-    public class CreateChannelCommand : IChatCommand {
+    public class CreateChannelCommand : ICommand {
         private const string NAME = @"create";
 
         private IUser Sender { get; }
@@ -19,7 +19,7 @@ namespace SharpChat.Commands {
         public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == NAME;
 
-        public IMessageEvent DispatchCommand(IChatCommandContext ctx) {
+        public IMessageEvent DispatchCommand(ICommandContext ctx) {
             if(!ctx.User.Can(UserPermissions.CreateChannel))
                 throw new CommandNotAllowedException(NAME);
 
@@ -35,16 +35,17 @@ namespace SharpChat.Commands {
                 throw new InsufficientRankForChangeCommandException();
 
             string createChanName = string.Join('_', ctx.Args.Skip(hasRank ? 2 : 1));
-            Channel createChan = new Channel(createChanName) {
-                IsTemporary = !ctx.User.Can(UserPermissions.SetChannelPermanent),
-                MinimumRank = rank,
-                Owner = ctx.User,
-            };
+            Channel createChan;
 
             try {
-                ctx.Chat.Channels.Add(createChan);
+                createChan = ctx.Chat.Channels.Create(
+                    ctx.User,
+                    createChanName,
+                    !ctx.User.Can(UserPermissions.SetChannelPermanent),
+                    rank
+                );
             } catch(ChannelExistException) {
-                throw new ChannelExistsCommandException(createChan.Name);
+                throw new ChannelExistsCommandException(createChanName);
             } catch(ChannelInvalidNameException) {
                 throw new ChannelNameInvalidCommandException();
             }

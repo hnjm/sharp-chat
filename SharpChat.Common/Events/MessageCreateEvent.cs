@@ -1,5 +1,4 @@
-﻿using SharpChat.Channels;
-using SharpChat.Users;
+﻿using SharpChat.Users;
 using System;
 using System.Collections.Generic;
 using System.Text.Json;
@@ -12,8 +11,8 @@ namespace SharpChat.Events {
         public string Text { get; }
         public bool IsAction { get; }
 
-        public MessageCreateEvent(IUser sender, Channel target, string text, bool isAction = false, DateTimeOffset? dateTime = null)
-            : base(dateTime ?? DateTimeOffset.Now, sender, target) {
+        public MessageCreateEvent(IEventTarget target, IUser sender, string text, bool isAction = false)
+            : base(target, sender) {
             Text = text ?? throw new ArgumentNullException(nameof(text));
             IsAction = isAction;
         }

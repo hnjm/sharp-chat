@@ -15,8 +15,8 @@ namespace SharpChat.Events {
             Reason = reason;
         }
 
-        public UserDisconnectEvent(DateTimeOffset parted, IUser user, Channel target, UserDisconnectReason reason)
-            : base(parted, user, target) {
+        public UserDisconnectEvent(IEventTarget target, IUser user, UserDisconnectReason reason)
+            : base(target, user) {
             Reason = reason;
         }
 

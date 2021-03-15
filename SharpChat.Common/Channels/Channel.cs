@@ -7,12 +7,12 @@ using System.Text;
 namespace SharpChat.Channels {
     public class Channel : IServerPacketTarget, IEventTarget {
         public string Name { get; private set; }
-        public string Password { get; set; } = string.Empty;
-        public bool IsTemporary { get; set; } = false;
-        public int MinimumRank { get; set; } = 0;
-        public bool AutoJoin { get; set; } = false;
-        public uint MaxCapacity { get; set; } = 0;
-        public ChatUser Owner { get; set; } = null;
+        public string Password { get; private set; } = string.Empty;
+        public bool IsTemporary { get; private set; } = false;
+        public int MinimumRank { get; private set; } = 0;
+        public bool AutoJoin { get; private set; } = false;
+        public uint MaxCapacity { get; private set; } = 0;
+        public IUser Owner { get; private set; } = null;
 
         private List<ChatUser> Users { get; } = new List<ChatUser>();
         private List<ChannelTyping> Typing { get; } = new List<ChannelTyping>();
@@ -25,9 +25,23 @@ namespace SharpChat.Channels {
 
         public string TargetName { get; private set; }
 
-        public Channel(string name) {
+        public Channel(
+            string name,
+            bool temp = false,
+            int minimumRank = 0,
+            string password = null,
+            bool autoJoin = false,
+            uint maxCapacity = 0,
+            IUser owner = null
+        ) {
             Name = name;
             TargetName = Name.ToLowerInvariant();
+            IsTemporary = temp;
+            MinimumRank = minimumRank;
+            Password = password ?? string.Empty;
+            AutoJoin = autoJoin;
+            MaxCapacity = maxCapacity;
+            Owner = owner;
         }
 
         public bool HasUser(ChatUser user) {
@@ -106,7 +120,18 @@ namespace SharpChat.Channels {
         }
 
         public void HandleEvent(IEvent evt) {
-            //
+            switch(evt) {
+                case ChannelUpdateEvent update:
+                    if(update.HasName)
+                        Name = update.Name;
+                    if(update.IsTemporary.HasValue)
+                        IsTemporary = update.IsTemporary.Value;
+                    if(update.MinimumRank.HasValue)
+                        MinimumRank = update.MinimumRank.Value;
+                    if(update.HasPassword)
+                        Password = update.Password;
+                    break;
+            }
         }
     }
 }

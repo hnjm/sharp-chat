@@ -28,20 +28,23 @@ namespace SharpChat.Events {
             Sender = evt.Sender;
             Target = evt.Target;
         }
-        public Event(DateTimeOffset dateTime, IUser user, IEventTarget target) {
+        public Event(IEventTarget target, IUser user, DateTimeOffset? dateTime = null) {
             EventId = GenerateSequenceId();
-            DateTime = dateTime;
+            DateTime = dateTime ?? DateTimeOffset.Now;
             Sender = user ?? throw new ArgumentNullException(nameof(user));
-            Target = target.TargetName;
+            Target = (target ?? throw new ArgumentNullException(nameof(target))).TargetName;
         }
 
         public virtual string EncodeAsJson()
             => @"{}";
 
-        public static void RegisterConstructors(IChatEventStorage storage) {
+        public static void RegisterConstructors(IEventStorage storage) {
             storage.RegisterConstructor(MessageCreateEvent.TYPE, MessageCreateEvent.DecodeFromJson);
-            storage.RegisterConstructor(UserChannelJoinEvent.TYPE, UserChannelJoinEvent.DecodeFromJson);
-            storage.RegisterConstructor(UserChannelLeaveEvent.TYPE, UserChannelLeaveEvent.DecodeFromJson);
+
+            storage.RegisterConstructor(ChannelJoinEvent.TYPE, ChannelJoinEvent.DecodeFromJson);
+            storage.RegisterConstructor(ChannelLeaveEvent.TYPE, ChannelLeaveEvent.DecodeFromJson);
+            storage.RegisterConstructor(ChannelUpdateEvent.TYPE, ChannelUpdateEvent.DecodeFromJson);
+
             storage.RegisterConstructor(UserConnectEvent.TYPE, UserConnectEvent.DecodeFromJson);
             storage.RegisterConstructor(UserDisconnectEvent.TYPE, UserDisconnectEvent.DecodeFromJson);
         }

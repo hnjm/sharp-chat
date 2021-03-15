@@ -43,13 +43,13 @@ namespace SharpChat.Packets {
                     sb.Append(BotArguments.Notice(@"join", Event.Sender.UserName));
                     break;
 
-                case UserChannelJoinEvent _:
+                case ChannelJoinEvent _:
                     sb.Append(V1_CHATBOT);
                     sb.Append(IServerPacket.SEPARATOR);
                     sb.Append(BotArguments.Notice(@"jchan", Event.Sender.UserName));
                     break;
 
-                case UserChannelLeaveEvent _:
+                case ChannelLeaveEvent _:
                     sb.Append(V1_CHATBOT);
                     sb.Append(IServerPacket.SEPARATOR);
                     sb.Append(BotArguments.Notice(@"lchan", Event.Sender.UserName));

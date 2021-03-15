@@ -1,7 +1,7 @@
 ﻿using System;
 
 namespace SharpChat.Events.Storage {
-    public partial class ADOChatEventStorage {
+    public partial class ADOEventStorage {
         private const string CREATE_EVENTS = @"create_events_table";
         private const string ENSURE_COLLATION = @"ensure_collation";
         private const string GENERALISE_EVENTS = @"update_events_20210313";

@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 namespace SharpChat.Commands {
-    public class NickCommand : IChatCommand {
+    public class NickCommand : ICommand {
         private const string NAME = @"nick";
         private IUser Sender { get; }
 
@@ -17,7 +17,7 @@ namespace SharpChat.Commands {
         public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == NAME;
 
-        public IMessageEvent DispatchCommand(IChatCommandContext ctx) {
+        public IMessageEvent DispatchCommand(ICommandContext ctx) {
             bool setOthersNick = ctx.User.Can(UserPermissions.SetOthersNickname);
 
             if(!setOthersNick && !ctx.User.Can(UserPermissions.SetOwnNickname))

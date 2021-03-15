@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 namespace SharpChat.Commands {
-    public class UnsilenceUserCommand : IChatCommand {
+    public class UnsilenceUserCommand : ICommand {
         private IUser Sender { get; }
 
         public UnsilenceUserCommand(IUser sender) {
@@ -16,7 +16,7 @@ namespace SharpChat.Commands {
         public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == @"unsilence";
 
-        public IMessageEvent DispatchCommand(IChatCommandContext ctx) {
+        public IMessageEvent DispatchCommand(ICommandContext ctx) {
             if(!ctx.User.Can(UserPermissions.SilenceUser))
                 throw new CommandNotAllowedException(ctx.Args);
 

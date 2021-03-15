@@ -2,7 +2,7 @@
 using System.Linq;
 
 namespace SharpChat.Events.Storage {
-    public class MemoryChatEventStorage : IChatEventStorage {
+    public class MemoryEventStorage : IEventStorage {
         private object Lock { get; } = new object();
         private List<IEvent> Events { get; } = new List<IEvent>();
 

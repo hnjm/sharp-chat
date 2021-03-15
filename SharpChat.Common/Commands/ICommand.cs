@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 
 namespace SharpChat.Commands {
-    public interface IChatCommand {
+    public interface ICommand {
         bool IsCommandMatch(string name, IEnumerable<string> args);
-        IMessageEvent DispatchCommand(IChatCommandContext ctx);
+        IMessageEvent DispatchCommand(ICommandContext ctx);
     }
 }

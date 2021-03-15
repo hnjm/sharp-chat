@@ -1,6 +1,4 @@
-﻿using SharpChat.Channels;
-using SharpChat.Users;
-using System;
+﻿using SharpChat.Users;
 using System.Text.Json;
 
 namespace SharpChat.Events {
@@ -10,7 +8,7 @@ namespace SharpChat.Events {
         public override string Type => TYPE;
 
         private UserConnectEvent(IEvent evt) : base(evt) { }
-        public UserConnectEvent(DateTimeOffset joined, IUser user, Channel target) : base(joined, user, target) {}
+        public UserConnectEvent(IEventTarget target, IUser user) : base(target, user) {}
 
         public static UserConnectEvent DecodeFromJson(IEvent evt, JsonElement elem) {
             return new UserConnectEvent(evt);

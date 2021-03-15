@@ -7,7 +7,7 @@ using System.Linq;
 using System.Net;
 
 namespace SharpChat.Commands {
-    public class WhoIsUserCommand : IChatCommand {
+    public class WhoIsUserCommand : ICommand {
         private IUser Sender { get; }
 
         public WhoIsUserCommand(IUser sender) {
@@ -17,7 +17,7 @@ namespace SharpChat.Commands {
         public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == @"ip" || name == @"whois";
 
-        public IMessageEvent DispatchCommand(IChatCommandContext ctx) {
+        public IMessageEvent DispatchCommand(ICommandContext ctx) {
             if(!ctx.User.Can(UserPermissions.SeeIPAddress))
                 throw new CommandNotAllowedException(ctx.Args);
 

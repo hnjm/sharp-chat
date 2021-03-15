@@ -5,11 +5,11 @@ using System.Collections.Generic;
 using System.Linq;
 
 namespace SharpChat.Commands {
-    public class KickBanUserCommand : IChatCommand {
+    public class KickBanUserCommand : ICommand {
         public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == @"kick" || name == @"ban";
 
-        public IMessageEvent DispatchCommand(IChatCommandContext ctx) {
+        public IMessageEvent DispatchCommand(ICommandContext ctx) {
             string commandName = ctx.Args.First();
             bool isBan = commandName == @"ban";
 

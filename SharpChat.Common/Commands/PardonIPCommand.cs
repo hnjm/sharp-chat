@@ -7,7 +7,7 @@ using System.Linq;
 using System.Net;
 
 namespace SharpChat.Commands {
-    public class PardonIPCommand : IChatCommand {
+    public class PardonIPCommand : ICommand {
         private IUser Sender { get; }
 
         public PardonIPCommand(IUser sender) {
@@ -17,7 +17,7 @@ namespace SharpChat.Commands {
         public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == @"pardonip" || name == @"unbanip";
 
-        public IMessageEvent DispatchCommand(IChatCommandContext ctx) {
+        public IMessageEvent DispatchCommand(ICommandContext ctx) {
             if(!ctx.User.Can(UserPermissions.BanUser | UserPermissions.KickUser))
                 throw new CommandNotAllowedException(ctx.Args);
 

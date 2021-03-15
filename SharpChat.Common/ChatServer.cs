@@ -39,7 +39,7 @@ namespace SharpChat {
             List<IPacketHandler> handlers = new List<IPacketHandler> {
                 new PingPacketHandler(),
                 new AuthPacketHandler(Context.Sessions, Context.Bot, VERSION),
-                new MessageSendPacketHandler(Context, new IChatCommand[] {
+                new MessageSendPacketHandler(Context, new ICommand[] {
                     new JoinCommand(),
                     new AFKCommand(),
                     new WhisperCommand(),

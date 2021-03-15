@@ -13,9 +13,9 @@ namespace SharpChat.PacketHandlers {
         public ClientPacket PacketId => ClientPacket.MessageSend;
 
         public ChatContext Context { get; }
-        public IEnumerable<IChatCommand> Commands { get; }
+        public IEnumerable<ICommand> Commands { get; }
 
-        public MessageSendPacketHandler(ChatContext context, IEnumerable<IChatCommand> commands) {
+        public MessageSendPacketHandler(ChatContext context, IEnumerable<ICommand> commands) {
             Context = context ?? throw new ArgumentNullException(nameof(context));
             Commands = commands ?? throw new ArgumentNullException(nameof(commands));
         }
@@ -76,7 +76,7 @@ namespace SharpChat.PacketHandlers {
             }
 
             if(message == null)
-                message = new MessageCreateEvent(ctx.User, channel, text);
+                message = new MessageCreateEvent(channel, ctx.User, text);
 
             ctx.Chat.HandleEvent(message);
             channel.SendPacket(new ChatMessageAddPacket(message));
@@ -91,10 +91,10 @@ namespace SharpChat.PacketHandlers {
                                    .Replace(@">", @"&gt;")
                                    .Replace("\n", @" <br/> ");
 
-            IChatCommand command = Commands.FirstOrDefault(x => x.IsCommandMatch(commandName, parts));
+            ICommand command = Commands.FirstOrDefault(x => x.IsCommandMatch(commandName, parts));
             if(command == null)
                 throw new CommandNotFoundException(commandName);
-            return command.DispatchCommand(new ChatCommandContext(parts, user, channel, context, session));
+            return command.DispatchCommand(new CommandContext(parts, user, channel, context, session));
         }
     }
 }

@@ -5,14 +5,14 @@ using System.Collections.Generic;
 using System.Linq;
 
 namespace SharpChat.Commands {
-    public class AFKCommand : IChatCommand {
+    public class AFKCommand : ICommand {
         private const string DEFAULT = @"AFK";
         private const int MAX_LENGTH = 5;
 
         public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == @"afk";
 
-        public IMessageEvent DispatchCommand(IChatCommandContext ctx) {
+        public IMessageEvent DispatchCommand(ICommandContext ctx) {
             string statusText = ctx.Args.ElementAtOrDefault(1);
             if(string.IsNullOrWhiteSpace(statusText))
                 statusText = DEFAULT;

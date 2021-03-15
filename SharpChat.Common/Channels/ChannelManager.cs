@@ -18,13 +18,17 @@ namespace SharpChat.Channels {
         private CachedValue<string[]> ChannelNames { get; }
 
         private ChatContext Context { get; }
+        private ChatBot Bot { get; }
         private object Sync { get; } = new object();
 
         public ChannelManager(ChatContext context, IConfig config) {
-            Context = context ?? throw new ArgumentNullException(nameof(config));
+            if(context == null)
+                throw new ArgumentNullException(nameof(config));
             Config = config ?? throw new ArgumentNullException(nameof(config));
             ChannelNames = Config.ReadCached(@"channels", new[] { @"lounge" });
+            Bot = context.Bot;
             UpdateConfigChannels();
+            Context = context;
         }
 
         public Channel DefaultChannel { get; private set; }
@@ -36,43 +40,49 @@ namespace SharpChat.Channels {
 
                 foreach(Channel channel in Channels) {
                     if(channelNames.Contains(channel.Name)) {
-                        UpdateConfigChannel(channel);
-                    } else {
-                        // Not in config == temporary
-                        channel.IsTemporary = true;
-                    }
+                        using IConfig config = Config.ScopeTo($@"channels:{channel.Name}");
+                        bool autoJoin = config.ReadValue(@"autoJoin", DefaultChannel == null || DefaultChannel == channel);
+                        string password = null;
+                        int? minRank = null;
+                        uint? maxCapacity = null;
+
+                        if(!autoJoin) {
+                            password = config.ReadValue(@"password", string.Empty);
+                            if(string.IsNullOrEmpty(password))
+                                password = null;
+
+                            minRank = config.SafeReadValue(@"minRank", 0);
+                            maxCapacity = config.SafeReadValue(@"maxCapacity", 0u);
+                        }
+
+                        Update(channel, null, false, minRank, password, autoJoin, maxCapacity);
+                    } else if(!channel.IsTemporary) // Not in config == temporary
+                        Update(channel, temporary: true);
                 }
 
                 foreach(string channelName in channelNames) {
                     if(Channels.Any(x => x.Name == channelName))
                         continue;
-                    Channel channel = new Channel(channelName);
-                    UpdateConfigChannel(channel);
-                    Add(channel);
+                    using IConfig config = Config.ScopeTo($@"channels:{channelName}");
+                    bool autoJoin = config.ReadValue(@"autoJoin", DefaultChannel == null || DefaultChannel.Name == channelName);
+                    string password = null;
+                    int minRank = 0;
+                    uint maxCapacity = 0;
+
+                    if(!autoJoin) {
+                        password = config.ReadValue(@"password", string.Empty);
+                        if(string.IsNullOrEmpty(password))
+                            password = null;
+
+                        minRank = config.SafeReadValue(@"minRank", 0);
+                        maxCapacity = config.SafeReadValue(@"maxCapacity", 0u);
+                    }
+
+                    Create(Bot, channelName, false, minRank, password, autoJoin, maxCapacity);
                 }
 
                 if(DefaultChannel == null || DefaultChannel.IsTemporary || !channelNames.Contains(DefaultChannel.Name))
                     DefaultChannel = Channels.FirstOrDefault(c => !c.IsTemporary && c.AutoJoin);
-            }
-        }
-
-        private void UpdateConfigChannel(Channel channel) {
-            IConfig config = Config.ScopeTo($@"channels:{channel.Name}");
-
-            // If we're here, the channel is listed in the config which implicitly means it's not temporary
-            channel.IsTemporary = false;
-
-            channel.AutoJoin = config.ReadValue(@"autoJoin", DefaultChannel == null || DefaultChannel == channel);
-            if(channel.AutoJoin) {
-                if(DefaultChannel == null)
-                    DefaultChannel = channel;
-            } else { // autojoin channels cannot have a minimum rank or password
-                string password = config.ReadValue(@"password", string.Empty);
-                if(!string.IsNullOrWhiteSpace(password))
-                    channel.Password = password;
-
-                channel.MinimumRank = config.SafeReadValue(@"minRank", 0);
-                channel.MaxCapacity = config.SafeReadValue(@"maxCapacity", 0u);
             }
         }
 
@@ -93,16 +103,20 @@ namespace SharpChat.Channels {
                     DefaultChannel = channel;
 
                 // Broadcast creation of channel
-                foreach(ChatUser user in Context.Users.OfRank(channel.MinimumRank))
-                    user.SendPacket(new ChannelCreatePacket(channel));
+                if(Context != null)
+                    foreach(ChatUser user in Context.Users.OfRank(channel.MinimumRank))
+                        user.SendPacket(new ChannelCreatePacket(channel));
             }
         }
 
-        public void Remove(Channel channel) {
+        public void Remove(Channel channel, IUser user = null) {
             if(channel == null || channel == DefaultChannel)
                 return;
 
             lock(Sync) {
+                // Broadcast death
+                Context.HandleEvent(new ChannelRemoveEvent(channel, user ?? Context.Bot));
+
                 // Remove channel from the listing
                 Channels.Remove(channel);
 
@@ -113,8 +127,8 @@ namespace SharpChat.Channels {
                 //}
 
                 // Broadcast deletion of channel
-                foreach(ChatUser user in Context.Users.OfRank(channel.MinimumRank))
-                    user.SendPacket(new ChannelDeletePacket(channel));
+                foreach(ChatUser u in Context.Users.OfRank(channel.MinimumRank))
+                    u.SendPacket(new ChannelDeletePacket(channel));
             }
         }
 
@@ -128,11 +142,22 @@ namespace SharpChat.Channels {
         }
 
         public void HandleEvent(IEvent evt) {
-            //
+            if(evt is not IChannelEvent chanEvt)
+                return;
+
+            Get(chanEvt.Target)?.HandleEvent(chanEvt);
         }
 
-        // Should be replaced by an event
-        public void Update(Channel channel, string name = null, bool? temporary = null, int? rank = null, string password = null) {
+        public Channel Create(IUser owner, string name, bool temp = true, int minRank = 0, string password = null, bool autoJoin = false, uint maxCapacity = 0) {
+            Channel channel = new Channel(name, temp, minRank, password, autoJoin, maxCapacity, owner);
+            Add(channel);
+
+            Context?.HandleEvent(new ChannelCreateEvent(Context, channel));
+
+            return channel;
+        }
+
+        public void Update(Channel channel, string name = null, bool? temporary = null, int? minRank = null, string password = null, bool? autoJoin = null, uint? maxCapacity = null) {
             if(channel == null)
                 throw new ArgumentNullException(nameof(channel));
             if(!Channels.Contains(channel))
@@ -148,20 +173,12 @@ namespace SharpChat.Channels {
                         throw new ChannelInvalidNameException();
                     if(Get(name) != null)
                         throw new ChannelExistException();
-
-                    //channel.Name = name;
                 }
 
-                if(temporary.HasValue)
-                    channel.IsTemporary = temporary.Value;
-
-                if(rank.HasValue)
-                    channel.MinimumRank = rank.Value;
-
-                if(password != null)
-                    channel.Password = password;
+                Context.HandleEvent(new ChannelUpdateEvent(channel, Context.Bot, name, temporary, minRank, password, autoJoin, maxCapacity));
 
                 // Users that no longer have access to the channel/gained access to the channel by the hierarchy change should receive delete and create packets respectively
+                // TODO: should be moved to the usermanager probably
                 foreach(ChatUser user in Context.Users.OfRank(channel.MinimumRank)) {
                     user.SendPacket(new ChannelUpdatePacket(prevName, channel));
 

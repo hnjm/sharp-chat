@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 namespace SharpChat.Commands {
-    public class DeleteChannelCommand : IChatCommand {
+    public class DeleteChannelCommand : ICommand {
         private IUser Sender { get; }
 
         public DeleteChannelCommand(IUser sender) {
@@ -17,7 +17,7 @@ namespace SharpChat.Commands {
         public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == @"delchan" || (name == @"delete" && args.ElementAtOrDefault(1)?.All(char.IsDigit) == false);
 
-        public IMessageEvent DispatchCommand(IChatCommandContext ctx) {
+        public IMessageEvent DispatchCommand(ICommandContext ctx) {
             string channelName = string.Join('_', ctx.Args.Skip(1));
 
             if(string.IsNullOrWhiteSpace(channelName))

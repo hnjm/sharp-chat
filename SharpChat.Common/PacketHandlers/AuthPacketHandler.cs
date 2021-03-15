@@ -88,7 +88,7 @@ namespace SharpChat.PacketHandlers {
 
                         if(!chan.HasUser(user)) {
                             chan.SendPacket(new UserConnectPacket(DateTimeOffset.Now, user));
-                            ctx.Chat.HandleEvent(new UserConnectEvent(DateTimeOffset.Now, user, chan));
+                            ctx.Chat.HandleEvent(new UserConnectEvent(chan, user));
                         }
 
                         sess.SendPacket(new AuthSuccessPacket(user, chan, sess, Version, ctx.Chat.MessageTextMaxLength));

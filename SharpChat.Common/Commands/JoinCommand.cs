@@ -5,11 +5,11 @@ using System.Collections.Generic;
 using System.Linq;
 
 namespace SharpChat.Commands {
-    public class JoinCommand : IChatCommand {
+    public class JoinCommand : ICommand {
         public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == @"join";
 
-        public IMessageEvent DispatchCommand(IChatCommandContext ctx) {
+        public IMessageEvent DispatchCommand(ICommandContext ctx) {
             string channelName = ctx.Args.ElementAtOrDefault(1);
 
             // no error, apparently
