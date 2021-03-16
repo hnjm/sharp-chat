@@ -16,7 +16,7 @@ namespace SharpChat.Commands {
         public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == @"password" || name == @"pwd";
 
-        public IMessageEvent DispatchCommand(ICommandContext ctx) {
+        public MessageCreateEvent DispatchCommand(ICommandContext ctx) {
             if(!ctx.User.Can(UserPermissions.SetChannelPassword) || ctx.Channel.Owner != ctx.User)
                 throw new CommandNotAllowedException(ctx.Args);
 

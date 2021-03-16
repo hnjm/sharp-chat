@@ -17,7 +17,7 @@ namespace SharpChat.Commands {
         public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == NAME;
 
-        public IMessageEvent DispatchCommand(ICommandContext ctx) {
+        public MessageCreateEvent DispatchCommand(ICommandContext ctx) {
             bool setOthersNick = ctx.User.Can(UserPermissions.SetOthersNickname);
 
             if(!setOthersNick && !ctx.User.Can(UserPermissions.SetOwnNickname))

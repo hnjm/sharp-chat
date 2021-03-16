@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace SharpChat.Database {
@@ -50,8 +51,10 @@ namespace SharpChat.Database {
 
         public bool SupportsJson
             => Backend.SupportsJson;
-        public string JsonSet(string path, string name, string value)
-            => Backend.JsonSet(path, name, value);
+        public string JsonSet(string field, string path, string value)
+            => Backend.JsonSet(field, path, value);
+        public string JsonSet(string field, IDictionary<string, object> values)
+            => Backend.JsonSet(field, values);
 
         public bool SupportsAlterTableCollate
             => Backend.SupportsAlterTableCollate;

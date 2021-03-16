@@ -1,6 +1,7 @@
 ﻿using SharpChat.Database;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
 
 namespace SharpChat.Events.Storage {
@@ -18,6 +19,11 @@ namespace SharpChat.Events.Storage {
         }
 
         public void HandleEvent(IEvent evt) {
+            if(evt is IDeleteEvent delEvt)
+                RemoveEvent(delEvt.TargetId);
+            if(evt is IUpdateEvent updEvt)
+                UpdateEvent(updEvt);
+
             Wrapper.RunCommand(
                 @"INSERT INTO `sqc_events` (`event_id`, `event_created`, `event_type`, `event_target`, `event_data`"
                 + @", `event_sender`, `event_sender_name`, `event_sender_colour`, `event_sender_rank`, `event_sender_nick`, `event_sender_perms`)"
@@ -37,11 +43,57 @@ namespace SharpChat.Events.Storage {
             );
         }
 
-        public bool RemoveEvent(IEvent evt) {
-            return Wrapper.RunCommand(
+        private bool RemoveEvent(long eventId)
+            => Wrapper.RunCommand(
                 @"UPDATE IGNORE `sqc_events` SET `event_deleted` = " + Wrapper.DateTimeNow() + @" WHERE `event_id` = @id AND `event_deleted` IS NULL",
-                Wrapper.CreateParam(@"id", evt.EventId)
+                Wrapper.CreateParam(@"id", eventId)
             ) > 0;
+
+        public bool RemoveEvent(IEvent evt)
+            => RemoveEvent(evt.EventId);
+
+        public bool UpdateEvent(IUpdateEvent updEvt) {
+            IDictionary<string, object> values = updEvt.GetUpdatedFields();
+            if(!values.Any())
+                return false;
+
+            if(Wrapper.SupportsJson) {
+                List<IDatabaseParameter> args = new List<IDatabaseParameter> {
+                    Wrapper.CreateParam(@"id", updEvt.TargetId),
+                };
+                foreach(KeyValuePair<string, object> value in values)
+                    args.Add(Wrapper.CreateParam($@"json_{value.Key}", value.Value));
+
+                return Wrapper.RunCommand(
+                    @"UPDATE IGNORE `sqc_events` SET `event_data` = "
+                    + Wrapper.JsonSet(@"`event_data`", values)
+                    + @" WHERE `event_id` = @id",
+                    args.ToArray()
+                ) > 0;
+            } else {
+                Dictionary<string, object> data = null;
+                
+                Wrapper.RunQuery(
+                    @"SELECT `event_data` FROM `sqc_events` WHERE `event_id` = @id LIMIT 1",
+                    reader => {
+                        if(reader.Next())
+                            data = JsonSerializer.Deserialize<Dictionary<string, object>>(reader.ReadString(0));
+                    },
+                    Wrapper.CreateParam(@"@id", updEvt.TargetId)
+                );
+
+                if(data == null)
+                    return false;
+
+                foreach(KeyValuePair<string, object> value in values)
+                    data[value.Key] = value.Value;
+
+                return Wrapper.RunCommand(
+                    @"UPDATE IGNORE `sqc_events` SET `event_data` = @data WHERE `event_id` = @id",
+                    Wrapper.CreateParam(@"@data", JsonSerializer.Serialize(data)),
+                    Wrapper.CreateParam(@"@id", updEvt.TargetId)
+                ) > 0;
+            }
         }
 
         public IEvent GetEvent(long seqId) {
@@ -52,7 +104,8 @@ namespace SharpChat.Events.Storage {
                 + @", `event_sender`, `event_sender_name`, `event_sender_colour`, `event_sender_rank`, `event_sender_nick`, `event_sender_perms`"
                 + @", " + Wrapper.ToUnixTime(@"`event_created`") + @" AS `event_created`"
                 + @" FROM `sqc_events`"
-                + @" WHERE `event_id` = @id",
+                + @" WHERE `event_id` = @id"
+                + @" LIMIT 1",
                 reader => {
                     if(reader.Next())
                         evt = ReadEvent(reader);

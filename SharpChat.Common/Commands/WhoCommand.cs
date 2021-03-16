@@ -33,7 +33,7 @@ namespace SharpChat.Commands {
             ctx.Session.SendPacket(new UserListResponsePacket(sender, whoChan, ctx.User, whoChan.GetUsers()));
         }
 
-        public IMessageEvent DispatchCommand(ICommandContext ctx) {
+        public MessageCreateEvent DispatchCommand(ICommandContext ctx) {
             string channelName = ctx.Args.ElementAtOrDefault(1) ?? string.Empty;
 
             if(string.IsNullOrEmpty(channelName))

@@ -9,7 +9,7 @@ namespace SharpChat.Commands {
         public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == @"join";
 
-        public IMessageEvent DispatchCommand(ICommandContext ctx) {
+        public MessageCreateEvent DispatchCommand(ICommandContext ctx) {
             string channelName = ctx.Args.ElementAtOrDefault(1);
 
             // no error, apparently

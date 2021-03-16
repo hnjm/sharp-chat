@@ -16,7 +16,7 @@ namespace SharpChat.Commands {
         public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == @"silence";
 
-        public IMessageEvent DispatchCommand(ICommandContext ctx) {
+        public MessageCreateEvent DispatchCommand(ICommandContext ctx) {
             if(!ctx.User.Can(UserPermissions.SilenceUser))
                 throw new CommandNotAllowedException(ctx.Args);
 

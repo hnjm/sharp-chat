@@ -17,7 +17,7 @@ namespace SharpChat.Commands {
             Storage = storage ?? throw new ArgumentNullException(nameof(storage));
         }
 
-        public IMessageEvent DispatchCommand(ICommandContext ctx) {
+        public MessageCreateEvent DispatchCommand(ICommandContext ctx) {
             bool deleteAnyMessage = ctx.User.Can(UserPermissions.DeleteAnyMessage);
 
             if(!deleteAnyMessage && !ctx.User.Can(UserPermissions.DeleteOwnMessage))
@@ -28,7 +28,7 @@ namespace SharpChat.Commands {
 
             IEvent delEvent = Storage.GetEvent(sequenceId);
 
-            if(delEvent is not IMessageEvent || delEvent.Sender.Rank > ctx.User.Rank
+            if(delEvent is not MessageCreateEvent || delEvent.Sender.Rank > ctx.User.Rank
                 || (!deleteAnyMessage && delEvent.Sender.UserId != ctx.User.UserId))
                 throw new MessageNotFoundCommandException();
 

@@ -25,7 +25,7 @@ namespace SharpChat.Packets {
             sb.Append(IServerPacket.SEPARATOR);
 
             switch (Event) {
-                case IMessageEvent msg:
+                case MessageCreateEvent msg:
                     sb.Append(Event.Sender.Pack());
                     sb.Append(IServerPacket.SEPARATOR);
                     sb.Append(
@@ -69,7 +69,6 @@ namespace SharpChat.Packets {
                     break;
             }
 
-
             sb.Append(IServerPacket.SEPARATOR);
             sb.Append(Event.EventId < 1 ? SequenceId : Event.EventId);
             sb.Append(IServerPacket.SEPARATOR);
@@ -77,8 +76,8 @@ namespace SharpChat.Packets {
             sb.Append(IServerPacket.SEPARATOR);
             sb.AppendFormat(
                 "1{0}0{1}{2}",
-                Event is IMessageEvent evt1 && evt1.IsAction ? '1' : '0',
-                Event is IMessageEvent evt2 && evt2.IsAction ? '0' : '1',
+                Event is MessageCreateEvent evt1 && evt1.IsAction ? '1' : '0',
+                Event is MessageCreateEvent evt2 && evt2.IsAction ? '0' : '1',
                 /*Event.Flags.HasFlag(EventFlags.Private)*/ false ? '1' : '0'
             );
 

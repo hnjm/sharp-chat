@@ -19,7 +19,7 @@ namespace SharpChat.Commands {
         public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == NAME;
 
-        public IMessageEvent DispatchCommand(ICommandContext ctx) {
+        public MessageCreateEvent DispatchCommand(ICommandContext ctx) {
             if(!ctx.User.Can(UserPermissions.CreateChannel))
                 throw new CommandNotAllowedException(NAME);
 

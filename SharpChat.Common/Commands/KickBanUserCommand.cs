@@ -9,7 +9,7 @@ namespace SharpChat.Commands {
         public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == @"kick" || name == @"ban";
 
-        public IMessageEvent DispatchCommand(ICommandContext ctx) {
+        public MessageCreateEvent DispatchCommand(ICommandContext ctx) {
             string commandName = ctx.Args.First();
             bool isBan = commandName == @"ban";
 

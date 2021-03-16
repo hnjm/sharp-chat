@@ -62,7 +62,7 @@ namespace SharpChat.PacketHandlers {
             Logger.Write($@"<{ctx.Session.Id} {ctx.User.UserName}> {text}");
 #endif
 
-            IMessageEvent message = null;
+            MessageCreateEvent message = null;
 
             if(text[0] == '/') {
                 try {
@@ -82,7 +82,7 @@ namespace SharpChat.PacketHandlers {
             channel.SendPacket(new ChatMessageAddPacket(message));
         }
 
-        public IMessageEvent HandleCommand(string message, ChatContext context, ChatUser user, Channel channel, Session session) {
+        public MessageCreateEvent HandleCommand(string message, ChatContext context, ChatUser user, Channel channel, Session session) {
             string[] parts = message[1..].Split(' ');
             string commandName = parts[0].Replace(@".", string.Empty).ToLowerInvariant();
 

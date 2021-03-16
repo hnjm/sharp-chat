@@ -17,7 +17,7 @@ namespace SharpChat.Commands {
         public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == @"ip" || name == @"whois";
 
-        public IMessageEvent DispatchCommand(ICommandContext ctx) {
+        public MessageCreateEvent DispatchCommand(ICommandContext ctx) {
             if(!ctx.User.Can(UserPermissions.SeeIPAddress))
                 throw new CommandNotAllowedException(ctx.Args);
 

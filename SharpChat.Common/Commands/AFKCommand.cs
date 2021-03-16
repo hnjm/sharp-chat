@@ -12,7 +12,7 @@ namespace SharpChat.Commands {
         public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == @"afk";
 
-        public IMessageEvent DispatchCommand(ICommandContext ctx) {
+        public MessageCreateEvent DispatchCommand(ICommandContext ctx) {
             string statusText = ctx.Args.ElementAtOrDefault(1);
             if(string.IsNullOrWhiteSpace(statusText))
                 statusText = DEFAULT;

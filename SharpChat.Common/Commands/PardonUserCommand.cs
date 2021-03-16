@@ -16,7 +16,7 @@ namespace SharpChat.Commands {
         public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == @"pardon" || name == @"unban";
 
-        public IMessageEvent DispatchCommand(ICommandContext ctx) {
+        public MessageCreateEvent DispatchCommand(ICommandContext ctx) {
             if(!ctx.User.Can(UserPermissions.BanUser | UserPermissions.KickUser))
                 throw new CommandNotAllowedException(ctx.Args);
 

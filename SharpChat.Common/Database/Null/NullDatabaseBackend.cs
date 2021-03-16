@@ -1,4 +1,5 @@
 ﻿using SharpChat.Configuration;
+using System.Collections.Generic;
 
 namespace SharpChat.Database.Null {
     [DatabaseBackend(@"null")]
@@ -50,6 +51,8 @@ namespace SharpChat.Database.Null {
 
         public bool SupportsJson => false;
         public string JsonSet(string path, string name, string value)
+            => string.Empty;
+        public string JsonSet(string field, IDictionary<string, object> values)
             => string.Empty;
 
         public bool SupportsAlterTableCollate => true;

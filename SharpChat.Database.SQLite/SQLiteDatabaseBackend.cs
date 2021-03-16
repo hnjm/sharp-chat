@@ -1,5 +1,6 @@
 ﻿using SharpChat.Configuration;
 using System;
+using System.Collections.Generic;
 using System.Data.SQLite;
 
 namespace SharpChat.Database.SQLite {
@@ -63,7 +64,9 @@ namespace SharpChat.Database.SQLite {
             => @"strftime('%s', 'now')";
 
         public bool SupportsJson => false;
-        public string JsonSet(string path, string name, string value)
+        public string JsonSet(string field, string path, string value)
+            => string.Empty;
+        public string JsonSet(string field, IDictionary<string, object> values)
             => string.Empty;
 
         public string Concat(params string[] args)

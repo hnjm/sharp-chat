@@ -1,5 +1,7 @@
 ﻿using MySql.Data.MySqlClient;
 using SharpChat.Configuration;
+using System.Collections.Generic;
+using System.Text;
 
 namespace SharpChat.Database.MariaDB {
     [DatabaseBackend(@"mariadb")]
@@ -70,6 +72,14 @@ namespace SharpChat.Database.MariaDB {
         public bool SupportsJson => true;
         public string JsonSet(string field, string path, string value)
             => string.Format(@"JSON_SET({0}, '{1}', {2})", field, path, value);
+        public string JsonSet(string field, IDictionary<string, object> values) {
+            StringBuilder sb = new StringBuilder();
+            sb.AppendFormat(@"JSON_SET({0}");
+            foreach(KeyValuePair<string, object> value in values)
+                sb.AppendFormat(@", '{0}', @json_{0}", value.Key);
+            sb.Append(')');
+            return sb.ToString();
+        }
 
         public string Concat(params string[] values)
             => string.Format(@"CONCAT({0})", string.Join(@", ", values));

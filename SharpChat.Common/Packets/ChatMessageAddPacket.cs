@@ -18,7 +18,7 @@ namespace SharpChat.Packets {
             IsAction = isAction;
         }
 
-        public ChatMessageAddPacket(IMessageEvent msg)
+        public ChatMessageAddPacket(MessageCreateEvent msg)
             : this(msg.EventId, msg.DateTime, msg.Sender, msg.Text, msg.Target, msg.IsAction) { }
 
         public ChatMessageAddPacket(

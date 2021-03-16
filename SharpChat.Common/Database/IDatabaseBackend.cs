@@ -1,4 +1,6 @@
-﻿namespace SharpChat.Database {
+﻿using System.Collections.Generic;
+
+namespace SharpChat.Database {
     public interface IDatabaseBackend {
         IDatabaseConnection CreateConnection();
 
@@ -24,7 +26,8 @@
         string ToLower(string param);
 
         bool SupportsJson { get; }
-        string JsonSet(string path, string name, string value);
+        string JsonSet(string field, string path, string value);
+        string JsonSet(string field, IDictionary<string, object> values);
 
         bool SupportsAlterTableCollate { get; }
 
