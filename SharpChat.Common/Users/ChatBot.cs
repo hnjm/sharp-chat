@@ -14,6 +14,9 @@
         public bool Can(UserPermissions perm)
             => true;
 
+        public bool Equals(IUser other)
+            => other is ChatBot;
+
         public string Pack() // permission part is empty for bot apparently
             => string.Join(IServerPacket.SEPARATOR, UserId, DisplayName, Colour, string.Empty);
 

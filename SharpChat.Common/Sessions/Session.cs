@@ -10,15 +10,17 @@ namespace SharpChat.Sessions {
     public class Session : IDisposable, IServerPacketTarget {
         public const int ID_LENGTH = 32;
 
-        public IConnection Connection { get; private set; }
+        private IConnection Connection { get; set; }
 
         public string Id { get; private set; }
         public DateTimeOffset LastPing { get; set; }
-        public ChatUser User { get; set; }
+        public IUser User { get; set; }
 
         public TimeSpan IdleTime => LastPing - DateTimeOffset.Now;
 
-        public bool HasConnection
+        public DateTimeOffset LastActivity { get; private set; } = DateTimeOffset.MinValue;
+
+        public bool IsConnected
             => Connection != null;
         public bool HasUser
             => User != null;
@@ -29,23 +31,26 @@ namespace SharpChat.Sessions {
         private object Sync { get; } = new object();
         private Queue<IServerPacket> PacketQueue { get; } = new Queue<IServerPacket>();
 
-        public Channel LastChannel { get; set; }
+        public IChannel LastChannel { get; set; }
 
         public ClientCapabilities Capabilities { get; set; }
 
-        public Session(IConnection conn, IHasSessions user) {
+        public Session(IConnection conn, IUser user) {
             Id = RNG.NextString(ID_LENGTH);
             BumpPing();
             Connection = conn;
-            user.AddSession(this);
+            User = user;
         }
+
+        public bool HasConnection(IConnection conn)
+            => Connection == conn;
 
         public bool HasCapability(ClientCapabilities capability)
             => (Capabilities & capability) == capability;
 
         public void SendPacket(IServerPacket packet) {
             lock(Sync) {
-                if(!HasConnection) {
+                if(!IsConnected) {
                     PacketQueue.Enqueue(packet);
                     return;
                 }
@@ -53,6 +58,7 @@ namespace SharpChat.Sessions {
                 if(!Connection.IsAvailable)
                     return;
 
+                LastActivity = DateTimeOffset.Now;
                 Connection.Send(packet.Pack());
             }
         }
@@ -77,7 +83,7 @@ namespace SharpChat.Sessions {
         public void BumpPing()
             => LastPing = DateTimeOffset.Now;
 
-        public void ForceChannel(Channel channel = null) {
+        public void ForceChannel(IChannel channel = null) {
             if(channel != null)
                 LastChannel = channel;
             if(LastChannel == null)
@@ -100,7 +106,6 @@ namespace SharpChat.Sessions {
             if (IsDisposed)
                 return;
             IsDisposed = true;
-            User.RemoveSession(this);
             Connection.Dispose();
             LastPing = DateTimeOffset.MinValue;
         }

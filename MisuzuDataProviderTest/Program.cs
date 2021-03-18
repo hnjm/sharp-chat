@@ -49,7 +49,7 @@ namespace MisuzuDataProviderTest {
                     authRes = res;
                     WriteLine(@"Auth success!");
                     WriteLine($@" User ID:   {authRes.UserId}");
-                    WriteLine($@" Username:  {authRes.Username}");
+                    WriteLine($@" Username:  {authRes.UserName}");
                     WriteLine($@" Colour:    {authRes.Colour.Raw:X8}");
                     WriteLine($@" Hierarchy: {authRes.Rank}");
                     WriteLine($@" Silenced:  {authRes.SilencedUntil}");
@@ -69,7 +69,7 @@ namespace MisuzuDataProviderTest {
             WriteLine(@"Bumping last seen...");
             mre.Reset();
             dataProvider.UserBumpClient.SubmitBumpUsers(
-                new[] { new ChatUser(authRes) },
+                new[] { new User(authRes) },
                 onSuccess: () => mre.Set(),
                 onFailure: ex => {
                     WriteLine($@"Bump failed: {ex.Message}");

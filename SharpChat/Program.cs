@@ -101,7 +101,7 @@ namespace SharpChat {
 
             sw.WriteLine(@"# General Configuration");
             sw.WriteLine($@"#chat:port               {DEFAULT_PORT}");
-            sw.WriteLine($@"#chat:messages:maxLength {ChatContext.DEFAULT_MSG_LENGTH_MAX}");
+            sw.WriteLine($@"#chat:messages:maxLength {Messages.MessageManager.DEFAULT_LENGTH_MAX}");
             sw.WriteLine($@"#chat:sessions:timeOut   {Sessions.SessionManager.DEFAULT_TIMEOUT}");
             sw.WriteLine($@"#chat:sessions:maxCount  {Sessions.SessionManager.DEFAULT_MAX_COUNT}");
             sw.WriteLine();

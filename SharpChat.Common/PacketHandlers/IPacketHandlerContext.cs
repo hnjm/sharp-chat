@@ -10,7 +10,7 @@ namespace SharpChat.PacketHandlers {
         ChatContext Chat { get; }
         IConnection Connection { get; }
         Session Session { get; }
-        ChatUser User { get; }
+        IUser User { get; }
 
         bool HasSession { get; }
         bool HasUser { get; }
@@ -22,7 +22,7 @@ namespace SharpChat.PacketHandlers {
         public Session Session { get; }
         public IConnection Connection { get; }
 
-        public ChatUser User => Session.User;
+        public IUser User => Session.User;
 
         public bool HasSession => Session != null;
         public bool HasUser => HasSession;

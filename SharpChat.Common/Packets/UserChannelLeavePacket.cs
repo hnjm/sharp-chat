@@ -5,9 +5,9 @@ using System.Text;
 
 namespace SharpChat.Packets {
     public class UserChannelLeavePacket : ServerPacketBase {
-        public ChatUser User { get; private set; }
+        public IUser User { get; private set; }
 
-        public UserChannelLeavePacket(ChatUser user) {
+        public UserChannelLeavePacket(IUser user) {
             User = user ?? throw new ArgumentNullException(nameof(user));
         }
 

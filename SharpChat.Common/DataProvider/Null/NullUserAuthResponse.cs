@@ -5,7 +5,7 @@ using System;
 namespace SharpChat.DataProvider.Null {
     public class NullUserAuthResponse : IUserAuthResponse {
         public long UserId { get; }
-        public string Username { get; }
+        public string UserName { get; }
         public int Rank { get; }
         public Colour Colour { get; }
         public UserPermissions Permissions { get; }
@@ -13,7 +13,7 @@ namespace SharpChat.DataProvider.Null {
 
         public NullUserAuthResponse(UserAuthRequest uar) {
             UserId = uar.UserId;
-            Username = $@"Misaka-{uar.UserId}";
+            UserName = $@"Misaka-{uar.UserId}";
             Rank = (int)(uar.UserId % 10);
             Random rng = new Random((int)uar.UserId);
             Colour = new Colour(rng.Next());

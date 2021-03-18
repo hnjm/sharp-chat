@@ -1,5 +1,7 @@
-﻿namespace SharpChat.Users {
-    public interface IUser {
+﻿using System;
+
+namespace SharpChat.Users {
+    public interface IUser : IEquatable<IUser> {
         /// <summary>
         /// Unique ID of the user
         /// </summary>

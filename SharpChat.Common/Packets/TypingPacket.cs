@@ -4,10 +4,10 @@ using System.Text;
 
 namespace SharpChat.Packets {
     public class TypingPacket : ServerPacketBase {
-        public Channel Channel { get; }
-        public ChannelTyping TypingInfo { get; }
+        public IChannel Channel { get; }
+        public object TypingInfo { get; }
 
-        public TypingPacket(Channel channel, ChannelTyping typingInfo) {
+        public TypingPacket(IChannel channel, object typingInfo) {
             Channel = channel ?? throw new ArgumentNullException(nameof(channel));
             TypingInfo = typingInfo ?? throw new ArgumentNullException(nameof(typingInfo));
         }
@@ -19,9 +19,9 @@ namespace SharpChat.Packets {
             sb.Append(IServerPacket.SEPARATOR);
             sb.Append(Channel.Name);
             sb.Append(IServerPacket.SEPARATOR);
-            sb.Append(TypingInfo.User.UserId);
+            //sb.Append(TypingInfo.User.UserId);
             sb.Append(IServerPacket.SEPARATOR);
-            sb.Append(TypingInfo.Started.ToUnixTimeSeconds());
+            //sb.Append(TypingInfo.Started.ToUnixTimeSeconds());
 
             return sb.ToString();
         }

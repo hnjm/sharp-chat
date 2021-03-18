@@ -1,5 +1,5 @@
 ﻿namespace SharpChat.Events {
-    public interface IEventTarget : IEventHandler {
+    public interface IEventTarget {
         string TargetName { get; }
     }
 }

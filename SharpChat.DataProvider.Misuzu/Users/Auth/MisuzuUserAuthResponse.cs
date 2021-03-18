@@ -15,7 +15,7 @@ namespace SharpChat.DataProvider.Misuzu.Users.Auth {
         public long UserId { get; set; }
 
         [JsonPropertyName(@"username")]
-        public string Username { get; set; }
+        public string UserName { get; set; }
 
         [JsonPropertyName(@"colour_raw")]
         public int ColourRaw { get; set; }

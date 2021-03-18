@@ -6,7 +6,7 @@ namespace SharpChat.Packets {
         public ChannelCreateResponsePacket(IUser sender, string channelName)
             : base(sender, BotArguments.Notice(@"crchan", channelName)) { }
 
-        public ChannelCreateResponsePacket(IUser sender, Channel channel)
+        public ChannelCreateResponsePacket(IUser sender, IChannel channel)
             : this(sender, channel.Name) { }
     }
 }

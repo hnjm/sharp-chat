@@ -5,9 +5,9 @@ using System.Text;
 namespace SharpChat.Packets {
     public class UserConnectPacket : ServerPacketBase {
         public DateTimeOffset Joined { get; private set; }
-        public ChatUser User { get; private set; }
+        public IUser User { get; private set; }
 
-        public UserConnectPacket(DateTimeOffset joined, ChatUser user) {
+        public UserConnectPacket(DateTimeOffset joined, IUser user) {
             Joined = joined;
             User = user ?? throw new ArgumentNullException(nameof(user));
         }

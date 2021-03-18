@@ -21,17 +21,18 @@ namespace SharpChat.Commands {
                 throw new CommandNotAllowedException(ctx.Args);
 
             string userName = ctx.Args.ElementAtOrDefault(1);
-            ChatUser user;
+            IUser user;
             if(string.IsNullOrEmpty(userName) || (user = ctx.Chat.Users.Get(userName)) == null)
                 throw new UserNotFoundCommandException(userName);
 
             if(user.Rank >= ctx.User.Rank)
                 throw new RevokeSilenceNotAllowedCommandException();
 
-            if(!user.IsSilenced)
-                throw new NotSilencedCommandException();
+            //if(!user.IsSilenced)
+            //    throw new NotSilencedCommandException();
 
-            user.SilencedUntil = DateTimeOffset.MinValue;
+            //ctx.Chat.Users.RevokeSilence(user);
+
             user.SendPacket(new SilenceRevokeNoticePacket(Sender));
             ctx.Session.SendPacket(new SilenceRevokeResponsePacket(Sender, user));
             return null;

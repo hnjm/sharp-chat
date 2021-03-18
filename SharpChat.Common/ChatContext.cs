@@ -4,6 +4,7 @@ using SharpChat.Database;
 using SharpChat.DataProvider;
 using SharpChat.Events;
 using SharpChat.Events.Storage;
+using SharpChat.Messages;
 using SharpChat.Packets;
 using SharpChat.RateLimiting;
 using SharpChat.Sessions;
@@ -11,10 +12,12 @@ using SharpChat.Users;
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Linq;
 
 namespace SharpChat {
-    public class ChatContext : IDisposable, IEventTarget, IServerPacketTarget {
+    public class ChatContext : IDisposable, IEventDispatcher, IEventTarget, IServerPacketTarget {
         public ChannelManager Channels { get; }
+        public MessageManager Messages { get; }
         public UserManager Users { get; }
         public SessionManager Sessions { get; }
         public RateLimiter RateLimiter { get; }
@@ -25,14 +28,11 @@ namespace SharpChat {
         public ChatBot Bot { get; } = new ChatBot(); 
 
         private Timer BumpTimer { get; }
-
-        public const int DEFAULT_MSG_LENGTH_MAX = 2100;
-        private CachedValue<int> MessageTextMaxLengthValue { get; }
-        public int MessageTextMaxLength => MessageTextMaxLengthValue;
+        private readonly object Sync = new object();
 
         public string TargetName => @"~";
 
-        public ChatContext(IConfig config, IDatabaseBackend databaseBackend, IDataProvider dataProvider) {
+        public ChatContext(Guid serverId, IConfig config, IDatabaseBackend databaseBackend, IDataProvider dataProvider) {
             if(config == null)
                 throw new ArgumentNullException(nameof(config));
 
@@ -43,17 +43,16 @@ namespace SharpChat {
             Event.RegisterConstructors(Events);
 
             DataProvider = dataProvider ?? throw new ArgumentNullException(nameof(dataProvider));
-            Users = new UserManager(this);
-            Channels = new ChannelManager(this, config);
-            Sessions = new SessionManager(config.ScopeTo(@"sessions"));
+            Sessions = new SessionManager(serverId, config.ScopeTo(@"sessions"));
+            Users = new UserManager(this, this, Sessions);
+            Channels = new ChannelManager(this, this, config, Bot, Users);
+            Messages = new MessageManager(this, this, Events, config.ScopeTo(@"messages"));
             RateLimiter = new RateLimiter(config.ScopeTo(@"flood"));
-
-            MessageTextMaxLengthValue = config.ReadCached(@"messages:maxLength", DEFAULT_MSG_LENGTH_MAX);
 
             // Should probably not rely on Timers in the future
             BumpTimer = new Timer(e => {
                 Logger.Write(@"Bumping last online times...");
-                DataProvider.UserBumpClient.SubmitBumpUsers(Users.WithActiveConnections());
+                DataProvider.UserBumpClient.SubmitBumpUsers(Sessions, Users.WithActiveConnections());
             }, null, TimeSpan.Zero, TimeSpan.FromMinutes(1));
         }
 
@@ -63,7 +62,7 @@ namespace SharpChat {
         }
 
         public void BanUser(
-            ChatUser user,
+            IUser user,
             TimeSpan duration,
             UserDisconnectReason reason = UserDisconnectReason.Kicked,
             bool isPermanent = false,
@@ -89,15 +88,13 @@ namespace SharpChat {
             user.SendPacket(packet);
             user.Close();
 
-            foreach(Channel chan in user.GetChannels())
+            foreach(IChannel chan in user.GetChannels())
                 UserLeave(chan, user, reason);
         }
 
-        public void UserLeave(Channel chan, ChatUser user, UserDisconnectReason reason = UserDisconnectReason.Leave) {
-            user.Status = UserStatus.Offline;
-
+        public void UserLeave(IChannel chan, IUser user, UserDisconnectReason reason = UserDisconnectReason.Leave) {
             if (chan == null) {
-                foreach(Channel channel in user.GetChannels()) {
+                foreach(IChannel channel in user.GetChannels()) {
                     UserLeave(channel, user, reason);
                 }
                 return;
@@ -108,16 +105,16 @@ namespace SharpChat {
 
             chan.UserLeave(user);
             chan.SendPacket(new UserDisconnectPacket(DateTimeOffset.Now, user, reason));
-            HandleEvent(new UserDisconnectEvent(chan, user, reason));
+            Users.Disconnect(user, reason);
         }
 
-        public void JoinChannel(ChatUser user, Channel channel) {
+        public void JoinChannel(IUser user, IChannel channel) {
             // These two should be combined into just an event broadcast
             channel.SendPacket(new UserChannelJoinPacket(user));
-            HandleEvent(new ChannelJoinEvent(channel, user));
+            DispatchEvent(this, new ChannelJoinEvent(channel, user));
 
             user.SendPacket(new ContextClearPacket(channel, ContextClearMode.MessagesUsers));
-            user.SendPacket(new ContextUsersPacket(channel.GetUsers(new[] { user })));
+            channel.GetUsers(users => user.SendPacket(new ContextUsersPacket(users.Except(new[] { user }).OrderByDescending(u => u.Rank))));
             IEnumerable<IEvent> msgs = Events.GetEventsForTarget(channel);
             foreach(IEvent msg in msgs)
                 user.SendPacket(new ContextMessagePacket(msg));
@@ -126,18 +123,18 @@ namespace SharpChat {
             user.ForceChannel(channel);
         }
 
-        public void LeaveChannel(ChatUser user, Channel channel) {
+        public void LeaveChannel(IUser user, IChannel channel) {
             channel.UserLeave(user);
 
             // These two should be combined into just an event broadcast
             channel.SendPacket(new UserChannelLeavePacket(user));
-            HandleEvent(new ChannelLeaveEvent(channel, user));
+            DispatchEvent(this, new ChannelLeaveEvent(channel, user));
 
             if(channel.IsTemporary && channel.Owner == user)
                 Channels.Remove(channel);
         }
 
-        public void SwitchChannel(Session session, Channel chan) {
+        public void SwitchChannel(Session session, IChannel chan) {
             if(session.LastChannel != null)
                 LeaveChannel(session.User, session.LastChannel);
             JoinChannel(session.User, chan);
@@ -145,20 +142,31 @@ namespace SharpChat {
 
         public void PruneSessionlessUsers() {
             lock(Users)
-                foreach (ChatUser user in Users.All())
+                foreach(IUser user in Users.All())
                     if(Sessions.GetSessionCount(user) < 1)
                         UserLeave(null, user, UserDisconnectReason.TimeOut);
         }
 
+        // Obsolete?
         public void SendPacket(IServerPacket packet) {
-            foreach (ChatUser user in Users.All())
-                user.SendPacket(packet);
+            foreach(IUser user in Users.All())
+                if(user is IServerPacketTarget spt)
+                    spt.SendPacket(packet);
         }
 
-        public void HandleEvent(IEvent evt) {
-            Events.HandleEvent(evt);
-            Channels.HandleEvent(evt);
-            Users.HandleEvent(evt);
+        public void DispatchEvent(object sender, IEvent evt) {
+            if(evt == null)
+                throw new ArgumentNullException(nameof(evt));
+
+            lock(Sync) {
+                Logger.Debug($@"{evt.GetType()} dispatched.");
+
+                Events.HandleEvent(sender, evt);
+                Messages.HandleEvent(sender, evt);
+                Channels.HandleEvent(sender, evt);
+                Users.HandleEvent(sender, evt);
+                Sessions.HandleEvent(sender, evt);
+            }
         }
 
         private bool IsDisposed;

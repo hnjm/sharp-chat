@@ -6,6 +6,7 @@ using SharpChat.PacketHandlers;
 using SharpChat.Packets;
 using SharpChat.RateLimiting;
 using SharpChat.Sessions;
+using SharpChat.Users;
 using SharpChat.WebSocket;
 using System;
 using System.Collections.Generic;
@@ -22,6 +23,7 @@ namespace SharpChat {
 
         public const int DEFAULT_MAX_CONNECTIONS = 5;
 
+        public Guid ServerId { get; }
         private IConfig Config { get; }
         private IServer Server { get; }
         private ChatContext Context { get; }
@@ -33,13 +35,14 @@ namespace SharpChat {
         public ChatServer(IConfig config, IServer server, IDataProvider dataProvider, IDatabaseBackend databaseBackend) {
             Logger.Write("Starting Sock Chat server...");
 
+            ServerId = Guid.NewGuid();
             Config = config ?? throw new ArgumentNullException(nameof(config));
-            Context = new ChatContext(Config.ScopeTo(@"chat"), databaseBackend, dataProvider);
+            Context = new ChatContext(ServerId, Config.ScopeTo(@"chat"), databaseBackend, dataProvider);
 
             List<IPacketHandler> handlers = new List<IPacketHandler> {
                 new PingPacketHandler(),
                 new AuthPacketHandler(Context.Sessions, Context.Bot, VERSION),
-                new MessageSendPacketHandler(Context, new ICommand[] {
+                new MessageSendPacketHandler(Context, Context.Users, Context.Messages, Context.Bot, new ICommand[] {
                     new JoinCommand(),
                     new AFKCommand(),
                     new WhisperCommand(),
@@ -58,7 +61,7 @@ namespace SharpChat {
                     new PardonUserCommand(Context.Bot),
                     new PardonIPCommand(Context.Bot),
                     new BanListCommand(Context.Bot),
-                    new WhoIsUserCommand(Context.Bot),
+                    new WhoIsUserCommand(Context.Sessions, Context.Bot),
                     new SilenceUserCommand(Context.Bot),
                     new UnsilenceUserCommand(Context.Bot),
                 }),
@@ -133,7 +136,7 @@ namespace SharpChat {
                     Context.BanUser(sess.User, Context.RateLimiter.BanDuration, UserDisconnectReason.Flood);
                     return;
                 } else if(rateLimit == RateLimitState.Warn)
-                    sess.User.SendPacket(new FloodWarningPacket(Context.Bot));
+                    sess.SendPacket(new FloodWarningPacket(Context.Bot));
             }
 
             PacketHandlers.FirstOrDefault(x => x.PacketId == opCode)?.HandlePacket(

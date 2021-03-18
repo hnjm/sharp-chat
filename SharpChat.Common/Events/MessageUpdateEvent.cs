@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Text.Json;
 
 namespace SharpChat.Events {
-    public class MessageUpdateEvent : Event, IMessageEvent, IUpdateEvent {
+    public class MessageUpdateEvent : Event, IUpdateEvent {
         public const string TYPE = @"message:update";
 
         public override string Type => TYPE;

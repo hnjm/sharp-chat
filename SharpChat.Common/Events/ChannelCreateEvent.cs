@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Text.Json;
 
 namespace SharpChat.Events {
-    public class ChannelCreateEvent : Event, IChannelEvent {
+    public class ChannelCreateEvent : Event {
         public const string TYPE = @"channel:create";
 
         public override string Type => TYPE;
@@ -24,7 +24,7 @@ namespace SharpChat.Events {
             AutoJoin = autoJoin;
             MaxCapacity = maxCapacity;
         }
-        public ChannelCreateEvent(ChatContext context, IUser user, string name, bool temp, int minRank, string password, bool autoJoin, uint maxCapacity)
+        public ChannelCreateEvent(IEventTarget context, IUser user, string name, bool temp, int minRank, string password, bool autoJoin, uint maxCapacity)
             : base(context, user) {
             Name = name ?? throw new ArgumentNullException(nameof(name));
             IsTemporary = temp;
@@ -33,7 +33,7 @@ namespace SharpChat.Events {
             AutoJoin = autoJoin;
             MaxCapacity = maxCapacity;
         }
-        public ChannelCreateEvent(ChatContext context, Channel channel)
+        public ChannelCreateEvent(IEventTarget context, IChannel channel)
             : base(context, channel.Owner) {
             Name = channel.Name;
             IsTemporary = channel.IsTemporary;

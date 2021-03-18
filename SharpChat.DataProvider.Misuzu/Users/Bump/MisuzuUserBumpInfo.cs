@@ -1,20 +1,18 @@
 ﻿using SharpChat.Users;
-using System;
-using System.Linq;
+using System.Net;
 using System.Text.Json.Serialization;
 
 namespace SharpChat.DataProvider.Misuzu.Users.Bump {
     public class MisuzuUserBumpInfo {
         [JsonPropertyName(@"id")]
-        public long UserId => User.UserId;
+        public long UserId { get; }
 
         [JsonPropertyName(@"ip")]
-        public string UserIP => User.RemoteAddresses.First().ToString();
+        public string UserIP { get; }
 
-        private ChatUser User { get; }
-
-        public MisuzuUserBumpInfo(ChatUser user) {
-            User = user ?? throw new ArgumentNullException(nameof(user));
+        public MisuzuUserBumpInfo(IUser user, IPAddress addr) {
+            UserId = user.UserId;
+            UserIP = addr.ToString();
         }
     }
 }

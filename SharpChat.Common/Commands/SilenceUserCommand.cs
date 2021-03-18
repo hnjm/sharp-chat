@@ -21,7 +21,7 @@ namespace SharpChat.Commands {
                 throw new CommandNotAllowedException(ctx.Args);
 
             string userName = ctx.Args.ElementAtOrDefault(1);
-            ChatUser user;
+            IUser user;
             if(string.IsNullOrEmpty(userName) || (user = ctx.Chat.Users.Get(userName)) == null)
                 throw new UserNotFoundCommandException(userName);
 
@@ -29,19 +29,18 @@ namespace SharpChat.Commands {
                 throw new SelfSilenceCommandException();
             if(user.Rank >= user.Rank)
                 throw new SilenceNotAllowedCommandException();
-            if(user.IsSilenced)
-                throw new AlreadySilencedCommandException();
+            //if(user.IsSilenced)
+            //    throw new AlreadySilencedCommandException();
 
             string durationArg = ctx.Args.ElementAtOrDefault(2);
-            DateTimeOffset duration = DateTimeOffset.MaxValue;
 
-            if(string.IsNullOrEmpty(durationArg)) {
+            if(!string.IsNullOrEmpty(durationArg)) {
                 if(!double.TryParse(durationArg, out double durationRaw))
                     throw new CommandFormatException();
-                duration = DateTimeOffset.Now.AddSeconds(durationRaw);
-            }
+                //ctx.Chat.Users.Silence(user, TimeSpan.FromSeconds(durationRaw));
+            } //else
+                //ctx.Chat.Users.Silence(user);
 
-            user.SilencedUntil = duration;
             user.SendPacket(new SilenceNoticePacket(Sender));
             ctx.Session.SendPacket(new SilenceResponsePacket(Sender, user));
             return null;

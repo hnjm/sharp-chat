@@ -43,6 +43,9 @@ namespace SharpChat.Events.Storage {
         public bool Can(UserPermissions perm)
             => (Permissions & perm) == perm;
 
+        public bool Equals(IUser other)
+            => other != null && other.UserId == UserId;
+
         public string Pack() {
             StringBuilder sb = new StringBuilder();
 

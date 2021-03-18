@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Text.Json;
 
 namespace SharpChat.Events {
-    public class ChannelUpdateEvent : Event, IChannelEvent {
+    public class ChannelUpdateEvent : Event {
         public const string TYPE = @"channel:update";
 
         public override string Type => TYPE;
@@ -26,7 +26,7 @@ namespace SharpChat.Events {
             AutoJoin = autoJoin;
             MaxCapacity = maxCapacity;
         }
-        public ChannelUpdateEvent(Channel channel, IUser user, string name = null, bool? temp = null, int? minRank = null, string password = null, bool? autoJoin = null, uint? maxCapacity = null)
+        public ChannelUpdateEvent(IChannel channel, IUser user, string name = null, bool? temp = null, int? minRank = null, string password = null, bool? autoJoin = null, uint? maxCapacity = null)
             : base(channel, user) {
             Name = name;
             IsTemporary = temp;
@@ -67,7 +67,7 @@ namespace SharpChat.Events {
                 rank = rankDecode;
 
             string password = null;
-            if(elem.TryGetProperty(@"name", out JsonElement passwordElem))
+            if(elem.TryGetProperty(@"pass", out JsonElement passwordElem))
                 password = passwordElem.GetString();
 
             bool? autoJoin = null;

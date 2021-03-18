@@ -3,20 +3,12 @@ using System;
 using System.Text;
 
 namespace SharpChat.Packets {
-    public enum UserDisconnectReason : int {
-        Unknown = 0,
-        Leave = 1,
-        TimeOut = 2,
-        Kicked = 3,
-        Flood = 4,
-    }
-
     public class UserDisconnectPacket : ServerPacketBase {
         public DateTimeOffset Disconnected { get; private set; }
-        public ChatUser User { get; private set; }
+        public IUser User { get; private set; }
         public UserDisconnectReason Reason { get; private set; }
 
-        public UserDisconnectPacket(DateTimeOffset disconnected, ChatUser user, UserDisconnectReason reason) {
+        public UserDisconnectPacket(DateTimeOffset disconnected, IUser user, UserDisconnectReason reason) {
             Disconnected = disconnected;
             User = user ?? throw new ArgumentNullException(nameof(user));
             Reason = reason;

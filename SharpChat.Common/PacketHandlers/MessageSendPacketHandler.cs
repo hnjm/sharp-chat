@@ -1,6 +1,7 @@
 ﻿using SharpChat.Channels;
 using SharpChat.Commands;
 using SharpChat.Events;
+using SharpChat.Messages;
 using SharpChat.Packets;
 using SharpChat.Sessions;
 using SharpChat.Users;
@@ -12,11 +13,23 @@ namespace SharpChat.PacketHandlers {
     public class MessageSendPacketHandler : IPacketHandler {
         public ClientPacket PacketId => ClientPacket.MessageSend;
 
-        public ChatContext Context { get; }
-        public IEnumerable<ICommand> Commands { get; }
+        private IEventDispatcher Dispatcher { get; }
+        private MessageManager Messages { get; }
+        private UserManager Users { get; }
+        private ChatBot Bot { get; }
+        private IEnumerable<ICommand> Commands { get; }
 
-        public MessageSendPacketHandler(ChatContext context, IEnumerable<ICommand> commands) {
-            Context = context ?? throw new ArgumentNullException(nameof(context));
+        public MessageSendPacketHandler(
+            IEventDispatcher dispatcher,
+            UserManager users,
+            MessageManager messages,
+            ChatBot bot,
+            IEnumerable<ICommand> commands
+        ) {
+            Dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
+            Users = users ?? throw new ArgumentNullException(nameof(users));
+            Messages = messages ?? throw new ArgumentNullException(nameof(messages));
+            Bot = bot ?? throw new ArgumentNullException(nameof(bot));
             Commands = commands ?? throw new ArgumentNullException(nameof(commands));
         }
 
@@ -32,7 +45,7 @@ namespace SharpChat.PacketHandlers {
             if(string.IsNullOrWhiteSpace(text))
                 return;
 
-            Channel channel;
+            IChannel channel;
             string channelName = ctx.Args.ElementAtOrDefault(3)?.ToLowerInvariant();
             if(string.IsNullOrWhiteSpace(channelName))
                 channel = ctx.Session.LastChannel;
@@ -41,18 +54,18 @@ namespace SharpChat.PacketHandlers {
 
             if(channel == null
                 || !ctx.User.InChannel(channel)
-                || (ctx.User.IsSilenced && !ctx.User.Can(UserPermissions.SilenceUser)))
-                return;
+            //  || (ctx.User.IsSilenced && !ctx.User.Can(UserPermissions.SilenceUser)) TODO: readd silencing
+            ) return;
 
             ctx.Session.LastChannel = channel;
 
             if(ctx.User.Status != UserStatus.Online) {
-                ctx.User.Status = UserStatus.Online;
+                ctx.Chat.Users.Update(ctx.User, status: UserStatus.Online);
                 channel.SendPacket(new UserUpdatePacket(ctx.User));
             }
 
             // there's a very miniscule chance that this will return a different value on second read
-            int maxLength = Context.MessageTextMaxLength;
+            int maxLength = Messages.TextMaxLength;
             if(text.Length > maxLength)
                 text = text.Substring(0, maxLength);
 
@@ -68,7 +81,7 @@ namespace SharpChat.PacketHandlers {
                 try {
                     message = HandleCommand(text, ctx.Chat, ctx.User, channel, ctx.Session);
                 } catch(CommandException ex) {
-                    ctx.Session.SendPacket(ex.ToPacket(Context.Bot));
+                    ctx.Session.SendPacket(ex.ToPacket(Bot));
                 }
 
                 if(message == null)
@@ -78,11 +91,11 @@ namespace SharpChat.PacketHandlers {
             if(message == null)
                 message = new MessageCreateEvent(channel, ctx.User, text);
 
-            ctx.Chat.HandleEvent(message);
+            ctx.Chat.DispatchEvent(this, message);
             channel.SendPacket(new ChatMessageAddPacket(message));
         }
 
-        public MessageCreateEvent HandleCommand(string message, ChatContext context, ChatUser user, Channel channel, Session session) {
+        public MessageCreateEvent HandleCommand(string message, ChatContext context, IUser user, IChannel channel, Session session) {
             string[] parts = message[1..].Split(' ');
             string commandName = parts[0].Replace(@".", string.Empty).ToLowerInvariant();
 

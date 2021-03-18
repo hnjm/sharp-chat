@@ -18,7 +18,10 @@ namespace SharpChat.Events.Storage {
             Constructors[type] = construct;
         }
 
-        public void HandleEvent(IEvent evt) {
+        public void HandleEvent(object sender, IEvent evt) {
+            if(sender == this)
+                return;
+
             if(evt is IDeleteEvent delEvt)
                 RemoveEvent(delEvt.TargetId);
             if(evt is IUpdateEvent updEvt)

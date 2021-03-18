@@ -23,7 +23,7 @@ namespace SharpChat.Commands {
             if(!setOthersNick && !ctx.User.Can(UserPermissions.SetOwnNickname))
                 throw new CommandNotAllowedException(NAME);
 
-            ChatUser targetUser = null;
+            IUser targetUser = null;
             int offset = 1;
 
             if(setOthersNick && long.TryParse(ctx.Args.ElementAtOrDefault(1), out long targetUserId) && targetUserId > 0) {
@@ -56,7 +56,7 @@ namespace SharpChat.Commands {
                 throw new NickNameInUseCommandException(nickStr);
 
             string previousName = targetUser == ctx.User ? (targetUser.NickName ?? targetUser.UserName) : null;
-            targetUser.NickName = nickStr;
+            ctx.Chat.Users.Update(targetUser, nickName: nickStr);
             ctx.Channel.SendPacket(new UserNickChangePacket(Sender, previousName, targetUser.DisplayName));
             ctx.Channel.SendPacket(new UserUpdatePacket(targetUser));
             return null;

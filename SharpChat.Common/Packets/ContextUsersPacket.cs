@@ -6,9 +6,9 @@ using System.Text;
 
 namespace SharpChat.Packets {
     public class ContextUsersPacket : ServerPacketBase {
-        public IEnumerable<ChatUser> Users { get; private set; }
+        public IEnumerable<IUser> Users { get; private set; }
 
-        public ContextUsersPacket(IEnumerable<ChatUser> users) {
+        public ContextUsersPacket(IEnumerable<IUser> users) {
             Users = users?.Where(u => u != null) ?? throw new ArgumentNullException(nameof(users));
         }
 
@@ -21,7 +21,7 @@ namespace SharpChat.Packets {
             sb.Append(IServerPacket.SEPARATOR);
             sb.Append(Users.Count());
 
-            foreach (ChatUser user in Users) {
+            foreach(IUser user in Users) {
                 sb.Append(IServerPacket.SEPARATOR);
                 sb.Append(user.Pack());
                 sb.Append(IServerPacket.SEPARATOR);

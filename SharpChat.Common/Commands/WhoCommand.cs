@@ -22,7 +22,7 @@ namespace SharpChat.Commands {
         }
 
         private static void WhoChannel(IUser sender, ICommandContext ctx, string channelName) {
-            Channel whoChan = ctx.Chat.Channels.Get(channelName);
+            IChannel whoChan = ctx.Chat.Channels.Get(channelName);
 
             if(whoChan == null)
                 throw new ChannelNotFoundCommandException(channelName);
@@ -30,7 +30,14 @@ namespace SharpChat.Commands {
             if(whoChan.MinimumRank > ctx.User.Rank || (whoChan.HasPassword && !ctx.User.Can(UserPermissions.JoinAnyChannel)))
                 throw new UserListChannelNotFoundCommandException(channelName);
 
-            ctx.Session.SendPacket(new UserListResponsePacket(sender, whoChan, ctx.User, whoChan.GetUsers()));
+            whoChan.GetUsers(
+                users => ctx.Session.SendPacket(new UserListResponsePacket(
+                    sender,
+                    whoChan,
+                    ctx.User,
+                    users.OrderByDescending(u => u.Rank)
+                ))
+            );
         }
 
         public MessageCreateEvent DispatchCommand(ICommandContext ctx) {

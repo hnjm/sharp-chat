@@ -95,17 +95,17 @@ namespace SharpChat.Commands {
 
     public class ChannelRankCommandException : CommandException {
         public ChannelRankCommandException(string channelName) : base(@"ipchan", channelName) { }
-        public ChannelRankCommandException(Channel channel) : this(channel.Name) { }
+        public ChannelRankCommandException(IChannel channel) : this(channel.Name) { }
     }
 
     public class ChannelPasswordCommandException : CommandException {
         public ChannelPasswordCommandException(string channelName) : base(@"ipwchan", channelName) { }
-        public ChannelPasswordCommandException(Channel channel) : this(channel.Name) { }
+        public ChannelPasswordCommandException(IChannel channel) : this(channel.Name) { }
     }
 
     public class AlreadyInChannelCommandException : CommandException {
         public AlreadyInChannelCommandException(string channelName) : base(@"samechan", channelName) { }
-        public AlreadyInChannelCommandException(Channel channel) : this(channel.Name) { }
+        public AlreadyInChannelCommandException(IChannel channel) : this(channel.Name) { }
     }
 
     public class ChannelNameInvalidCommandException : CommandException {

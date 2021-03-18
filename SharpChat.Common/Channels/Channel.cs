@@ -1,22 +1,23 @@
 ﻿using SharpChat.Events;
 using SharpChat.Users;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
 namespace SharpChat.Channels {
-    public class Channel : IServerPacketTarget, IEventTarget {
+    public class Channel : IChannel {
         public string Name { get; private set; }
+        public bool IsTemporary { get; private set; }
+        public int MinimumRank { get; private set; }
+        public bool AutoJoin { get; private set; }
+        public uint MaxCapacity { get; private set; }
+        public IUser Owner { get; private set; }
+
+        private readonly object Sync = new object();
+        private List<IUser> Users { get; } = new List<IUser>();
+
         public string Password { get; private set; } = string.Empty;
-        public bool IsTemporary { get; private set; } = false;
-        public int MinimumRank { get; private set; } = 0;
-        public bool AutoJoin { get; private set; } = false;
-        public uint MaxCapacity { get; private set; } = 0;
-        public IUser Owner { get; private set; } = null;
-
-        private List<ChatUser> Users { get; } = new List<ChatUser>();
-        private List<ChannelTyping> Typing { get; } = new List<ChannelTyping>();
-
         public bool HasPassword
             => !string.IsNullOrWhiteSpace(Password);
 
@@ -44,94 +45,65 @@ namespace SharpChat.Channels {
             Owner = owner;
         }
 
-        public bool HasUser(ChatUser user) {
-            lock(Users)
-                return Users.Contains(user);
+        public bool VerifyPassword(string password) {
+            if(password == null)
+                throw new ArgumentNullException(nameof(password));
+            lock(Sync)
+                return !HasPassword || Password.Equals(password);
         }
 
-        public void UserJoin(ChatUser user) {
-            if(!user.InChannel(this))
-                user.JoinChannel(this);
-
-            lock(Users) {
-                if(!HasUser(user))
-                    Users.Add(user);
-            }
-        }
-
-        public void UserLeave(ChatUser user) {
-            lock(Users)
-                Users.Remove(user);
-
-            if(user.InChannel(this))
-                user.LeaveChannel(this);
-        }
-
-        public void SendPacket(IServerPacket packet) {
-            lock(Users) {
-                foreach(ChatUser user in Users)
-                    user.SendPacket(packet);
-            }
-        }
-
-        public IEnumerable<ChatUser> GetUsers(IEnumerable<ChatUser> exclude = null) {
-            lock(Users) {
-                IEnumerable<ChatUser> users = Users.OrderByDescending(x => x.Rank);
-
-                if(exclude != null)
-                    users = users.Except(exclude);
-
-                return users.ToList();
-            }
-        }
-
-        public bool IsTyping(ChatUser user) {
+        public bool HasUser(IUser user) {
             if(user == null)
                 return false;
-            lock(Typing)
-                return Typing.Any(x => x.User == user && !x.HasExpired);
+            lock(Sync)
+                return Users.Any(u => u.Equals(user));
         }
-        public bool CanType(ChatUser user) {
-            if(user == null || !HasUser(user))
-                return false;
-            return !IsTyping(user);
-        }
-        public ChannelTyping RegisterTyping(ChatUser user) {
-            if(user == null || !HasUser(user))
-                return null;
-            ChannelTyping typing = new ChannelTyping(user);
-            lock(Typing) {
-                Typing.RemoveAll(x => x.HasExpired);
-                Typing.Add(typing);
-            }
-            return typing;
+
+        public void GetUsers(Action<IEnumerable<IUser>> callable) {
+            if(callable == null)
+                throw new ArgumentNullException(nameof(callable));
+            lock(Sync)
+                callable(Users);
         }
 
         public string Pack() {
-            StringBuilder sb = new StringBuilder();
+            lock(Sync) {
+                StringBuilder sb = new StringBuilder();
 
-            sb.Append(Name);
-            sb.Append(IServerPacket.SEPARATOR);
-            sb.Append(string.IsNullOrEmpty(Password) ? '0' : '1');
-            sb.Append(IServerPacket.SEPARATOR);
-            sb.Append(IsTemporary ? '1' : '0');
+                sb.Append(Name);
+                sb.Append(IServerPacket.SEPARATOR);
+                sb.Append(HasPassword ? '1' : '0');
+                sb.Append(IServerPacket.SEPARATOR);
+                sb.Append(IsTemporary ? '1' : '0');
 
-            return sb.ToString();
+                return sb.ToString();
+            }
         }
 
-        public void HandleEvent(IEvent evt) {
-            switch(evt) {
-                case ChannelUpdateEvent update:
-                    if(update.HasName)
-                        Name = update.Name;
-                    if(update.IsTemporary.HasValue)
-                        IsTemporary = update.IsTemporary.Value;
-                    if(update.MinimumRank.HasValue)
-                        MinimumRank = update.MinimumRank.Value;
-                    if(update.HasPassword)
-                        Password = update.Password;
-                    break;
-            }
+        public void HandleEvent(object sender, IEvent evt) {
+            lock(Sync)
+                switch(evt) {
+                    case ChannelUpdateEvent update:
+                        if(update.HasName) {
+                            Name = update.Name;
+                            TargetName = Name.ToLowerInvariant();
+                        }
+                        if(update.IsTemporary.HasValue)
+                            IsTemporary = update.IsTemporary.Value;
+                        if(update.MinimumRank.HasValue)
+                            MinimumRank = update.MinimumRank.Value;
+                        if(update.HasPassword)
+                            Password = update.Password;
+                        break;
+
+                    case ChannelJoinEvent join:
+                        Users.Add(join.Sender);
+                        break;
+
+                    case ChannelLeaveEvent leave:
+                        Users.Remove(leave.Sender);
+                        break;
+                }
         }
     }
 }

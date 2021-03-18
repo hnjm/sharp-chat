@@ -16,7 +16,7 @@ namespace SharpChat.Commands {
             if(string.IsNullOrWhiteSpace(channelName))
                 return null;
 
-            Channel channel = ctx.Chat.Channels.Get(channelName);
+            IChannel channel = ctx.Chat.Channels.Get(channelName);
 
             // the original server sends ForceChannel before sending the error message, but this order probably makes more sense.
 
@@ -38,7 +38,7 @@ namespace SharpChat.Commands {
                     throw new ChannelRankCommandException(channel);
                 }
 
-                if(channel.Password != password) {
+                if(channel.VerifyPassword(password)) {
                     ctx.Session.ForceChannel();
                     throw new ChannelPasswordCommandException(channel);
                 }

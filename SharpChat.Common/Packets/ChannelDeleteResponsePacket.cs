@@ -6,7 +6,7 @@ namespace SharpChat.Packets {
         public ChannelDeleteResponsePacket(IUser sender, string channelName)
             : base(sender, BotArguments.Notice(@"delchan", channelName)) { }
 
-        public ChannelDeleteResponsePacket(IUser sender, Channel channel)
+        public ChannelDeleteResponsePacket(IUser sender, IChannel channel)
             : this(sender, channel.Name) { }
     }
 }

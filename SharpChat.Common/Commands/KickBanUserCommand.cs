@@ -17,7 +17,7 @@ namespace SharpChat.Commands {
                 throw new CommandNotAllowedException(commandName);
 
             string userName = ctx.Args.ElementAtOrDefault(1);
-            ChatUser user;
+            IUser user;
             if(userName == null || (user = ctx.Chat.Users.Get(userName)) == null)
                 throw new UserNotFoundCommandException(userName);
 

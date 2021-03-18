@@ -26,7 +26,7 @@ namespace SharpChat.DataProvider.Misuzu.Users.Auth {
                 onSuccess.Invoke(new MisuzuUserAuthResponse {
                     Success = true,
                     UserId = request.UserId,
-                    Username = @"Misaka-" + (request.UserId - 10000),
+                    UserName = @"Misaka-" + (request.UserId - 10000),
                     ColourRaw = (RNG.Next(0, 255) << 16) | (RNG.Next(0, 255) << 8) | RNG.Next(0, 255),
                     Rank = 0,
                     SilencedUntil = DateTimeOffset.MinValue,

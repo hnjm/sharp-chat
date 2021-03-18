@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Text.Json;
 
 namespace SharpChat.Events {
-    public class MessageDeleteEvent : Event, IMessageEvent, IDeleteEvent {
+    public class MessageDeleteEvent : Event, IDeleteEvent {
         public const string TYPE = @"message:delete";
 
         public override string Type => TYPE;

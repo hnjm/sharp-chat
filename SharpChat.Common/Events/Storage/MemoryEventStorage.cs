@@ -6,7 +6,10 @@ namespace SharpChat.Events.Storage {
         private object Lock { get; } = new object();
         private List<IEvent> Events { get; } = new List<IEvent>();
 
-        public void HandleEvent(IEvent evt) {
+        public void HandleEvent(object sender, IEvent evt) {
+            if(sender == this)
+                return;
+
             lock(Lock)
                 Events.Add(evt);
         }

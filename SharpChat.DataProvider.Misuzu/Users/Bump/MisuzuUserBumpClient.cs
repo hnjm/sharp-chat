@@ -1,9 +1,11 @@
 ﻿using Hamakaze;
+using SharpChat.Sessions;
 using SharpChat.Users;
 using SharpChat.Users.Bump;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Text.Json;
 
 namespace SharpChat.DataProvider.Misuzu.Users.Bump {
@@ -18,13 +20,26 @@ namespace SharpChat.DataProvider.Misuzu.Users.Bump {
             HttpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
         }
 
-        public void SubmitBumpUsers(IEnumerable<ChatUser> users, Action onSuccess = null, Action<Exception> onFailure = null) {
+        public void SubmitBumpUsers(
+            SessionManager sessions,
+            IEnumerable<IUser> users,
+            Action onSuccess = null,
+            Action<Exception> onFailure = null
+        ) {
             if(users == null)
                 throw new ArgumentNullException(nameof(users));
             if(!users.Any())
                 return;
 
-            byte[] data = JsonSerializer.SerializeToUtf8Bytes(users.Where(x => x.RemoteAddresses.Any()).Select(x => new MisuzuUserBumpInfo(x)));
+            List<MisuzuUserBumpInfo> infos = new List<MisuzuUserBumpInfo>();
+            foreach(IUser user in users) {
+                IPAddress addr = sessions.GetLastRemoteAddress(user);
+                if(addr == IPAddress.None)
+                    continue;
+                infos.Add(new MisuzuUserBumpInfo(user, addr));
+            }
+
+            byte[] data = JsonSerializer.SerializeToUtf8Bytes(infos);
 
             HttpRequestMessage request = new HttpRequestMessage(HttpRequestMessage.POST, DataProvider.GetURL(URL));
             request.SetHeader(@"X-SharpChat-Signature", DataProvider.GetSignedHash(data));

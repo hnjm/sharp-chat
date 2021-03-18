@@ -23,7 +23,7 @@ namespace SharpChat.Commands {
             if(string.IsNullOrWhiteSpace(channelName))
                 throw new CommandFormatException();
 
-            Channel channel = ctx.Chat.Channels.Get(channelName);
+            IChannel channel = ctx.Chat.Channels.Get(channelName);
             if(channel == null)
                 throw new ChannelNotFoundCommandException(channelName);
 

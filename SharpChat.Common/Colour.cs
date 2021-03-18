@@ -1,16 +1,19 @@
-﻿namespace SharpChat {
-    public readonly struct Colour {
+﻿using System;
+
+namespace SharpChat {
+    public readonly struct Colour : IEquatable<Colour?> {
         public const int INHERIT = 0x40000000;
 
         public int Raw { get; }
 
-        public Colour(bool inherit = true) {
-            Raw = inherit ? INHERIT : 0;
+        public Colour(int argb) {
+            Raw = argb;
         }
 
-        public Colour(int colour) {
-            Raw = colour;
-        }
+        public static implicit operator Colour(int argb) => new Colour(argb);
+
+        public bool Equals(Colour? other)
+            => other.HasValue && other.Value.Raw == Raw;
 
         public bool Inherit => (Raw & INHERIT) > 0;
         public int Red => (Raw >> 16) & 0xFF;

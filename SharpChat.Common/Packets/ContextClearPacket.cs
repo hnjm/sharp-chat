@@ -11,13 +11,13 @@ namespace SharpChat.Packets {
     }
 
     public class ContextClearPacket : ServerPacketBase {
-        public Channel Channel { get; private set; }
+        public IChannel Channel { get; private set; }
         public ContextClearMode Mode { get; private set; }
 
         public bool IsGlobal
             => Channel == null;
 
-        public ContextClearPacket(Channel channel, ContextClearMode mode) {
+        public ContextClearPacket(IChannel channel, ContextClearMode mode) {
             Channel = channel;
             Mode = mode;
         }

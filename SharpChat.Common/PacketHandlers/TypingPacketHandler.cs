@@ -7,7 +7,7 @@ namespace SharpChat.PacketHandlers {
         public ClientPacket PacketId => ClientPacket.Typing;
 
         public void HandlePacket(IPacketHandlerContext ctx) {
-            if(!ctx.HasUser)
+            /*if(!ctx.HasUser)
                 return;
 
             if(!long.TryParse(ctx.Args.ElementAtOrDefault(1), out long userId) || ctx.User.UserId != userId)
@@ -17,7 +17,7 @@ namespace SharpChat.PacketHandlers {
             if(!string.IsNullOrWhiteSpace(channelName))
                 return;
 
-            Channel channel = ctx.User.GetChannels().FirstOrDefault(c => c.Name.ToLowerInvariant() == channelName);
+            IChannel channel = ctx.User.GetChannels().FirstOrDefault(c => c.Name.ToLowerInvariant() == channelName);
             if(channel == null || !channel.CanType(ctx.User))
                 return;
 
@@ -27,7 +27,7 @@ namespace SharpChat.PacketHandlers {
             if(info == null)
                 return;
 
-            channel.SendPacket(new TypingPacket(channel, info));
+            channel.SendPacket(new TypingPacket(channel, info));*/
         }
     }
 }

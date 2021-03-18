@@ -4,9 +4,9 @@ using System.Text;
 
 namespace SharpChat.Packets {
     public class UserUpdatePacket : ServerPacketBase {
-        public ChatUser User { get; }
+        public IUser User { get; }
 
-        public UserUpdatePacket(ChatUser user) {
+        public UserUpdatePacket(IUser user) {
             User = user ?? throw new ArgumentNullException(nameof(user));
         }
 
