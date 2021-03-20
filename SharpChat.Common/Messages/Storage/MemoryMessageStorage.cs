@@ -15,7 +15,7 @@ namespace SharpChat.Messages.Storage {
                 return Messages.FirstOrDefault(m => m.MessageId == messageId);
         }
 
-        public IEnumerable<IMessage> GetMessages(IChannel channel, int amount, int offset) {
+        public void GetMessages(IChannel channel, Action<IEnumerable<IMessage>> callback, int amount, int offset) {
             lock(Sync) {
                 IEnumerable<IMessage> subset = Messages.Where(m => m.Channel.Equals(channel));
 
@@ -26,7 +26,7 @@ namespace SharpChat.Messages.Storage {
                     start = 0;
                 }
 
-                return subset.Skip(start).Take(amount).ToArray();
+                callback.Invoke(subset.Skip(start).Take(amount));
             }
         }
 

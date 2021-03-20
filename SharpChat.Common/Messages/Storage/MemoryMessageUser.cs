@@ -1,27 +1,27 @@
-﻿using SharpChat.Users;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using SharpChat.Events;
+using SharpChat.Users;
 
 namespace SharpChat.Messages.Storage {
     public class MemoryMessageUser : IUser {
-        public long UserId => throw new NotImplementedException();
-        public string UserName => throw new NotImplementedException();
-        public Colour Colour => throw new NotImplementedException();
-        public int Rank => throw new NotImplementedException();
-        public string NickName => throw new NotImplementedException();
-        public UserPermissions Permissions => throw new NotImplementedException();
-        public UserStatus Status => throw new NotImplementedException();
-        public string StatusMessage => throw new NotImplementedException();
+        public long UserId { get; }
+        public string UserName { get; }
+        public Colour Colour { get; }
+        public int Rank { get; }
+        public string NickName { get; }
+        public UserPermissions Permissions { get; }
+        public UserStatus Status => UserStatus.Unknown;
+        public string StatusMessage => string.Empty;
 
-        public bool Can(UserPermissions perm) {
-            throw new NotImplementedException();
+        public MemoryMessageUser(MessageCreateEvent mce) {
+            UserId = mce.Sender.UserId;
+            UserName = mce.Sender.UserName;
+            Colour = mce.Sender.Colour;
+            Rank = mce.Sender.Rank;
+            NickName = mce.Sender.NickName;
+            Permissions = mce.Sender.Permissions;
         }
 
-        public bool Equals(IUser other) {
-            throw new NotImplementedException();
-        }
+        public bool Equals(IUser other)
+            => other != null && other.UserId == UserId;
     }
 }

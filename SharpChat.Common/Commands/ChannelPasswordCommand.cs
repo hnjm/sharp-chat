@@ -1,5 +1,4 @@
-﻿using SharpChat.Events;
-using SharpChat.Packets;
+﻿using SharpChat.Packets;
 using SharpChat.Users;
 using System;
 using System.Collections.Generic;
@@ -16,7 +15,7 @@ namespace SharpChat.Commands {
         public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == @"password" || name == @"pwd";
 
-        public MessageCreateEvent DispatchCommand(ICommandContext ctx) {
+        public bool DispatchCommand(ICommandContext ctx) {
             if(!ctx.User.Can(UserPermissions.SetChannelPassword) || ctx.Channel.Owner != ctx.User)
                 throw new CommandNotAllowedException(ctx.Args);
 
@@ -27,7 +26,7 @@ namespace SharpChat.Commands {
 
             ctx.Chat.Channels.Update(ctx.Channel, password: password);
             ctx.Session.SendPacket(new ChannelPasswordResponsePacket(Sender));
-            return null;
+            return true;
         }
     }
 }

@@ -1,5 +1,4 @@
-﻿using SharpChat.Events;
-using SharpChat.Packets;
+﻿using SharpChat.Packets;
 using SharpChat.Users;
 using System;
 using System.Collections.Generic;
@@ -16,7 +15,7 @@ namespace SharpChat.Commands {
         public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == @"rank" || name == @"hierarchy" || name == @"priv";
 
-        public MessageCreateEvent DispatchCommand(ICommandContext ctx) {
+        public bool DispatchCommand(ICommandContext ctx) {
             if(!ctx.User.Can(UserPermissions.SetChannelHierarchy) || ctx.Channel.Owner != ctx.User)
                 throw new CommandNotAllowedException(ctx.Args);
 
@@ -25,7 +24,7 @@ namespace SharpChat.Commands {
 
             ctx.Chat.Channels.Update(ctx.Channel, minRank: rank);
             ctx.Session.SendPacket(new ChannelRankResponsePacket(Sender));
-            return null;
+            return true;
         }
     }
 }

@@ -1,5 +1,4 @@
-﻿using SharpChat.Events;
-using SharpChat.Users;
+﻿using SharpChat.Users;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,7 +8,7 @@ namespace SharpChat.Commands {
         public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == @"kick" || name == @"ban";
 
-        public MessageCreateEvent DispatchCommand(ICommandContext ctx) {
+        public bool DispatchCommand(ICommandContext ctx) {
             string commandName = ctx.Args.First();
             bool isBan = commandName == @"ban";
 
@@ -18,7 +17,7 @@ namespace SharpChat.Commands {
 
             string userName = ctx.Args.ElementAtOrDefault(1);
             IUser user;
-            if(userName == null || (user = ctx.Chat.Users.Get(userName)) == null)
+            if(userName == null || (user = ctx.Chat.Users.GetUser(userName)) == null)
                 throw new UserNotFoundCommandException(userName);
 
             if(user == ctx.User || user.Rank >= ctx.User.Rank)
@@ -42,8 +41,7 @@ namespace SharpChat.Commands {
             // TODO: allow supplying a textReason
 
             ctx.Chat.BanUser(user, duration, isPermanent: isPermanent, modUser: ctx.User);
-
-            return null;
+            return true;
         }
     }
 }

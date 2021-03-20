@@ -1,5 +1,4 @@
-﻿using SharpChat.Events;
-using SharpChat.Packets;
+﻿using SharpChat.Packets;
 using SharpChat.Users;
 using System;
 using System.Collections.Generic;
@@ -17,7 +16,7 @@ namespace SharpChat.Commands {
         public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == NAME;
 
-        public MessageCreateEvent DispatchCommand(ICommandContext ctx) {
+        public bool DispatchCommand(ICommandContext ctx) {
             bool setOthersNick = ctx.User.Can(UserPermissions.SetOthersNickname);
 
             if(!setOthersNick && !ctx.User.Can(UserPermissions.SetOwnNickname))
@@ -27,7 +26,7 @@ namespace SharpChat.Commands {
             int offset = 1;
 
             if(setOthersNick && long.TryParse(ctx.Args.ElementAtOrDefault(1), out long targetUserId) && targetUserId > 0) {
-                targetUser = ctx.Chat.Users.Get(targetUserId);
+                targetUser = ctx.Chat.Users.GetUser(targetUserId);
                 offset = 2;
             }
 
@@ -52,14 +51,14 @@ namespace SharpChat.Commands {
             else if(string.IsNullOrEmpty(nickStr))
                 nickStr = null;
 
-            if(nickStr != null && ctx.Chat.Users.Get(nickStr) != null)
+            if(nickStr != null && ctx.Chat.Users.GetUser(nickStr) != null)
                 throw new NickNameInUseCommandException(nickStr);
 
             string previousName = targetUser == ctx.User ? (targetUser.NickName ?? targetUser.UserName) : null;
             ctx.Chat.Users.Update(targetUser, nickName: nickStr);
             ctx.Channel.SendPacket(new UserNickChangePacket(Sender, previousName, targetUser.GetDisplayName()));
             ctx.Channel.SendPacket(new UserUpdatePacket(targetUser));
-            return null;
+            return true;
         }
     }
 }

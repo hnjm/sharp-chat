@@ -1,5 +1,4 @@
-﻿using SharpChat.Events;
-using SharpChat.Packets;
+﻿using SharpChat.Packets;
 using SharpChat.Users;
 using System;
 using System.Collections.Generic;
@@ -16,13 +15,13 @@ namespace SharpChat.Commands {
         public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == @"unsilence";
 
-        public MessageCreateEvent DispatchCommand(ICommandContext ctx) {
+        public bool DispatchCommand(ICommandContext ctx) {
             if(!ctx.User.Can(UserPermissions.SilenceUser))
                 throw new CommandNotAllowedException(ctx.Args);
 
             string userName = ctx.Args.ElementAtOrDefault(1);
             IUser user;
-            if(string.IsNullOrEmpty(userName) || (user = ctx.Chat.Users.Get(userName)) == null)
+            if(string.IsNullOrEmpty(userName) || (user = ctx.Chat.Users.GetUser(userName)) == null)
                 throw new UserNotFoundCommandException(userName);
 
             if(user.Rank >= ctx.User.Rank)
@@ -35,7 +34,7 @@ namespace SharpChat.Commands {
 
             user.SendPacket(new SilenceRevokeNoticePacket(Sender));
             ctx.Session.SendPacket(new SilenceRevokeResponsePacket(Sender, user));
-            return null;
+            return true;
         }
     }
 }

@@ -1,5 +1,4 @@
-﻿using SharpChat.Events;
-using SharpChat.Packets;
+﻿using SharpChat.Packets;
 using SharpChat.Users;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,7 +11,7 @@ namespace SharpChat.Commands {
         public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == @"afk";
 
-        public MessageCreateEvent DispatchCommand(ICommandContext ctx) {
+        public bool DispatchCommand(ICommandContext ctx) {
             string statusText = ctx.Args.ElementAtOrDefault(1);
             if(string.IsNullOrWhiteSpace(statusText))
                 statusText = DEFAULT;
@@ -24,7 +23,7 @@ namespace SharpChat.Commands {
 
             ctx.Chat.Users.Update(ctx.User, status: UserStatus.Away, statusMessage: statusText);
             ctx.Channel.SendPacket(new UserUpdatePacket(ctx.User));
-            return null;
+            return true;
         }
     }
 }

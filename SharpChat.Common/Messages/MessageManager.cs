@@ -84,8 +84,13 @@ namespace SharpChat.Messages {
         public IMessage GetMessage(long messageId)
             => Storage.GetMessage(messageId);
 
-        public IEnumerable<IMessage> GetMessages(IChannel channel, int amount, int offset)
-            => Storage.GetMessages(channel, amount, offset);
+        public void GetMessages(IChannel channel, Action<IEnumerable<IMessage>> callback, int amount = 20, int offset = 0) {
+            if(channel == null)
+                throw new ArgumentNullException(nameof(channel));
+            if(callback == null)
+                throw new ArgumentNullException(nameof(callback));
+            Storage.GetMessages(channel, callback, amount, offset);
+        }
 
         public void HandleEvent(object sender, IEvent evt)
             => Storage.HandleEvent(sender, evt);

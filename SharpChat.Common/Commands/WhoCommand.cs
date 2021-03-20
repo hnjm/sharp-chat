@@ -1,5 +1,4 @@
 ﻿using SharpChat.Channels;
-using SharpChat.Events;
 using SharpChat.Packets;
 using SharpChat.Users;
 using System;
@@ -8,11 +7,11 @@ using System.Linq;
 
 namespace SharpChat.Commands {
     public class WhoCommand : ICommand {
-        private ChannelManager Channels { get; }
+        private ChannelUserRelations ChannelUsers { get; }
         private IUser Sender { get; }
 
-        public WhoCommand(ChannelManager channels, IUser sender) {
-            Channels = channels ?? throw new ArgumentNullException(nameof(channels));
+        public WhoCommand(ChannelUserRelations channelUsers, IUser sender) {
+            ChannelUsers = channelUsers ?? throw new ArgumentNullException(nameof(channelUsers));
             Sender = sender ?? throw new ArgumentNullException(nameof(sender));
         }
 
@@ -20,11 +19,13 @@ namespace SharpChat.Commands {
             => name == @"who";
 
         private void WhoServer(ICommandContext ctx) {
-            ctx.Session.SendPacket(new UserListResponsePacket(Sender, ctx.User, ctx.Chat.Users.All()));
+            ctx.Chat.Users.GetUsers(u => {
+                ctx.Session.SendPacket(new UserListResponsePacket(Sender, ctx.User, u));
+            });
         }
 
         private void WhoChannel(ICommandContext ctx, string channelName) {
-            IChannel channel = ctx.Chat.Channels.Get(channelName);
+            IChannel channel = ctx.Chat.Channels.GetChannel(channelName);
 
             if(channel == null)
                 throw new ChannelNotFoundCommandException(channelName);
@@ -32,7 +33,7 @@ namespace SharpChat.Commands {
             if(channel.MinimumRank > ctx.User.Rank || (channel.HasPassword && !ctx.User.Can(UserPermissions.JoinAnyChannel)))
                 throw new UserListChannelNotFoundCommandException(channelName);
 
-            Channels.GetUsers(
+            ChannelUsers.GetUsers(
                 channel,
                 users => ctx.Session.SendPacket(new UserListResponsePacket(
                     Sender,
@@ -43,7 +44,7 @@ namespace SharpChat.Commands {
             );
         }
 
-        public MessageCreateEvent DispatchCommand(ICommandContext ctx) {
+        public bool DispatchCommand(ICommandContext ctx) {
             string channelName = ctx.Args.ElementAtOrDefault(1) ?? string.Empty;
 
             if(string.IsNullOrEmpty(channelName))
@@ -51,7 +52,7 @@ namespace SharpChat.Commands {
             else
                 WhoChannel(ctx, channelName);
 
-            return null;
+            return true;
         }
     }
 }

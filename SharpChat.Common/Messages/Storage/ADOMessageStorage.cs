@@ -37,7 +37,7 @@ namespace SharpChat.Messages.Storage {
             return msg;
         }
 
-        public IEnumerable<IMessage> GetMessages(IChannel channel, int amount, int offset) {
+        public void GetMessages(IChannel channel, Action<IEnumerable<IMessage>> callback, int amount, int offset) {
             List<IMessage> msgs = new List<IMessage>();
 
             Wrapper.RunQuery(
@@ -60,7 +60,7 @@ namespace SharpChat.Messages.Storage {
             );
 
             msgs.Reverse();
-            return msgs;
+            callback.Invoke(msgs);
         }
 
         private void StoreMessage(MessageCreateEvent mce) {

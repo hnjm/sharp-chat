@@ -1,5 +1,4 @@
 ﻿using SharpChat.Channels;
-using SharpChat.Events;
 using SharpChat.Packets;
 using SharpChat.Users;
 using System;
@@ -19,7 +18,7 @@ namespace SharpChat.Commands {
         public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == NAME;
 
-        public MessageCreateEvent DispatchCommand(ICommandContext ctx) {
+        public bool DispatchCommand(ICommandContext ctx) {
             if(!ctx.User.Can(UserPermissions.CreateChannel))
                 throw new CommandNotAllowedException(NAME);
 
@@ -52,7 +51,7 @@ namespace SharpChat.Commands {
 
             ctx.Chat.SwitchChannel(ctx.Session, createChan);
             ctx.Session.SendPacket(new ChannelCreateResponsePacket(Sender, createChan));
-            return null;
+            return true;
         }
     }
 }

@@ -3,6 +3,9 @@ using System.Text;
 
 namespace SharpChat.Users {
     public static class IUserExtensions {
+        public static bool Can(this IUser user, UserPermissions perm)
+            => user is ChatBot || (user.Permissions & perm) == perm;
+
         public static string GetDisplayName(this IUser user) {
             if(user is ChatBot)
                 return user.UserName;

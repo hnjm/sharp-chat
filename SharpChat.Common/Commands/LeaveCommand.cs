@@ -1,19 +1,18 @@
-﻿using SharpChat.Events;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace SharpChat.Commands {
     public class LeaveCommand : ICommand {
         public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == @"leave";
 
-        public MessageCreateEvent DispatchCommand(ICommandContext ctx) {
+        public bool DispatchCommand(ICommandContext ctx) {
             if(!ctx.Session.HasCapability(ClientCapabilities.MCHAN))
                 throw new CommandNotFoundException(@"leave");
 
             // figure out the channel leaving logic
             // should i postpone this implementation till i have the event based shit in place?
 
-            return null;
+            return true;
         }
     }
 }

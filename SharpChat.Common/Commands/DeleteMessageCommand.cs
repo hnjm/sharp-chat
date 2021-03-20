@@ -1,5 +1,4 @@
-﻿using SharpChat.Events;
-using SharpChat.Messages;
+﻿using SharpChat.Messages;
 using SharpChat.Packets;
 using SharpChat.Users;
 using System;
@@ -17,7 +16,7 @@ namespace SharpChat.Commands {
             Messages = messages ?? throw new ArgumentNullException(nameof(messages));
         }
 
-        public MessageCreateEvent DispatchCommand(ICommandContext ctx) {
+        public bool DispatchCommand(ICommandContext ctx) {
             bool deleteAnyMessage = ctx.User.Can(UserPermissions.DeleteAnyMessage);
 
             if(!deleteAnyMessage && !ctx.User.Can(UserPermissions.DeleteOwnMessage))
@@ -34,8 +33,7 @@ namespace SharpChat.Commands {
 
             Messages.Delete(ctx.User, delMsg);
             ctx.Chat.SendPacket(new ChatMessageDeletePacket(delMsg));
-
-            return null;
+            return true;
         }
     }
 }

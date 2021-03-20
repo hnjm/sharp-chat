@@ -24,9 +24,6 @@ namespace SharpChat.Messages.Storage {
             Permissions = (UserPermissions)reader.ReadI32(@"msg_sender_perms");
         }
 
-        public bool Can(UserPermissions perm)
-            => (Permissions & perm) == perm;
-
         public bool Equals(IUser other)
             => other != null && other.UserId == UserId;
 

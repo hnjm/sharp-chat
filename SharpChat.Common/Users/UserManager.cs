@@ -1,5 +1,4 @@
 ﻿using SharpChat.Events;
-using SharpChat.Sessions;
 using SharpChat.Users.Auth;
 using System;
 using System.Collections.Generic;
@@ -7,16 +6,14 @@ using System.Linq;
 
 namespace SharpChat.Users {
     public class UserManager : IEventHandler {
-        private List<IUser> Users { get; } = new List<IUser>();
+        private List<User> Users { get; } = new List<User>();
         private IEventDispatcher Dispatcher { get; }
         private IEventTarget Target { get; }
-        private SessionManager Sessions { get; }
-        private object Sync { get; } = new object();
+        private readonly object Sync = new object();
 
-        public UserManager(IEventDispatcher dispatcher, IEventTarget target, SessionManager sessions) {
+        public UserManager(IEventDispatcher dispatcher, IEventTarget target) {
             Dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
             Target = target ?? throw new ArgumentNullException(nameof(target));
-            Sessions = sessions ?? throw new ArgumentNullException(nameof(sessions));
         }
 
         private void OnConnect(object sender, UserConnectEvent uce) {
@@ -49,19 +46,17 @@ namespace SharpChat.Users {
 
         private void OnDisconnect(object sender, UserDisconnectEvent ude) {
             lock(Sync) {
-                IUser user = Get(ude.Sender.UserId);
+                IUser user = GetUser(ude.Sender.UserId);
                 if(user == null)
                     return;
                 if(user is IEventHandler ueh)
                     ueh.HandleEvent(sender, ude);
-                else
-                    Users.Remove(user);
             }
         }
 
         private void OnUpdate(object sender, UserUpdateEvent uue) {
             lock(Sync) {
-                IUser user = Get(uue.Sender.UserId);
+                IUser user = GetUser(uue.Sender.UserId);
                 if(user is IEventHandler ueh)
                     ueh.HandleEvent(sender, uue);
             }
@@ -72,16 +67,16 @@ namespace SharpChat.Users {
                 return false;
 
             lock(Sync)
-                return Users.Contains(user)
+                return Users.Contains(user) // the below should probably use .Equals
                     || Users.Any(x => x.Equals(user) || x.UserName.ToLowerInvariant() == user.UserName.ToLowerInvariant());
         }
 
-        public IUser Get(long userId) {
+        public IUser GetUser(long userId) {
             lock(Sync)
                 return Users.FirstOrDefault(x => x.UserId == userId);
         }
 
-        public IUser Get(string username, bool includeNickName = true, bool includeDisplayName = true) {
+        public IUser GetUser(string username, bool includeNickName = true, bool includeDisplayName = true) {
             if(string.IsNullOrWhiteSpace(username))
                 return null;
             username = username.ToLowerInvariant();
@@ -92,63 +87,42 @@ namespace SharpChat.Users {
                     || (includeDisplayName && x.GetDisplayName().ToLowerInvariant() == username));
         }
 
-        public IEnumerable<IUser> OfRank(int rank) {
-            lock(Sync)
-                return Users.Where(u => u.Rank >= rank).ToList();
+        public IUser GetUser(IUser user) {
+            if(user == null)
+                throw new ArgumentNullException(nameof(user));
+            lock(Sync) {
+                if(user is User u && Users.Contains(u))
+                    return u;
+                return Users.FirstOrDefault(u => u.Equals(user));
+            }
         }
 
-        public IEnumerable<IUser> WithActiveConnections() {
+        public void GetUsers(int minRank, Action<IEnumerable<IUser>> callback) {
+            if(callback == null)
+                throw new ArgumentNullException(nameof(callback));
             lock(Sync)
-                return Users.Where(u => Sessions.GetSessionCount(u) > 0).ToList();
+                callback.Invoke(Users.Where(u => u.Rank >= minRank));
         }
 
-        public IEnumerable<IUser> All() {
+        public void GetUsers(Action<IEnumerable<IUser>> callback) {
+            if(callback == null)
+                throw new ArgumentNullException(nameof(callback));
             lock(Sync)
-                return Users.ToList();
-        }
-
-        public void HandleEvent(object sender, IEvent evt) {
-            lock(Sync)
-                switch(evt) {
-                    // Send to all users with minimum rank
-                    case ChannelCreateEvent cce:
-                        break;
-                    case ChannelUpdateEvent cue:
-                        break;
-                    case ChannelDeleteEvent cde:
-                        break;
-
-                    case UserConnectEvent uce:
-                        OnConnect(sender, uce);
-                        break;
-                    case UserUpdateEvent uue:
-                        OnUpdate(sender, uue);
-                        break;
-                    case UserDisconnectEvent ude:
-                        OnDisconnect(sender, ude);
-                        break;
-                }
+                callback.Invoke(Users);
         }
 
         public IUser Connect(IUserAuthResponse uar) {
             lock(Sync) {
-                IUser user = Get(uar.UserId);
+                IUser user = GetUser(uar.UserId);
                 if(user == null)
-                    return Create(
-                        uar.UserId,
-                        uar.UserName,
-                        uar.Colour,
-                        uar.Rank,
-                        uar.Permissions
-                    );
+                    return Create(uar.UserId, uar.UserName, uar.Colour, uar.Rank, uar.Permissions);
 
                 Update(user, uar.UserName, uar.Colour, uar.Rank, uar.Permissions);
-
                 return user;
             }
         }
 
-        private IUser Create(
+        public IUser Create(
             long userId,
             string userName,
             Colour colour,
@@ -158,12 +132,13 @@ namespace SharpChat.Users {
             string statusMessage = null,
             string nickName = null
         ) {
+            if(userName == null)
+                throw new ArgumentNullException(nameof(userName));
+
             lock(Sync) {
-                IUser user = new User(userId, userName, colour, rank, perms, status, statusMessage, nickName);
+                User user = new User(userId, userName, colour, rank, perms, status, statusMessage, nickName);
                 Users.Add(user);
-
                 Dispatcher.DispatchEvent(this, new UserConnectEvent(Target, user));
-
                 return user;
             }
         }
@@ -222,6 +197,29 @@ namespace SharpChat.Users {
 
                 Dispatcher.DispatchEvent(this, new UserUpdateEvent(Target, user, userName, colour, rank, nickName, perms, status, statusMessage));
             }
+        }
+
+        public void HandleEvent(object sender, IEvent evt) {
+            lock(Sync)
+                switch(evt) {
+                    // Send to all users with minimum rank
+                    case ChannelCreateEvent cce:
+                        break;
+                    case ChannelUpdateEvent cue:
+                        break;
+                    case ChannelDeleteEvent cde:
+                        break;
+
+                    case UserConnectEvent uce:
+                        OnConnect(sender, uce);
+                        break;
+                    case UserUpdateEvent uue:
+                        OnUpdate(sender, uue);
+                        break;
+                    case UserDisconnectEvent ude:
+                        OnDisconnect(sender, ude);
+                        break;
+                }
         }
     }
 }

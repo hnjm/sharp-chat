@@ -1,5 +1,4 @@
 ﻿using SharpChat.Channels;
-using SharpChat.Events;
 using SharpChat.Users;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,14 +8,14 @@ namespace SharpChat.Commands {
         public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == @"join";
 
-        public MessageCreateEvent DispatchCommand(ICommandContext ctx) {
+        public bool DispatchCommand(ICommandContext ctx) {
             string channelName = ctx.Args.ElementAtOrDefault(1);
 
             // no error, apparently
             if(string.IsNullOrWhiteSpace(channelName))
-                return null;
+                return false;
 
-            IChannel channel = ctx.Chat.Channels.Get(channelName);
+            IChannel channel = ctx.Chat.Channels.GetChannel(channelName);
 
             // the original server sends ForceChannel before sending the error message, but this order probably makes more sense.
 
@@ -25,7 +24,7 @@ namespace SharpChat.Commands {
                 throw new ChannelNotFoundCommandException(channelName);
             }
 
-            if(ctx.Chat.Channels.HasUser(channel, ctx.User)) {
+            if(ctx.Chat.ChannelUsers.HasUser(channel, ctx.User)) {
                 ctx.Session.ForceChannel();
                 throw new AlreadyInChannelCommandException(channel);
             }
@@ -45,8 +44,7 @@ namespace SharpChat.Commands {
             }
 
             ctx.Chat.SwitchChannel(ctx.Session, channel);
-
-            return null;
+            return true;
         }
     }
 }

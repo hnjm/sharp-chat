@@ -12,7 +12,7 @@ namespace SharpChat.Sessions {
         public const short DEFAULT_MAX_COUNT = 5;
         public const ushort DEFAULT_TIMEOUT = 5;
 
-        private object Sync { get; } = new object();
+        private readonly object Sync = new object();
 
         private CachedValue<short> MaxPerUser { get; } 
         private CachedValue<ushort> TimeOut { get; }
@@ -34,6 +34,24 @@ namespace SharpChat.Sessions {
             if(timeOut < 1) // avoid idiocy
                 timeOut = DEFAULT_TIMEOUT;
             return session.IdleTime.TotalSeconds >= timeOut;
+        }
+
+        public void GetSessions(IUser user, Action<IEnumerable<Session>> callback) {
+            if(user == null)
+                throw new ArgumentNullException(nameof(user));
+            if(callback == null)
+                throw new ArgumentNullException(nameof(callback));
+
+            lock(Sync)
+                callback.Invoke(Sessions.Where(s => s.HasUser && s.User.Equals(user)));
+        }
+
+        public void GetActiveSessions(Action<IEnumerable<Session>> callback) {
+            if(callback == null)
+                throw new ArgumentNullException(nameof(callback));
+
+            lock(Sync)
+                callback.Invoke(Sessions.Where(s => s.HasUser && !HasTimedOut(s)));
         }
 
         public void Add(Session session) {

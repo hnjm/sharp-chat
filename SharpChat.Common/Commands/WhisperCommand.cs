@@ -1,12 +1,11 @@
-﻿using SharpChat.Events;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace SharpChat.Commands {
     public class WhisperCommand : ICommand {
         public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == @"whisper" || name == @"msg";
 
-        public MessageCreateEvent DispatchCommand(ICommandContext ctx) {
+        public bool DispatchCommand(ICommandContext ctx) {
             // reimplement this entirely
             // this should invoke the creation of a private temporary channel
             // if the client joins this channel, it should no longer use the Private message flag and just pump shit into that channel
@@ -27,7 +26,7 @@ namespace SharpChat.Commands {
 
             whisperUser.Send(new ChatMessageAddPacket(new ChatMessageEvent(ctx.User, whisperUser, whisperStr, EventFlags.Private)));
             ctx.User.Send(new ChatMessageAddPacket(new ChatMessageEvent(ctx.User, ctx.User, $@"{whisperUser.DisplayName} {whisperStr}", EventFlags.Private)));*/
-            return null;
+            return true;
         }
     }
 }

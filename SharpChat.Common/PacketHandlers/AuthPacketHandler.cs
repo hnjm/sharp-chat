@@ -1,5 +1,4 @@
 ﻿using SharpChat.Channels;
-using SharpChat.Events;
 using SharpChat.Messages;
 using SharpChat.Packets;
 using SharpChat.Sessions;
@@ -78,7 +77,7 @@ namespace SharpChat.PacketHandlers {
                         }
 
                         IChannel chan = ctx.Chat.Channels.DefaultChannel;
-                        bool shouldJoin = !Channels.HasUser(chan, user);
+                        bool shouldJoin = !ctx.Chat.ChannelUsers.HasUser(chan, user);
 
                         if(shouldJoin) {
                             chan.SendPacket(new UserConnectPacket(DateTimeOffset.Now, user));
@@ -86,17 +85,17 @@ namespace SharpChat.PacketHandlers {
                         }
 
                         sess.SendPacket(new AuthSuccessPacket(user, chan, sess, Version, ctx.Chat.Messages.TextMaxLength));
-                        Channels.GetUsers(chan, users => sess.SendPacket(new ContextUsersPacket(users.Except(new[] { user }).OrderByDescending(u => u.Rank))));
+                        ctx.Chat.ChannelUsers.GetUsers(chan, u => sess.SendPacket(new ContextUsersPacket(u.Except(new[] { user }).OrderByDescending(u => u.Rank))));
 
-                        IEnumerable<IMessage> msgs = ctx.Chat.Messages.GetMessages(chan, 20, 0);
+                        ctx.Chat.Messages.GetMessages(chan, m => {
+                            foreach(IMessage msg in m)
+                                sess.SendPacket(new ContextMessagePacket(msg));
+                        });
 
-                        foreach(IMessage msg in msgs)
-                            sess.SendPacket(new ContextMessagePacket(msg));
-
-                        sess.SendPacket(new ContextChannelsPacket(ctx.Chat.Channels.OfHierarchy(user.Rank)));
+                        ctx.Chat.Channels.GetChannels(user.Rank, c => sess.SendPacket(new ContextChannelsPacket(c)));
 
                         if(shouldJoin)
-                            chan.UserJoin(user);
+                            ctx.Chat.ChannelUsers.JoinChannel(chan, user);
                     }, exceptionHandler);
                 },
                 exceptionHandler

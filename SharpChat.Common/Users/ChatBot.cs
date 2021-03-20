@@ -9,9 +9,6 @@
         public UserStatus Status => UserStatus.Online;
         public string StatusMessage => string.Empty;
 
-        public bool Can(UserPermissions perm)
-            => true;
-
         public bool Equals(IUser other)
             => other != null && (other is ChatBot || other.UserId == UserId);
 

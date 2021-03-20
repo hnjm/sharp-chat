@@ -1,5 +1,4 @@
-﻿using SharpChat.Events;
-using SharpChat.Packets;
+﻿using SharpChat.Packets;
 using SharpChat.Users;
 using System;
 using System.Collections.Generic;
@@ -15,7 +14,7 @@ namespace SharpChat.Commands {
         public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == @"bans" || name == @"banned";
 
-        public MessageCreateEvent DispatchCommand(ICommandContext ctx) {
+        public bool DispatchCommand(ICommandContext ctx) {
             if(!ctx.User.Can(UserPermissions.BanUser | UserPermissions.KickUser))
                 throw new CommandNotAllowedException(ctx.Args);
 
@@ -27,7 +26,7 @@ namespace SharpChat.Commands {
                 ctx.Session.SendPacket(new CommandGenericException().ToPacket(Sender));
             });
 
-            return null;
+            return true;
         }
     }
 }

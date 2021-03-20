@@ -41,10 +41,5 @@ namespace SharpChat.Users {
         /// Current presence message of the user
         /// </summary>
         string StatusMessage { get; }
-
-        /// <summary>
-        /// Permission check shorthand
-        /// </summary>
-        bool Can(UserPermissions perm);
     }
 }

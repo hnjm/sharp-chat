@@ -1,7 +1,9 @@
-﻿using SharpChat.Events;
+﻿using SharpChat.Channels;
+using SharpChat.Events;
 using SharpChat.Users.Auth;
 using System;
-using System.Text;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace SharpChat.Users {
     public class User : IUser, IEventHandler {
@@ -13,6 +15,9 @@ namespace SharpChat.Users {
         public UserPermissions Permissions { get; private set; }
         public UserStatus Status { get; private set; } = UserStatus.Online;
         public string StatusMessage { get; private set; }
+
+        private readonly object Sync = new object();
+        private List<string> Channels { get; } = new List<string>();
 
         public User(
             long userId,
@@ -50,37 +55,56 @@ namespace SharpChat.Users {
             Permissions = auth.Permissions;
         }
 
-        public bool Can(UserPermissions perm)
-            => (Permissions & perm) == perm;
-
         public override string ToString()
             => $@"<ChatUser {UserId}#{UserName}>";
 
         public bool Equals(IUser other)
             => other != null && other.UserId == UserId;
 
-        public void HandleEvent(object sender, IEvent evt) {
-            switch(evt) {
-                case UserUpdateEvent uue:
-                    if(uue.HasUserName)
-                        UserName = uue.UserName;
-                    if(uue.Colour.HasValue)
-                        Colour = uue.Colour.Value;
-                    if(uue.Rank.HasValue)
-                        Rank = uue.Rank.Value;
-                    if(uue.HasNickName)
-                        NickName = uue.NickName;
-                    if(uue.Perms.HasValue)
-                        Permissions = uue.Perms.Value;
-                    if(uue.Status.HasValue)
-                        Status = uue.Status.Value;
-                    if(uue.HasStatusMessage)
-                        StatusMessage = uue.StatusMessage;
-                    break;
+        public bool HasChannel(IChannel channel) {
+            if(channel == null)
+                return false;
+            lock(Sync)
+                return Channels.Contains(channel.Name.ToLowerInvariant());
+        }
 
-                case UserDisconnectEvent _:
-                    Status = UserStatus.Offline;
-                    break;
+        public void GetChannels(Action<IEnumerable<string>> callback) {
+            if(callback == null)
+                throw new ArgumentNullException(nameof(callback));
+            lock(Sync)
+                callback.Invoke(Channels);
+        }
+
+        public void HandleEvent(object sender, IEvent evt) {
+            lock(Sync) {
+                switch(evt) {
+                    case ChannelJoinEvent cje:
+                        Channels.Add(evt.Target);
+                        break;
+                    case ChannelLeaveEvent cle:
+                        Channels.Remove(evt.Target);
+                        break;
+
+                    case UserUpdateEvent uue:
+                        if(uue.HasUserName)
+                            UserName = uue.UserName;
+                        if(uue.Colour.HasValue)
+                            Colour = uue.Colour.Value;
+                        if(uue.Rank.HasValue)
+                            Rank = uue.Rank.Value;
+                        if(uue.HasNickName)
+                            NickName = uue.NickName;
+                        if(uue.Perms.HasValue)
+                            Permissions = uue.Perms.Value;
+                        if(uue.Status.HasValue)
+                            Status = uue.Status.Value;
+                        if(uue.HasStatusMessage)
+                            StatusMessage = uue.StatusMessage;
+                        break;
+                    case UserDisconnectEvent _:
+                        Status = UserStatus.Offline;
+                        break;
+                }
             }
         }
     }

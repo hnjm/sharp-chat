@@ -1,5 +1,4 @@
 ﻿using SharpChat.Channels;
-using SharpChat.Events;
 using SharpChat.Packets;
 using SharpChat.Users;
 using System;
@@ -17,13 +16,13 @@ namespace SharpChat.Commands {
         public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == @"delchan" || (name == @"delete" && args.ElementAtOrDefault(1)?.All(char.IsDigit) == false);
 
-        public MessageCreateEvent DispatchCommand(ICommandContext ctx) {
+        public bool DispatchCommand(ICommandContext ctx) {
             string channelName = string.Join('_', ctx.Args.Skip(1));
 
             if(string.IsNullOrWhiteSpace(channelName))
                 throw new CommandFormatException();
 
-            IChannel channel = ctx.Chat.Channels.Get(channelName);
+            IChannel channel = ctx.Chat.Channels.GetChannel(channelName);
             if(channel == null)
                 throw new ChannelNotFoundCommandException(channelName);
 
@@ -32,7 +31,7 @@ namespace SharpChat.Commands {
 
             ctx.Chat.Channels.Remove(channel);
             ctx.Session.SendPacket(new ChannelDeleteResponsePacket(Sender, channel.Name));
-            return null;
+            return true;
         }
     }
 }

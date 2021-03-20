@@ -1,5 +1,4 @@
-﻿using SharpChat.Events;
-using SharpChat.Packets;
+﻿using SharpChat.Packets;
 using SharpChat.Sessions;
 using SharpChat.Users;
 using System;
@@ -20,20 +19,20 @@ namespace SharpChat.Commands {
         public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == @"ip" || name == @"whois";
 
-        public MessageCreateEvent DispatchCommand(ICommandContext ctx) {
+        public bool DispatchCommand(ICommandContext ctx) {
             if(!ctx.User.Can(UserPermissions.SeeIPAddress))
                 throw new CommandNotAllowedException(ctx.Args);
 
             string userName = ctx.Args.ElementAtOrDefault(1);
             IUser user = null;
-            if(string.IsNullOrEmpty(userName) || (user = ctx.Chat.Users.Get(userName)) == null)
+            if(string.IsNullOrEmpty(userName) || (user = ctx.Chat.Users.GetUser(userName)) == null)
                 throw new UserNotFoundCommandException(user?.UserName ?? userName);
 
             IEnumerable<IPAddress> addrs = Sessions.GetRemoteAddresses(user);
             foreach(IPAddress addr in addrs)
                 ctx.Session.SendPacket(new WhoIsResponsePacket(Sender, user, addr));
 
-            return null;
+            return true;
         }
     }
 }

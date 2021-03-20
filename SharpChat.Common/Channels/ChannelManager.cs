@@ -1,6 +1,5 @@
 ﻿using SharpChat.Configuration;
 using SharpChat.Events;
-using SharpChat.Packets;
 using SharpChat.Users;
 using System;
 using System.Collections.Generic;
@@ -12,34 +11,26 @@ namespace SharpChat.Channels {
     public class ChannelInvalidNameException : ChannelException { }
 
     public class ChannelManager : IEventHandler {
-        private List<IChannel> Channels { get; } = new List<IChannel>();
+        private List<Channel> Channels { get; } = new List<Channel>();
 
         private IConfig Config { get; }
         private CachedValue<string[]> ChannelNames { get; }
 
         private IEventDispatcher Dispatcher { get; }
         private IEventTarget Target { get; }
-        private UserManager Users { get; }
         private ChatBot Bot { get; }
         private object Sync { get; } = new object();
 
-        public ChannelManager(
-            IEventDispatcher dispatcher,
-            IEventTarget target,
-            IConfig config,
-            ChatBot bot,
-            UserManager users
-        ) {
+        public ChannelManager(IEventDispatcher dispatcher, IEventTarget target, IConfig config, ChatBot bot) {
             Dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
             Target = target ?? throw new ArgumentNullException(nameof(target));
             Config = config ?? throw new ArgumentNullException(nameof(config));
-            Users = users ?? throw new ArgumentNullException(nameof(users));
             Bot = bot ?? throw new ArgumentNullException(nameof(bot));
             ChannelNames = Config.ReadCached(@"channels", new[] { @"lounge" });
             UpdateConfigChannels();
         }
 
-        public IChannel DefaultChannel { get; private set; }
+        public IChannel DefaultChannel { get; private set; } // does there need to be a more explicit way of assigning this?
 
         // Needs better name + figure out how to run periodically
         public void UpdateConfigChannels() {
@@ -94,71 +85,41 @@ namespace SharpChat.Channels {
             }
         }
 
-        // Should this be here?
-        // Should there be a Channel User relationship thing?
-        public bool HasUser(IChannel channel, IUser user) {
-            if(channel == null)
-                throw new ArgumentNullException(nameof(channel));
-            if(user == null)
-                throw new ArgumentNullException(nameof(user));
-
-            if(channel is Channel c)
-                return c.HasUser(user);
-
-            lock(Sync) {
-                return false;
-            }
+        public bool Exists(string name) {
+            if(name == null)
+                throw new ArgumentNullException(nameof(name));
+            lock(Sync)
+                return Channels.Any(c => c.Name.Equals(name, StringComparison.InvariantCultureIgnoreCase));
         }
 
-        public void GetUsers(IChannel channel, Action<IEnumerable<IUser>> callable) {
+        public bool Exists(IChannel channel) {
             if(channel == null)
                 throw new ArgumentNullException(nameof(channel));
-            if(callable == null)
-                throw new ArgumentNullException(nameof(callable));
-
-            if(channel is Channel c) {
-                c.GetUsers(callable);
-                return;
-            }
-
-            lock(Sync) {
-                return;
-            }
-        }
-
-        public void Add(IChannel channel) {
-            if(channel == null)
-                throw new ArgumentNullException(nameof(channel));
-            if(!channel.Name.All(c => char.IsLetter(c) || char.IsNumber(c) || c == '-'))
-                throw new ChannelInvalidNameException();
-            if(Get(channel.Name) != null)
-                throw new ChannelExistException();
-
-            lock(Sync) {
-                // Add channel to the listing
-                Channels.Add(channel);
-
-                // Set as default if there's none yet
-                if(DefaultChannel == null)
-                    DefaultChannel = channel;
-
-                // Broadcast creation of channel (deprecated)
-                if(Users != null)
-                    foreach(IUser user in Users.OfRank(channel.MinimumRank))
-                        user.SendPacket(new ChannelCreatePacket(channel));
-            }
+            lock(Sync)
+                return Channels.Any(c => c.Equals(channel));
         }
 
         public void Remove(IChannel channel, IUser user = null) {
-            if(channel == null || channel == DefaultChannel)
-                return;
+            if(channel == null)
+                throw new ArgumentNullException(nameof(channel));
+            if(channel == DefaultChannel)
+                return; // exception?
 
             lock(Sync) {
+                Channel chan;
+                if(channel is Channel c && Channels.Contains(c))
+                    chan = c;
+                else
+                    chan = Channels.FirstOrDefault(c => c.Equals(channel));
+
+                if(chan == null)
+                    return; // exception?
+
                 // Remove channel from the listing
-                Channels.Remove(channel);
+                Channels.Remove(chan);
 
                 // Broadcast death
-                Dispatcher.DispatchEvent(this, new ChannelDeleteEvent(channel, user ?? Bot));
+                Dispatcher.DispatchEvent(this, new ChannelDeleteEvent(chan, user ?? Bot));
 
                 // Move all users back to the main channel
                 // TODO:!!!!!!!!! Replace this with a kick. SCv2 supports being in 0 channels, SCv1 should force the user back to DefaultChannel.
@@ -168,8 +129,8 @@ namespace SharpChat.Channels {
                 //}
 
                 // Broadcast deletion of channel (deprecated)
-                foreach(IUser u in Users.OfRank(channel.MinimumRank))
-                    u.SendPacket(new ChannelDeletePacket(channel));
+                /*foreach(IUser u in Users.OfRank(chan.MinimumRank))
+                    u.SendPacket(new ChannelDeletePacket(chan));*/
             }
         }
 
@@ -182,27 +143,11 @@ namespace SharpChat.Channels {
                     || Channels.Any(c => c.Name.ToLowerInvariant() == chan.Name.ToLowerInvariant());
         }
 
-        public void HandleEvent(object sender, IEvent evt) {
-            lock(Sync)
-                switch(evt) {
-                    case ChannelCreateEvent create:
-                        //if(sender != this)
-                        //    Add();
-                        break;
-
-                    case ChannelDeleteEvent delete:
-                        //if(sender != this)
-                            //Remove();
-                        break;
-
-                    case ChannelUpdateEvent _:
-                    case ChannelJoinEvent _:
-                    case ChannelLeaveEvent _:
-                        IChannel chan = Get(evt.Target);
-                        if(chan is IEventHandler ceh)
-                            ceh.HandleEvent(sender, evt);
-                        break;
-                }
+        private void ValidateName(string name) {
+            if(!name.All(c => char.IsLetter(c) || char.IsNumber(c) || c == '-'))
+                throw new ChannelInvalidNameException();
+            if(Exists(name))
+                throw new ChannelExistException();
         }
 
         public IChannel Create(
@@ -214,11 +159,24 @@ namespace SharpChat.Channels {
             bool autoJoin = false,
             uint maxCapacity = 0
         ) {
-            lock(Sync) {
-                IChannel channel = new Channel(name, temp, minRank, password, autoJoin, maxCapacity, owner);
-                Add(channel);
+            if(name == null)
+                throw new ArgumentNullException(nameof(name));
+            ValidateName(name);
 
+            lock(Sync) {
+                Channel channel = new Channel(name, temp, minRank, password, autoJoin, maxCapacity, owner);
+                Channels.Add(channel);
+                
+                // Should this remain?
+                if(DefaultChannel == null)
+                    DefaultChannel = channel;
+                
                 Dispatcher.DispatchEvent(this, new ChannelCreateEvent(Target, channel));
+
+                // Broadcast creation of channel (deprecated)
+                /*if(Users != null)
+                    foreach(IUser user in Users.OfRank(channel.MinimumRank))
+                        user.SendPacket(new ChannelCreatePacket(channel));*/
 
                 return channel;
             }
@@ -234,12 +192,8 @@ namespace SharpChat.Channels {
                 string prevName = channel.Name;
                 bool nameUpdated = !string.IsNullOrWhiteSpace(name) && name != prevName;
 
-                if(nameUpdated) {
-                    if(!name.All(c => char.IsLetter(c) || char.IsNumber(c) || c == '-'))
-                        throw new ChannelInvalidNameException();
-                    if(Get(name) != null)
-                        throw new ChannelExistException();
-                }
+                if(nameUpdated)
+                    ValidateName(name);
 
                 if(temporary.HasValue && channel.IsTemporary == temporary.Value)
                     temporary = null;
@@ -260,28 +214,113 @@ namespace SharpChat.Channels {
 
                 // Users that no longer have access to the channel/gained access to the channel by the hierarchy change should receive delete and create packets respectively
                 // TODO: should be moved to the usermanager probably
-                foreach(IUser user in Users.OfRank(channel.MinimumRank)) {
+                /*foreach(IUser user in Users.OfRank(channel.MinimumRank)) {
                     user.SendPacket(new ChannelUpdatePacket(prevName, channel));
 
                     if(nameUpdated)
                         user.ForceChannel();
-                }
+                }*/
             }
         }
 
-        public IChannel Get(string name) {
+        public IChannel GetChannel(string name) {
             if(string.IsNullOrWhiteSpace(name))
                 return null;
+            lock(Sync)
+                return Channels.FirstOrDefault(c => c.Name.Equals(name, StringComparison.InvariantCultureIgnoreCase));
+        }
 
+        public IChannel GetChannel(IChannel channel) {
+            if(channel == null)
+                throw new ArgumentNullException(nameof(channel));
             lock(Sync) {
-                return Channels.FirstOrDefault(x => x.Name.ToLowerInvariant() == name.ToLowerInvariant());
+                if(channel is Channel c && Channels.Contains(c))
+                    return c;
+                return Channels.FirstOrDefault(c => c.Equals(channel));
             }
         }
 
-        public IEnumerable<IChannel> OfHierarchy(int hierarchy) {
+        public void GetChannels(IEnumerable<string> names, Action<IEnumerable<IChannel>> callback) {
+            if(names == null)
+                throw new ArgumentNullException(nameof(names));
+            if(callback == null)
+                throw new ArgumentNullException(nameof(callback));
+            lock(Sync)
+                callback.Invoke(Channels.Where(c => names.Contains(c.Name)));
+        }
+
+        public void GetChannels(int minRank, Action<IEnumerable<IChannel>> callback) {
+            if(callback == null)
+                throw new ArgumentNullException(nameof(callback));
+            lock(Sync)
+                callback.Invoke(Channels.Where(c => c.MinimumRank <= minRank));
+        }
+
+        public void GetChannels(IUser user, Action<IEnumerable<IChannel>> callback) {
+            if(user == null)
+                throw new ArgumentNullException(nameof(user));
+            if(callback == null)
+                throw new ArgumentNullException(nameof(callback));
+
+            lock(Sync)
+                callback.Invoke(Channels.Where(c => c.HasUser(user)));
+        }
+
+        private void OnCreate(object sender, ChannelCreateEvent cce) {
+            if(sender == this)
+                return;
+
             lock(Sync) {
-                return Channels.Where(c => c.MinimumRank <= hierarchy);
+                if(Exists(cce.Name))
+                    throw new ArgumentException(@"Channel already registered??????", nameof(cce));
+
+                Channels.Add(new Channel(
+                    cce.Name,
+                    cce.IsTemporary,
+                    cce.MinimumRank,
+                    cce.Password,
+                    cce.AutoJoin,
+                    cce.MaxCapacity,
+                    cce.Sender
+                ));
             }
+        }
+
+        private void OnDelete(object sender, ChannelDeleteEvent cde) {
+            if(sender == this)
+                return;
+
+            lock(Sync) {
+                Channel channel = Channels.FirstOrDefault(c => c.Name.Equals(cde.Target, StringComparison.InvariantCultureIgnoreCase));
+                if(channel != null)
+                    Channels.Remove(channel);
+            }
+        }
+
+        private void OnEvent(object sender, IEvent evt) {
+            lock(Sync) {
+                Channel channel = Channels.FirstOrDefault(c => c.Name.Equals(evt.Target, StringComparison.InvariantCultureIgnoreCase));
+                if(channel != null)
+                    channel.HandleEvent(sender, evt);
+            }
+        }
+
+        public void HandleEvent(object sender, IEvent evt) {
+            lock(Sync)
+                switch(evt) {
+                    case ChannelCreateEvent cce:
+                        OnCreate(sender, cce);
+                        break;
+                    case ChannelDeleteEvent cde:
+                        OnDelete(sender, cde);
+                        break;
+
+                    case ChannelUpdateEvent _:
+                    case ChannelJoinEvent _:
+                    case ChannelLeaveEvent _:
+                        OnEvent(sender, evt);
+                        break;
+                }
         }
     }
 }

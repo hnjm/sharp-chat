@@ -53,10 +53,10 @@ namespace SharpChat.PacketHandlers {
             if(string.IsNullOrWhiteSpace(channelName))
                 channel = ctx.Session.LastChannel;
             else
-                channel = ctx.User.GetChannels().FirstOrDefault(c => c.Name.ToLowerInvariant() == channelName);
+                channel = ctx.Chat.Channels.GetChannel(channelName);
 
             if(channel == null
-                || !ctx.Chat.Channels.HasUser(channel, ctx.User)
+                || !ctx.Chat.ChannelUsers.HasUser(channel, ctx.User)
             //  || (ctx.User.IsSilenced && !ctx.User.Can(UserPermissions.SilenceUser)) TODO: readd silencing
             ) return;
 
@@ -78,27 +78,20 @@ namespace SharpChat.PacketHandlers {
             Logger.Write($@"<{ctx.Session.Id} {ctx.User.UserName}> {text}");
 #endif
 
-            MessageCreateEvent message = null;
+            bool handled = false;
 
-            if(text[0] == '/') {
+            if(text[0] == '/')
                 try {
-                    message = HandleCommand(text, ctx.Chat, ctx.User, channel, ctx.Session);
+                    handled = HandleCommand(text, ctx.Chat, ctx.User, channel, ctx.Session);
                 } catch(CommandException ex) {
                     ctx.Session.SendPacket(ex.ToPacket(Bot));
                 }
 
-                if(message == null)
-                    return;
-            }
-
-            if(message == null)
-                message = new MessageCreateEvent(channel, ctx.User, text);
-
-            ctx.Chat.DispatchEvent(this, message);
-            channel.SendPacket(new ChatMessageAddPacket(message));
+            if(!handled)
+                Messages.Create(ctx.User, channel, text);
         }
 
-        public MessageCreateEvent HandleCommand(string message, ChatContext context, IUser user, IChannel channel, Session session) {
+        public bool HandleCommand(string message, ChatContext context, IUser user, IChannel channel, Session session) {
             string[] parts = message[1..].Split(' ');
             string commandName = parts[0].Replace(@".", string.Empty).ToLowerInvariant();
 
