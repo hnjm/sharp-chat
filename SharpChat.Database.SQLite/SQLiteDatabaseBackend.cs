@@ -37,6 +37,8 @@ namespace SharpChat.Database.SQLite {
 
         public string TimestampType
             => @"INTEGER";
+        public string TextType
+            => @"TEXT";
         public string BlobType
             => @"BLOB";
         public string VarCharType(int size)

@@ -43,18 +43,8 @@ namespace SharpChat.Users {
         string StatusMessage { get; }
 
         /// <summary>
-        /// Definitive display name of the user, should be UserName unless NickName isn't empty
-        /// </summary>
-        string DisplayName { get; }
-
-        /// <summary>
         /// Permission check shorthand
         /// </summary>
         bool Can(UserPermissions perm);
-
-        /// <summary>
-        /// Packs the user up for sending to the client
-        /// </summary>
-        string Pack();
     }
 }

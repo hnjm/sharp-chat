@@ -43,6 +43,8 @@ namespace SharpChat.Database.MariaDB {
 
         public string TimestampType
             => @"TIMESTAMP";
+        public string TextType
+            => @"TEXT";
         public string BlobType
             => @"BLOB";
         public string VarCharType(int size)

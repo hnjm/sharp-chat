@@ -89,7 +89,7 @@ namespace SharpChat.Users {
             lock(Sync)
                 return Users.FirstOrDefault(x => x.UserName.ToLowerInvariant() == username
                     || (includeNickName && x.NickName?.ToLowerInvariant() == username)
-                    || (includeDisplayName && x.DisplayName.ToLowerInvariant() == username));
+                    || (includeDisplayName && x.GetDisplayName().ToLowerInvariant() == username));
         }
 
         public IEnumerable<IUser> OfRank(int rank) {

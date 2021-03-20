@@ -1,5 +1,6 @@
 ﻿using SharpChat.Channels;
 using SharpChat.Events;
+using SharpChat.Messages;
 using SharpChat.Packets;
 using SharpChat.Sessions;
 using SharpChat.Users;
@@ -16,11 +17,13 @@ namespace SharpChat.PacketHandlers {
         public ClientPacket PacketId => ClientPacket.Authenticate;
 
         private SessionManager Sessions { get; }
+        private ChannelManager Channels { get; }
         private IUser Sender { get; }
         private int Version { get; }
 
-        public AuthPacketHandler(SessionManager sessions, IUser sender, int version) {
+        public AuthPacketHandler(SessionManager sessions, ChannelManager channels, IUser sender, int version) {
             Sessions = sessions ?? throw new ArgumentNullException(nameof(sessions));
+            Channels = channels ?? throw new ArgumentNullException(nameof(channels));
             Sender = sender ?? throw new ArgumentNullException(nameof(sender));
             Version = version;
         }
@@ -75,23 +78,24 @@ namespace SharpChat.PacketHandlers {
                         }
 
                         IChannel chan = ctx.Chat.Channels.DefaultChannel;
+                        bool shouldJoin = !Channels.HasUser(chan, user);
 
-                        if(!chan.HasUser(user)) {
+                        if(shouldJoin) {
                             chan.SendPacket(new UserConnectPacket(DateTimeOffset.Now, user));
                             //ctx.Chat.DispatchEvent(this, new UserConnectEvent(chan, user));
                         }
 
                         sess.SendPacket(new AuthSuccessPacket(user, chan, sess, Version, ctx.Chat.Messages.TextMaxLength));
-                        chan.GetUsers(users => sess.SendPacket(new ContextUsersPacket(users.Except(new[] { user }).OrderByDescending(u => u.Rank))));
+                        Channels.GetUsers(chan, users => sess.SendPacket(new ContextUsersPacket(users.Except(new[] { user }).OrderByDescending(u => u.Rank))));
 
-                        IEnumerable<IEvent> msgs = ctx.Chat.Events.GetEventsForTarget(chan);
+                        IEnumerable<IMessage> msgs = ctx.Chat.Messages.GetMessages(chan, 20, 0);
 
-                        foreach(IEvent msg in msgs)
+                        foreach(IMessage msg in msgs)
                             sess.SendPacket(new ContextMessagePacket(msg));
 
                         sess.SendPacket(new ContextChannelsPacket(ctx.Chat.Channels.OfHierarchy(user.Rank)));
 
-                        if(!chan.HasUser(user))
+                        if(shouldJoin)
                             chan.UserJoin(user);
                     }, exceptionHandler);
                 },

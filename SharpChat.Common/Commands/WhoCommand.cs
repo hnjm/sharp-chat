@@ -8,32 +8,35 @@ using System.Linq;
 
 namespace SharpChat.Commands {
     public class WhoCommand : ICommand {
+        private ChannelManager Channels { get; }
         private IUser Sender { get; }
 
-        public WhoCommand(IUser sender) {
+        public WhoCommand(ChannelManager channels, IUser sender) {
+            Channels = channels ?? throw new ArgumentNullException(nameof(channels));
             Sender = sender ?? throw new ArgumentNullException(nameof(sender));
         }
 
         public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == @"who";
 
-        private static void WhoServer(IUser sender, ICommandContext ctx) {
-            ctx.Session.SendPacket(new UserListResponsePacket(sender, ctx.User, ctx.Chat.Users.All()));
+        private void WhoServer(ICommandContext ctx) {
+            ctx.Session.SendPacket(new UserListResponsePacket(Sender, ctx.User, ctx.Chat.Users.All()));
         }
 
-        private static void WhoChannel(IUser sender, ICommandContext ctx, string channelName) {
-            IChannel whoChan = ctx.Chat.Channels.Get(channelName);
+        private void WhoChannel(ICommandContext ctx, string channelName) {
+            IChannel channel = ctx.Chat.Channels.Get(channelName);
 
-            if(whoChan == null)
+            if(channel == null)
                 throw new ChannelNotFoundCommandException(channelName);
 
-            if(whoChan.MinimumRank > ctx.User.Rank || (whoChan.HasPassword && !ctx.User.Can(UserPermissions.JoinAnyChannel)))
+            if(channel.MinimumRank > ctx.User.Rank || (channel.HasPassword && !ctx.User.Can(UserPermissions.JoinAnyChannel)))
                 throw new UserListChannelNotFoundCommandException(channelName);
 
-            whoChan.GetUsers(
+            Channels.GetUsers(
+                channel,
                 users => ctx.Session.SendPacket(new UserListResponsePacket(
-                    sender,
-                    whoChan,
+                    Sender,
+                    channel,
                     ctx.User,
                     users.OrderByDescending(u => u.Rank)
                 ))
@@ -44,9 +47,9 @@ namespace SharpChat.Commands {
             string channelName = ctx.Args.ElementAtOrDefault(1) ?? string.Empty;
 
             if(string.IsNullOrEmpty(channelName))
-                WhoServer(Sender, ctx);
+                WhoServer(ctx);
             else
-                WhoChannel(Sender, ctx, channelName);
+                WhoChannel(ctx, channelName);
 
             return null;
         }

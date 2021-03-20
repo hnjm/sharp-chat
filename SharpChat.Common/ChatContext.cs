@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Linq;
+using SharpChat.Messages.Storage;
 
 namespace SharpChat {
     public class ChatContext : IDisposable, IEventDispatcher, IEventTarget, IServerPacketTarget {
@@ -22,7 +23,6 @@ namespace SharpChat {
         public SessionManager Sessions { get; }
         public RateLimiter RateLimiter { get; }
 
-        public IEventStorage Events { get; }
         public IDataProvider DataProvider { get; }
 
         public ChatBot Bot { get; } = new ChatBot(); 
@@ -32,21 +32,26 @@ namespace SharpChat {
 
         public string TargetName => @"~";
 
+        private ADOEventStorage Events { get; }
+
         public ChatContext(Guid serverId, IConfig config, IDatabaseBackend databaseBackend, IDataProvider dataProvider) {
             if(config == null)
                 throw new ArgumentNullException(nameof(config));
 
             DatabaseWrapper db = new DatabaseWrapper(databaseBackend ?? throw new ArgumentNullException(nameof(databaseBackend)));
-            Events = db.IsNullBackend
-                ? new MemoryEventStorage()
-                : new ADOEventStorage(db);
-            Event.RegisterConstructors(Events);
+
+            if(!db.IsNullBackend) // only leaving to watch things fill in the database for now
+                Events = new ADOEventStorage(db);
+
+            IMessageStorage msgStore = db.IsNullBackend
+                ? new MemoryMessageStorage()
+                : new ADOMessageStorage(db);
 
             DataProvider = dataProvider ?? throw new ArgumentNullException(nameof(dataProvider));
             Sessions = new SessionManager(serverId, config.ScopeTo(@"sessions"));
             Users = new UserManager(this, this, Sessions);
             Channels = new ChannelManager(this, this, config, Bot, Users);
-            Messages = new MessageManager(this, this, Events, config.ScopeTo(@"messages"));
+            Messages = new MessageManager(this, msgStore, config.ScopeTo(@"messages"));
             RateLimiter = new RateLimiter(config.ScopeTo(@"flood"));
 
             // Should probably not rely on Timers in the future
@@ -114,9 +119,9 @@ namespace SharpChat {
             DispatchEvent(this, new ChannelJoinEvent(channel, user));
 
             user.SendPacket(new ContextClearPacket(channel, ContextClearMode.MessagesUsers));
-            channel.GetUsers(users => user.SendPacket(new ContextUsersPacket(users.Except(new[] { user }).OrderByDescending(u => u.Rank))));
-            IEnumerable<IEvent> msgs = Events.GetEventsForTarget(channel);
-            foreach(IEvent msg in msgs)
+            Channels.GetUsers(channel, users => user.SendPacket(new ContextUsersPacket(users.Except(new[] { user }).OrderByDescending(u => u.Rank))));
+            IEnumerable<IMessage> msgs = Messages.GetMessages(channel, 20, 0);
+            foreach(IMessage msg in msgs)
                 user.SendPacket(new ContextMessagePacket(msg));
 
             channel.UserJoin(user);
@@ -161,7 +166,7 @@ namespace SharpChat {
             lock(Sync) {
                 Logger.Debug($@"{evt.GetType()} dispatched.");
 
-                Events.HandleEvent(sender, evt);
+                Events?.HandleEvent(sender, evt);
                 Messages.HandleEvent(sender, evt);
                 Channels.HandleEvent(sender, evt);
                 Users.HandleEvent(sender, evt);

@@ -19,7 +19,7 @@ namespace SharpChat.Packets {
             sb.Append(IServerPacket.SEPARATOR);
             sb.Append(User.UserId);
             sb.Append(IServerPacket.SEPARATOR);
-            sb.Append(User.DisplayName);
+            sb.Append(User.GetDisplayName());
             sb.Append(IServerPacket.SEPARATOR);
             sb.Append(User.Colour);
             sb.Append(IServerPacket.SEPARATOR);

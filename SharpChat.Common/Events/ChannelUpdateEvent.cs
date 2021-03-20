@@ -8,6 +8,7 @@ namespace SharpChat.Events {
         public const string TYPE = @"channel:update";
 
         public override string Type => TYPE;
+        public string PreviousName { get; }
         public string Name { get; }
         public bool? IsTemporary { get; }
         public int? MinimumRank { get; }
@@ -18,16 +19,9 @@ namespace SharpChat.Events {
         public bool HasName => Name != null;
         public bool HasPassword => Password != null;
 
-        private ChannelUpdateEvent(IEvent evt, string name, bool? temp, int? minRank, string password, bool? autoJoin, uint? maxCapacity) : base(evt) {
-            Name = name;
-            IsTemporary = temp;
-            MinimumRank = minRank;
-            Password = password;
-            AutoJoin = autoJoin;
-            MaxCapacity = maxCapacity;
-        }
         public ChannelUpdateEvent(IChannel channel, IUser user, string name = null, bool? temp = null, int? minRank = null, string password = null, bool? autoJoin = null, uint? maxCapacity = null)
             : base(channel, user) {
+            PreviousName = channel.Name;
             Name = name;
             IsTemporary = temp;
             MinimumRank = minRank;
@@ -51,34 +45,6 @@ namespace SharpChat.Events {
             if(MaxCapacity.HasValue)
                 data[@"mcap"] = MaxCapacity.Value;
             return JsonSerializer.Serialize(data);
-        }
-
-        public static IEvent DecodeFromJson(IEvent evt, JsonElement elem) {
-            string name = null;
-            if(elem.TryGetProperty(@"name", out JsonElement nameElem))
-                name = nameElem.GetString();
-
-            bool? temp = null;
-            if(elem.TryGetProperty(@"temp", out JsonElement tempElem))
-                temp = tempElem.GetBoolean();
-
-            int? rank = null;
-            if(elem.TryGetProperty(@"rank", out JsonElement rankElem) && rankElem.TryGetInt32(out int rankDecode))
-                rank = rankDecode;
-
-            string password = null;
-            if(elem.TryGetProperty(@"pass", out JsonElement passwordElem))
-                password = passwordElem.GetString();
-
-            bool? autoJoin = null;
-            if(elem.TryGetProperty(@"auto", out JsonElement autoJoinElem))
-                autoJoin = autoJoinElem.GetBoolean();
-
-            uint? maxCapacity = null;
-            if(elem.TryGetProperty(@"mcap", out JsonElement maxCapacityElem) && maxCapacityElem.TryGetUInt32(out uint maxCapacityDecode))
-                maxCapacity = maxCapacityDecode;
-
-            return new ChannelUpdateEvent(evt, name, temp, rank, password, autoJoin, maxCapacity);
         }
     }
 }

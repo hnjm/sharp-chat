@@ -1,6 +1,5 @@
 ﻿using SharpChat.Users;
 using System;
-using System.Collections.Generic;
 using System.Text;
 
 namespace SharpChat.Packets {

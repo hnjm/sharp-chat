@@ -41,14 +41,14 @@ namespace SharpChat {
 
             List<IPacketHandler> handlers = new List<IPacketHandler> {
                 new PingPacketHandler(),
-                new AuthPacketHandler(Context.Sessions, Context.Bot, VERSION),
-                new MessageSendPacketHandler(Context, Context.Users, Context.Messages, Context.Bot, new ICommand[] {
+                new AuthPacketHandler(Context.Sessions, Context.Channels, Context.Bot, VERSION),
+                new MessageSendPacketHandler(Context, Context.Users, Context.Channels, Context.Messages, Context.Bot, new ICommand[] {
                     new JoinCommand(),
                     new AFKCommand(),
                     new WhisperCommand(),
                     new ActionCommand(),
-                    new WhoCommand(Context.Bot),
-                    new DeleteMessageCommand(Context.Events),
+                    new WhoCommand(Context.Channels, Context.Bot),
+                    new DeleteMessageCommand(Context.Messages),
 
                     new NickCommand(Context.Bot),
                     new CreateChannelCommand(Context.Bot),

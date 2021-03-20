@@ -8,6 +8,7 @@ namespace SharpChat.Database {
         IDatabaseParameter CreateParameter(string name, DatabaseType type);
 
         string TimestampType { get; }
+        string TextType { get; }
         string BlobType { get; }
         string VarCharType(int length);
         string VarBinaryType(int length);

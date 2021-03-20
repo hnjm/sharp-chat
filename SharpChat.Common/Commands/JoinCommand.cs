@@ -25,7 +25,7 @@ namespace SharpChat.Commands {
                 throw new ChannelNotFoundCommandException(channelName);
             }
 
-            if(ctx.User.InChannel(channel)) {
+            if(ctx.Chat.Channels.HasUser(channel, ctx.User)) {
                 ctx.Session.ForceChannel();
                 throw new AlreadyInChannelCommandException(channel);
             }

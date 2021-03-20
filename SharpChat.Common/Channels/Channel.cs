@@ -3,10 +3,9 @@ using SharpChat.Users;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace SharpChat.Channels {
-    public class Channel : IChannel {
+    public class Channel : IChannel, IEventHandler {
         public string Name { get; private set; }
         public bool IsTemporary { get; private set; }
         public int MinimumRank { get; private set; }
@@ -66,20 +65,6 @@ namespace SharpChat.Channels {
                 callable(Users);
         }
 
-        public string Pack() {
-            lock(Sync) {
-                StringBuilder sb = new StringBuilder();
-
-                sb.Append(Name);
-                sb.Append(IServerPacket.SEPARATOR);
-                sb.Append(HasPassword ? '1' : '0');
-                sb.Append(IServerPacket.SEPARATOR);
-                sb.Append(IsTemporary ? '1' : '0');
-
-                return sb.ToString();
-            }
-        }
-
         public void HandleEvent(object sender, IEvent evt) {
             lock(Sync)
                 switch(evt) {
@@ -105,5 +90,8 @@ namespace SharpChat.Channels {
                         break;
                 }
         }
+
+        public bool Equals(IChannel other)
+            => other != null && Name.Equals(other.Name, StringComparison.InvariantCultureIgnoreCase);
     }
 }

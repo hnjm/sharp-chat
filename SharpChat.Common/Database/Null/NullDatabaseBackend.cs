@@ -17,6 +17,8 @@ namespace SharpChat.Database.Null {
 
         public string TimestampType
             => string.Empty;
+        public string TextType
+            => string.Empty;
         public string BlobType
             => string.Empty;
 

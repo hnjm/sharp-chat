@@ -10,10 +10,6 @@ namespace SharpChat.Events {
         public UserStatus Status { get; }
         public string StatusMessage { get; }
 
-        private UserConnectEvent(IEvent evt, UserStatus status, string statusMessage) : base(evt) {
-            Status = status;
-            StatusMessage = statusMessage;
-        }
         public UserConnectEvent(IEventTarget target, IUser user) : base(target, user) {
             Status = user.Status;
             StatusMessage = user.StatusMessage;
@@ -26,18 +22,6 @@ namespace SharpChat.Events {
             if(!string.IsNullOrWhiteSpace(StatusMessage))
                 data[@"sm"] = StatusMessage;
             return JsonSerializer.Serialize(data);
-        }
-
-        public static UserConnectEvent DecodeFromJson(IEvent evt, JsonElement elem) {
-            UserStatus status = UserStatus.Unknown;
-            if(elem.TryGetProperty(@"s", out JsonElement statusElem) && statusElem.TryGetInt32(out int statusRaw))
-                status = (UserStatus)statusRaw;
-
-            string statusMessage = string.Empty;
-            if(elem.TryGetProperty(@"sm", out JsonElement statusMsgElem))
-                statusMessage = statusMsgElem.GetString();
-
-            return new UserConnectEvent(evt, status, statusMessage);
         }
     }
 }

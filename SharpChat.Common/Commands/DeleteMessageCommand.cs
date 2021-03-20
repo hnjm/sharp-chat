@@ -1,5 +1,5 @@
 ﻿using SharpChat.Events;
-using SharpChat.Events.Storage;
+using SharpChat.Messages;
 using SharpChat.Packets;
 using SharpChat.Users;
 using System;
@@ -11,10 +11,10 @@ namespace SharpChat.Commands {
         public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == @"delmsg" || (name == @"delete" && args.ElementAtOrDefault(1)?.All(char.IsDigit) == true);
 
-        private IEventStorage Storage { get; }
+        private MessageManager Messages { get; }
 
-        public DeleteMessageCommand(IEventStorage storage) {
-            Storage = storage ?? throw new ArgumentNullException(nameof(storage));
+        public DeleteMessageCommand(MessageManager messages) {
+            Messages = messages ?? throw new ArgumentNullException(nameof(messages));
         }
 
         public MessageCreateEvent DispatchCommand(ICommandContext ctx) {
@@ -23,17 +23,17 @@ namespace SharpChat.Commands {
             if(!deleteAnyMessage && !ctx.User.Can(UserPermissions.DeleteOwnMessage))
                 throw new CommandNotAllowedException(ctx.Args);
 
-            if(!long.TryParse(ctx.Args.ElementAtOrDefault(1), out long sequenceId))
+            if(!long.TryParse(ctx.Args.ElementAtOrDefault(1), out long messageId))
                 throw new CommandFormatException();
 
-            IEvent delEvent = Storage.GetEvent(sequenceId);
+            IMessage delMsg = Messages.GetMessage(messageId);
 
-            if(delEvent is not MessageCreateEvent || delEvent.Sender.Rank > ctx.User.Rank
-                || (!deleteAnyMessage && delEvent.Sender.UserId != ctx.User.UserId))
+            if(delMsg == null || delMsg.Sender.Rank > ctx.User.Rank
+                || (!deleteAnyMessage && delMsg.Sender.UserId != ctx.User.UserId))
                 throw new MessageNotFoundCommandException();
 
-            if(Storage.RemoveEvent(delEvent))
-                ctx.Chat.SendPacket(new ChatMessageDeletePacket(delEvent));
+            Messages.Delete(ctx.User, delMsg);
+            ctx.Chat.SendPacket(new ChatMessageDeletePacket(delMsg));
 
             return null;
         }

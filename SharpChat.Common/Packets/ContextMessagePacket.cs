@@ -1,18 +1,17 @@
-﻿using SharpChat.Events;
+﻿using SharpChat.Messages;
+using SharpChat.Users;
 using System;
 using System.Text;
 
 namespace SharpChat.Packets {
     public class ContextMessagePacket : ServerPacketBase {
-        public IEvent Event { get; private set; }
+        public IMessage Message { get; private set; }
         public bool Notify { get; private set; }
 
-        public ContextMessagePacket(IEvent evt, bool notify = false) {
-            Event = evt ?? throw new ArgumentNullException(nameof(evt));
+        public ContextMessagePacket(IMessage msg, bool notify = false) {
+            Message = msg ?? throw new ArgumentNullException(nameof(msg));
             Notify = notify;
         }
-
-        private const string V1_CHATBOT = "-1\tChatBot\tinherit\t";
 
         public override string Pack() {
             StringBuilder sb = new StringBuilder();
@@ -21,10 +20,14 @@ namespace SharpChat.Packets {
             sb.Append(IServerPacket.SEPARATOR);
             sb.Append((int)ServerContextPacket.Message);
             sb.Append(IServerPacket.SEPARATOR);
-            sb.Append(Event.DateTime.ToUnixTimeSeconds());
+            sb.Append(Message.Created.ToUnixTimeSeconds());
             sb.Append(IServerPacket.SEPARATOR);
 
-            switch (Event) {
+            sb.Append(Message.Sender.Pack());
+            sb.Append(IServerPacket.SEPARATOR);
+            sb.Append(Message.GetSanitisedText());
+
+            /*switch (Event) {
                 case MessageCreateEvent msg:
                     sb.Append(Event.Sender.Pack());
                     sb.Append(IServerPacket.SEPARATOR);
@@ -67,17 +70,17 @@ namespace SharpChat.Packets {
                     sb.Append(IServerPacket.SEPARATOR);
                     sb.Append(BotArguments.Notice(udeReason, Event.Sender.UserName));
                     break;
-            }
+            }*/
 
             sb.Append(IServerPacket.SEPARATOR);
-            sb.Append(Event.EventId < 1 ? SequenceId : Event.EventId);
+            sb.Append(Message.MessageId);
             sb.Append(IServerPacket.SEPARATOR);
             sb.Append(Notify ? '1' : '0');
             sb.Append(IServerPacket.SEPARATOR);
             sb.AppendFormat(
                 "1{0}0{1}{2}",
-                Event is MessageCreateEvent evt1 && evt1.IsAction ? '1' : '0',
-                Event is MessageCreateEvent evt2 && evt2.IsAction ? '0' : '1',
+                Message.IsAction ? '1' : '0',
+                Message.IsAction ? '0' : '1',
                 /*Event.Flags.HasFlag(EventFlags.Private)*/ false ? '1' : '0'
             );
 

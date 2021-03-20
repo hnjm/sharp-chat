@@ -30,17 +30,13 @@ namespace SharpChat.Channels {
             ChatBot bot,
             UserManager users
         ) {
-#pragma warning disable IDE0016    // Not using the expressin here since UpdateConfigChannels does filesystem reading
-            if(dispatcher == null) //  which would be a waste if an exception is guaranteed.
-                throw new ArgumentNullException(nameof(dispatcher));
-#pragma warning restore IDE0016
+            Dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
             Target = target ?? throw new ArgumentNullException(nameof(target));
             Config = config ?? throw new ArgumentNullException(nameof(config));
             Users = users ?? throw new ArgumentNullException(nameof(users));
             Bot = bot ?? throw new ArgumentNullException(nameof(bot));
             ChannelNames = Config.ReadCached(@"channels", new[] { @"lounge" });
             UpdateConfigChannels();
-            Dispatcher = dispatcher;
         }
 
         public IChannel DefaultChannel { get; private set; }
@@ -95,6 +91,38 @@ namespace SharpChat.Channels {
 
                 if(DefaultChannel == null || DefaultChannel.IsTemporary || !channelNames.Contains(DefaultChannel.Name))
                     DefaultChannel = Channels.FirstOrDefault(c => !c.IsTemporary && c.AutoJoin);
+            }
+        }
+
+        // Should this be here?
+        // Should there be a Channel User relationship thing?
+        public bool HasUser(IChannel channel, IUser user) {
+            if(channel == null)
+                throw new ArgumentNullException(nameof(channel));
+            if(user == null)
+                throw new ArgumentNullException(nameof(user));
+
+            if(channel is Channel c)
+                return c.HasUser(user);
+
+            lock(Sync) {
+                return false;
+            }
+        }
+
+        public void GetUsers(IChannel channel, Action<IEnumerable<IUser>> callable) {
+            if(channel == null)
+                throw new ArgumentNullException(nameof(channel));
+            if(callable == null)
+                throw new ArgumentNullException(nameof(callable));
+
+            if(channel is Channel c) {
+                c.GetUsers(callable);
+                return;
+            }
+
+            lock(Sync) {
+                return;
             }
         }
 
@@ -170,7 +198,9 @@ namespace SharpChat.Channels {
                     case ChannelUpdateEvent _:
                     case ChannelJoinEvent _:
                     case ChannelLeaveEvent _:
-                        Get(evt.Target)?.HandleEvent(sender, evt);
+                        IChannel chan = Get(evt.Target);
+                        if(chan is IEventHandler ceh)
+                            ceh.HandleEvent(sender, evt);
                         break;
                 }
         }
@@ -188,7 +218,7 @@ namespace SharpChat.Channels {
                 IChannel channel = new Channel(name, temp, minRank, password, autoJoin, maxCapacity, owner);
                 Add(channel);
 
-                Dispatcher?.DispatchEvent(this, new ChannelCreateEvent(Target, channel));
+                Dispatcher.DispatchEvent(this, new ChannelCreateEvent(Target, channel));
 
                 return channel;
             }
@@ -246,14 +276,6 @@ namespace SharpChat.Channels {
             lock(Sync) {
                 return Channels.FirstOrDefault(x => x.Name.ToLowerInvariant() == name.ToLowerInvariant());
             }
-        }
-
-        public IEnumerable<IChannel> GetUser(IUser user) {
-            if(user == null)
-                return null;
-
-            lock(Sync)
-                return Channels.Where(x => x.HasUser(user));
         }
 
         public IEnumerable<IChannel> OfHierarchy(int hierarchy) {

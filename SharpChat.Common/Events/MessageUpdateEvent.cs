@@ -1,41 +1,30 @@
-﻿using SharpChat.Users;
+﻿using SharpChat.Messages;
+using SharpChat.Users;
 using System;
 using System.Collections.Generic;
 using System.Text.Json;
 
 namespace SharpChat.Events {
-    public class MessageUpdateEvent : Event, IUpdateEvent {
+    public class MessageUpdateEvent : Event {
         public const string TYPE = @"message:update";
 
         public override string Type => TYPE;
+        public long MessageId { get; }
         public string Text { get; }
 
-        public long TargetId => EventId;
+        public bool HasText
+            => !string.IsNullOrEmpty(Text);
 
-        public MessageUpdateEvent(IEventTarget target, IUser editor, string text)
-            : base(target, editor) {
-            Text = text ?? throw new ArgumentNullException(nameof(text));
-        }
-        private MessageUpdateEvent(IEvent evt, string text) : base(evt) {
+        public MessageUpdateEvent(IMessage message, IUser editor, string text)
+            : base(message.Channel, editor) {
+            MessageId = message.MessageId;
             Text = text ?? throw new ArgumentNullException(nameof(text));
         }
 
         public override string EncodeAsJson() {
-            return JsonSerializer.Serialize(GetUpdatedFields());
-        }
-
-        public static IEvent DecodeFromJson(IEvent evt, JsonElement elem) {
-            string text = string.Empty;
-            if(elem.TryGetProperty(@"text", out JsonElement textElem))
-                text = textElem.GetString();
-
-            return new MessageUpdateEvent(evt, text);
-        }
-
-        public Dictionary<string, object> GetUpdatedFields() {
-            return new Dictionary<string, object> {
+            return JsonSerializer.Serialize(new Dictionary<string, object> {
                 { @"text", Text },
-            };
+            });
         }
     }
 }

@@ -24,7 +24,7 @@ namespace SharpChat.Packets {
                     sb.Append(@" style=""font-weight: bold;""");
 
                 sb.Append('>');
-                sb.Append(user.DisplayName);
+                sb.Append(user.GetDisplayName());
                 sb.Append(@"</a>, ");
             }
 

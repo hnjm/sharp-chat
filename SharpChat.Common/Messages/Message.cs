@@ -3,7 +3,7 @@ using SharpChat.Users;
 using System;
 
 namespace SharpChat.Messages {
-    public class Message {
+    public class Message : IMessage {
         public long MessageId { get; }
         public IChannel Channel { get; }
         public IUser Sender { get; }

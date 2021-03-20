@@ -9,19 +9,16 @@
         public UserStatus Status => UserStatus.Online;
         public string StatusMessage => string.Empty;
 
-        public string DisplayName => UserName;
-
         public bool Can(UserPermissions perm)
             => true;
 
         public bool Equals(IUser other)
-            => other is ChatBot;
+            => other != null && (other is ChatBot || other.UserId == UserId);
 
-        public string Pack() // permission part is empty for bot apparently
-            => string.Join(IServerPacket.SEPARATOR, UserId, DisplayName, Colour, string.Empty);
+        public string PackBot() // permission part is empty for bot apparently
+            => string.Join(IServerPacket.SEPARATOR, UserId, UserName, Colour, string.Empty);
 
-        public override string ToString() {
-            return @"<ChatBot>";
-        }
+        public override string ToString()
+            => @"<ChatBot>";
     }
 }

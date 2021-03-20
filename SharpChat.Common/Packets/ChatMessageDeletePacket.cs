@@ -1,13 +1,13 @@
-﻿using SharpChat.Events;
+﻿using SharpChat.Messages;
 using System;
 using System.Text;
 
 namespace SharpChat.Packets {
     public class ChatMessageDeletePacket : ServerPacketBase {
-        public IEvent Event { get; private set; }
+        public IMessage Message { get; private set; }
 
-        public ChatMessageDeletePacket(IEvent evt) {
-            Event = evt ?? throw new ArgumentNullException(nameof(evt));
+        public ChatMessageDeletePacket(IMessage msg) {
+            Message = msg ?? throw new ArgumentNullException(nameof(msg));
         }
 
         public override string Pack() {
@@ -15,7 +15,7 @@ namespace SharpChat.Packets {
 
             sb.Append((int)ServerPacket.MessageDelete);
             sb.Append(IServerPacket.SEPARATOR);
-            sb.Append(Event.EventId);
+            sb.Append(Message.MessageId);
 
             return sb.ToString();
         }

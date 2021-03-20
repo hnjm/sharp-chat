@@ -18,6 +18,8 @@ namespace SharpChat.Database {
 
         public string TimestampType
             => Backend.TimestampType;
+        public string TextType
+            => Backend.TextType;
         public string BlobType
             => Backend.BlobType;
         public string VarCharType(int size)

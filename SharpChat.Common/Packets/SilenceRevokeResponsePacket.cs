@@ -6,6 +6,6 @@ namespace SharpChat.Packets {
             : base(sender, BotArguments.Notice(@"usilok", userName)) { }
 
         public SilenceRevokeResponsePacket(IUser sender, IUser target)
-            : this(sender, target.DisplayName) { }
+            : this(sender, target.GetDisplayName()) { }
     }
 }

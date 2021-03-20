@@ -16,11 +16,8 @@ namespace SharpChat.Packets {
         public AuthFailPacket(AuthFailReason reason, IBanRecord banInfo = null) {
             Reason = reason;
 
-            if (reason == AuthFailReason.Banned) {
-                if (banInfo == null)
-                    throw new ArgumentNullException(nameof(banInfo));
-                BanInfo = banInfo;
-            }
+            if(reason == AuthFailReason.Banned)
+                BanInfo = banInfo ?? throw new ArgumentNullException(nameof(banInfo));
         }
 
         public override string Pack() {

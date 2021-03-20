@@ -1,5 +1,7 @@
 ﻿using System;
 
+// to be destroyed
+
 namespace SharpChat.Events.Storage {
     public partial class ADOEventStorage {
         private const string CREATE_EVENTS = @"create_events_table";

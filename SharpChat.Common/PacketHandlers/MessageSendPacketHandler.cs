@@ -16,18 +16,21 @@ namespace SharpChat.PacketHandlers {
         private IEventDispatcher Dispatcher { get; }
         private MessageManager Messages { get; }
         private UserManager Users { get; }
+        private ChannelManager Channels { get; }
         private ChatBot Bot { get; }
         private IEnumerable<ICommand> Commands { get; }
 
         public MessageSendPacketHandler(
             IEventDispatcher dispatcher,
             UserManager users,
+            ChannelManager channels,
             MessageManager messages,
             ChatBot bot,
             IEnumerable<ICommand> commands
         ) {
             Dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
             Users = users ?? throw new ArgumentNullException(nameof(users));
+            Channels = channels ?? throw new ArgumentNullException(nameof(channels));
             Messages = messages ?? throw new ArgumentNullException(nameof(messages));
             Bot = bot ?? throw new ArgumentNullException(nameof(bot));
             Commands = commands ?? throw new ArgumentNullException(nameof(commands));
@@ -53,7 +56,7 @@ namespace SharpChat.PacketHandlers {
                 channel = ctx.User.GetChannels().FirstOrDefault(c => c.Name.ToLowerInvariant() == channelName);
 
             if(channel == null
-                || !ctx.User.InChannel(channel)
+                || !ctx.Chat.Channels.HasUser(channel, ctx.User)
             //  || (ctx.User.IsSilenced && !ctx.User.Can(UserPermissions.SilenceUser)) TODO: readd silencing
             ) return;
 

@@ -1,10 +1,9 @@
 ﻿using SharpChat.Events;
 using SharpChat.Users;
 using System;
-using System.Collections.Generic;
 
 namespace SharpChat.Channels {
-    public interface IChannel : IEventTarget, IEventHandler {
+    public interface IChannel : IEventTarget, IEquatable<IChannel> {
         string Name { get; }
         bool IsTemporary { get; }
         int MinimumRank { get; }
@@ -18,10 +17,5 @@ namespace SharpChat.Channels {
         bool HasMaxCapacity { get; }
 
         bool VerifyPassword(string password);
-
-        bool HasUser(IUser user);
-        void GetUsers(Action<IEnumerable<IUser>> callable);
-
-        string Pack();
     }
 }
