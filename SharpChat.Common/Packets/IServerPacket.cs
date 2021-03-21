@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading;
 
-namespace SharpChat {
+namespace SharpChat.Packets {
     public interface IServerPacket {
         public const char SEPARATOR = '\t';
 

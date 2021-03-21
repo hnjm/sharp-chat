@@ -1,4 +1,5 @@
-﻿using SharpChat.Events;
+﻿using SharpChat.Channels;
+using SharpChat.Events;
 using SharpChat.Users;
 using System;
 using System.Text;
@@ -19,21 +20,21 @@ namespace SharpChat.Packets {
         }
 
         public ChatMessageAddPacket(MessageCreateEvent msg)
-            : this(msg.EventId, msg.DateTime, msg.Sender, msg.Text, msg.Target, msg.IsAction) { }
+            : this(msg.EventId, msg.DateTime, msg.User, msg.Text, msg.Channel, msg.IsAction) { }
 
         public ChatMessageAddPacket(
             long eventId,
             DateTimeOffset dateTime,
             IUser sender,
             string text,
-            string target,
+            IChannel channel,
             bool isAction = false
         ) : base(eventId) {
             if(text == null)
                 throw new ArgumentNullException(nameof(text));
 
             Sender = sender ?? throw new ArgumentNullException(nameof(sender));
-            TargetName = target ?? throw new ArgumentNullException(nameof(target));
+            TargetName = channel?.Name ?? throw new ArgumentNullException(nameof(channel));
             DateTime = dateTime;
             IsAction = isAction;
 

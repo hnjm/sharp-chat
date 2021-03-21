@@ -56,7 +56,7 @@ namespace SharpChat {
                     new ChannelPasswordCommand(Context.Bot),
                     new ChannelRankCommand(Context.Bot),
 
-                    new BroadcastCommand(Context.Bot),
+                    new BroadcastCommand(Context.Messages, Context.Bot),
                     new KickBanUserCommand(),
                     new PardonUserCommand(Context.Bot),
                     new PardonIPCommand(Context.Bot),

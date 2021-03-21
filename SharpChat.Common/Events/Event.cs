@@ -1,4 +1,5 @@
-﻿using SharpChat.Users;
+﻿using SharpChat.Channels;
+using SharpChat.Users;
 using System;
 
 namespace SharpChat.Events {
@@ -6,17 +7,14 @@ namespace SharpChat.Events {
         public long EventId { get; }
         public abstract string Type { get; }
         public DateTimeOffset DateTime { get; }
-        public IUser Sender { get; }
-        public string Target { get; }
+        public IUser User { get; }
+        public IChannel Channel { get; }
 
-        public Event(IEventTarget target, IUser user, DateTimeOffset? dateTime = null) {
+        public Event(IChannel channel, IUser user, DateTimeOffset? dateTime = null) {
             EventId = SharpId.Next();
             DateTime = dateTime ?? DateTimeOffset.Now;
-            Sender = user ?? throw new ArgumentNullException(nameof(user));
-            Target = (target ?? throw new ArgumentNullException(nameof(target))).TargetName;
+            User = user ?? throw new ArgumentNullException(nameof(user));
+            Channel = channel; // channel is allowed to be NULL for broadcasting
         }
-
-        public virtual string EncodeAsJson()
-            => @"{}";
     }
 }

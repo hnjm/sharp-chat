@@ -1,9 +1,8 @@
-﻿using SharpChat.Events;
-using SharpChat.Users;
+﻿using SharpChat.Users;
 using System;
 
 namespace SharpChat.Channels {
-    public interface IChannel : IEventTarget, IEquatable<IChannel> {
+    public interface IChannel : IEquatable<IChannel> {
         string Name { get; }
         bool IsTemporary { get; }
         int MinimumRank { get; }
@@ -13,8 +12,6 @@ namespace SharpChat.Channels {
 
         string Password { get; }
         bool HasPassword { get; }
-
-        bool HasMaxCapacity { get; }
 
         bool VerifyPassword(string password);
     }

@@ -43,7 +43,9 @@ namespace SharpChat.Commands {
                 }
             }
 
-            ctx.Chat.SwitchChannel(ctx.Session, channel);
+            if(ctx.Session.LastChannel != null)
+                ctx.Chat.ChannelUsers.LeaveChannel(ctx.Session.LastChannel, ctx.User, UserDisconnectReason.Leave);
+            ctx.Chat.ChannelUsers.JoinChannel(channel, ctx.User);
             return true;
         }
     }

@@ -1,4 +1,6 @@
-﻿namespace SharpChat.Users {
+﻿using SharpChat.Packets;
+
+namespace SharpChat.Users {
     public class ChatBot : IUser {
         public long UserId { get; } = -1;
         public string UserName { get; } = @"ChatBot";

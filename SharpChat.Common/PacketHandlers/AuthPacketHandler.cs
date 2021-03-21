@@ -80,7 +80,8 @@ namespace SharpChat.PacketHandlers {
                         bool shouldJoin = !ctx.Chat.ChannelUsers.HasUser(chan, user);
 
                         if(shouldJoin) {
-                            chan.SendPacket(new UserConnectPacket(DateTimeOffset.Now, user));
+                            // ChannelUsers?
+                            //chan.SendPacket(new UserConnectPacket(DateTimeOffset.Now, user));
                             //ctx.Chat.DispatchEvent(this, new UserConnectEvent(chan, user));
                         }
 

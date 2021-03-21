@@ -53,10 +53,8 @@ namespace SharpChat.Database {
 
         public bool SupportsJson
             => Backend.SupportsJson;
-        public string JsonSet(string field, string path, string value)
-            => Backend.JsonSet(field, path, value);
-        public string JsonSet(string field, IDictionary<string, object> values)
-            => Backend.JsonSet(field, values);
+        public string JsonValue(string field, string path)
+            => Backend.JsonValue(field, path);
 
         public bool SupportsAlterTableCollate
             => Backend.SupportsAlterTableCollate;

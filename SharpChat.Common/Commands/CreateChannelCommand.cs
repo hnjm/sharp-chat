@@ -49,7 +49,10 @@ namespace SharpChat.Commands {
                 throw new ChannelNameInvalidCommandException();
             }
 
-            ctx.Chat.SwitchChannel(ctx.Session, createChan);
+            if(ctx.Session.LastChannel != null) // this should probably happen implicitly for v1 clients
+                ctx.Chat.ChannelUsers.LeaveChannel(ctx.Session.LastChannel, ctx.User, UserDisconnectReason.Leave);
+            ctx.Chat.ChannelUsers.JoinChannel(createChan, ctx.User);
+
             ctx.Session.SendPacket(new ChannelCreateResponsePacket(Sender, createChan));
             return true;
         }

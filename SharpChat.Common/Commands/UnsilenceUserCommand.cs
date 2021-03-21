@@ -32,7 +32,10 @@ namespace SharpChat.Commands {
 
             //ctx.Chat.Users.RevokeSilence(user);
 
-            user.SendPacket(new SilenceRevokeNoticePacket(Sender));
+            // UserManager
+            //user.SendPacket(new SilenceRevokeNoticePacket(Sender));
+            
+            // Remain? Also UserManager?
             ctx.Session.SendPacket(new SilenceRevokeResponsePacket(Sender, user));
             return true;
         }

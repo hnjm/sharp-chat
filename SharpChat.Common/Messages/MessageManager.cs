@@ -74,7 +74,7 @@ namespace SharpChat.Messages {
                 throw new ArgumentNullException(nameof(message));
 
             lock(Sync) {
-                MessageDeleteEvent mde = new MessageDeleteEvent(message.Channel, user, message.MessageId);
+                MessageDeleteEvent mde = new MessageDeleteEvent(user, message);
                 if(message is IEventHandler meh)
                     meh.HandleEvent(this, mde);
                 Dispatcher.DispatchEvent(this, mde);

@@ -64,7 +64,8 @@ namespace SharpChat.PacketHandlers {
 
             if(ctx.User.Status != UserStatus.Online) {
                 ctx.Chat.Users.Update(ctx.User, status: UserStatus.Online);
-                channel.SendPacket(new UserUpdatePacket(ctx.User));
+                // ChannelUsers?
+                //channel.SendPacket(new UserUpdatePacket(ctx.User));
             }
 
             // there's a very miniscule chance that this will return a different value on second read

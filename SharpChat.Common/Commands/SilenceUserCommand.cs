@@ -40,7 +40,10 @@ namespace SharpChat.Commands {
             } //else
                 //ctx.Chat.Users.Silence(user);
 
-            user.SendPacket(new SilenceNoticePacket(Sender));
+            // UserManager
+            //user.SendPacket(new SilenceNoticePacket(Sender));
+
+            // Remain? Also UserManager?
             ctx.Session.SendPacket(new SilenceResponsePacket(Sender, user));
             return true;
         }

@@ -1,4 +1,5 @@
-﻿using SharpChat.Packets;
+﻿using SharpChat.Messages;
+using SharpChat.Packets;
 using SharpChat.Users;
 using System;
 using System.Collections.Generic;
@@ -9,8 +10,10 @@ namespace SharpChat.Commands {
         private const string NAME = @"say";
 
         private IUser Sender { get; }
+        private MessageManager Messages { get; }
 
-        public BroadcastCommand(IUser sender) {
+        public BroadcastCommand(MessageManager messages, IUser sender) {
+            Messages = messages ?? throw new ArgumentNullException(nameof(messages));
             Sender = sender ?? throw new ArgumentNullException(nameof(sender));
         }
 

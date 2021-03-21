@@ -1,7 +1,6 @@
 ﻿using SharpChat.Channels;
 using SharpChat.Users;
-using System.Collections.Generic;
-using System.Text.Json;
+using System;
 
 namespace SharpChat.Events {
     public class ChannelUpdateEvent : Event {
@@ -19,8 +18,16 @@ namespace SharpChat.Events {
         public bool HasName => Name != null;
         public bool HasPassword => Password != null;
 
-        public ChannelUpdateEvent(IChannel channel, IUser user, string name = null, bool? temp = null, int? minRank = null, string password = null, bool? autoJoin = null, uint? maxCapacity = null)
-            : base(channel, user) {
+        public ChannelUpdateEvent(
+            IChannel channel,
+            IUser user,
+            string name = null,
+            bool? temp = null,
+            int? minRank = null,
+            string password = null,
+            bool? autoJoin = null,
+            uint? maxCapacity = null
+        ) : base(channel ?? throw new ArgumentNullException(nameof(channel)), user) {
             PreviousName = channel.Name;
             Name = name;
             IsTemporary = temp;
@@ -28,23 +35,6 @@ namespace SharpChat.Events {
             Password = password;
             AutoJoin = autoJoin;
             MaxCapacity = maxCapacity;
-        }
-
-        public override string EncodeAsJson() {
-            Dictionary<string, object> data = new Dictionary<string, object>();
-            if(HasName)
-                data[@"name"] = Name;
-            if(IsTemporary.HasValue)
-                data[@"temp"] = IsTemporary.Value;
-            if(MinimumRank.HasValue)
-                data[@"rank"] = MinimumRank.Value;
-            if(HasPassword)
-                data[@"pass"] = Password;
-            if(AutoJoin.HasValue)
-                data[@"auto"] = AutoJoin.Value;
-            if(MaxCapacity.HasValue)
-                data[@"mcap"] = MaxCapacity.Value;
-            return JsonSerializer.Serialize(data);
         }
     }
 }

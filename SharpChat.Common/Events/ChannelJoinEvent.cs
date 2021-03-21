@@ -1,6 +1,6 @@
 ﻿using SharpChat.Channels;
 using SharpChat.Users;
-using System.Text.Json;
+using System;
 
 namespace SharpChat.Events {
     public class ChannelJoinEvent : Event {
@@ -8,6 +8,7 @@ namespace SharpChat.Events {
 
         public override string Type => TYPE;
 
-        public ChannelJoinEvent(IChannel channel, IUser user) : base(channel, user) {}
+        public ChannelJoinEvent(IChannel channel, IUser user)
+            : base(channel ?? throw new ArgumentNullException(nameof(channel)), user) {}
     }
 }

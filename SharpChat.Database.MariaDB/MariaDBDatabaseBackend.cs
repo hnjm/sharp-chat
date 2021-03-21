@@ -72,16 +72,8 @@ namespace SharpChat.Database.MariaDB {
             => @"NOW()";
 
         public bool SupportsJson => true;
-        public string JsonSet(string field, string path, string value)
-            => string.Format(@"JSON_SET({0}, '{1}', {2})", field, path, value);
-        public string JsonSet(string field, IDictionary<string, object> values) {
-            StringBuilder sb = new StringBuilder();
-            sb.AppendFormat(@"JSON_SET({0}");
-            foreach(KeyValuePair<string, object> value in values)
-                sb.AppendFormat(@", '{0}', @json_{0}", value.Key);
-            sb.Append(')');
-            return sb.ToString();
-        }
+        public string JsonValue(string field, string path) // yes this is fucked, no i don't care
+            => string.Format(@"JSON_UNQUOTE(JSON_EXTRACT({0}, '{1}'))", field, path);
 
         public string Concat(params string[] values)
             => string.Format(@"CONCAT({0})", string.Join(@", ", values));

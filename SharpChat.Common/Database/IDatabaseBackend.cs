@@ -27,8 +27,7 @@ namespace SharpChat.Database {
         string ToLower(string param);
 
         bool SupportsJson { get; }
-        string JsonSet(string field, string path, string value);
-        string JsonSet(string field, IDictionary<string, object> values);
+        string JsonValue(string field, string path);
 
         bool SupportsAlterTableCollate { get; }
 

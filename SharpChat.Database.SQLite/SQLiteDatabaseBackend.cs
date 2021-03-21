@@ -66,9 +66,7 @@ namespace SharpChat.Database.SQLite {
             => @"strftime('%s', 'now')";
 
         public bool SupportsJson => false;
-        public string JsonSet(string field, string path, string value)
-            => string.Empty;
-        public string JsonSet(string field, IDictionary<string, object> values)
+        public string JsonValue(string field, string path)
             => string.Empty;
 
         public string Concat(params string[] args)

@@ -6,22 +6,22 @@ using System;
 namespace SharpChat.Messages.Storage {
     public class MemoryMessageChannel : IChannel, IEventHandler {
         public string Name { get; private set; }
-        public bool IsTemporary => true;
-        public int MinimumRank => 0;
-        public bool AutoJoin => false;
-        public uint MaxCapacity => 0;
-        public IUser Owner => null;
-        public string Password => string.Empty;
-        public bool HasPassword => false;
-        public bool HasMaxCapacity => false;
-        public string TargetName => Name.ToLowerInvariant();
+        public bool IsTemporary { get; private set; }
+        public int MinimumRank { get; private set; }
+        public bool AutoJoin { get; private set; }
+        public uint MaxCapacity { get; private set; }
+        public IUser Owner { get; private set; }
+        public string Password { get; private set; }
+        public bool HasPassword => !string.IsNullOrEmpty(Password);
 
-        public MemoryMessageChannel(ChannelCreateEvent cce) {
-            Name = cce.Target;
-        }
-
-        public MemoryMessageChannel(MessageCreateEvent evt) {
-            Name = evt.Target;
+        public MemoryMessageChannel(IEvent evt) {
+            Name = evt.Channel.Name;
+            IsTemporary = evt.Channel.IsTemporary;
+            MinimumRank = evt.Channel.MinimumRank;
+            AutoJoin = evt.Channel.AutoJoin;
+            MaxCapacity = evt.Channel.MaxCapacity;
+            Owner = evt.Channel.Owner;
+            Password = evt.Channel.Password;
         }
 
         public bool VerifyPassword(string password)

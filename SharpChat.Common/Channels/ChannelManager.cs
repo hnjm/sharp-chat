@@ -17,23 +17,19 @@ namespace SharpChat.Channels {
         private CachedValue<string[]> ChannelNames { get; }
 
         private IEventDispatcher Dispatcher { get; }
-        private IEventTarget Target { get; }
         private ChatBot Bot { get; }
         private object Sync { get; } = new object();
 
-        public ChannelManager(IEventDispatcher dispatcher, IEventTarget target, IConfig config, ChatBot bot) {
+        public ChannelManager(IEventDispatcher dispatcher, IConfig config, ChatBot bot) {
             Dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
-            Target = target ?? throw new ArgumentNullException(nameof(target));
             Config = config ?? throw new ArgumentNullException(nameof(config));
             Bot = bot ?? throw new ArgumentNullException(nameof(bot));
             ChannelNames = Config.ReadCached(@"channels", new[] { @"lounge" });
-            UpdateConfigChannels();
         }
 
         public IChannel DefaultChannel { get; private set; } // does there need to be a more explicit way of assigning this?
 
-        // Needs better name + figure out how to run periodically
-        public void UpdateConfigChannels() {
+        public void UpdateChannels() {
             lock(Sync) {
                 string[] channelNames = ChannelNames;
 
@@ -171,7 +167,7 @@ namespace SharpChat.Channels {
                 if(DefaultChannel == null)
                     DefaultChannel = channel;
                 
-                Dispatcher.DispatchEvent(this, new ChannelCreateEvent(Target, channel));
+                Dispatcher.DispatchEvent(this, new ChannelCreateEvent(channel));
 
                 // Broadcast creation of channel (deprecated)
                 /*if(Users != null)
@@ -281,7 +277,7 @@ namespace SharpChat.Channels {
                     cce.Password,
                     cce.AutoJoin,
                     cce.MaxCapacity,
-                    cce.Sender
+                    cce.User
                 ));
             }
         }
@@ -291,7 +287,7 @@ namespace SharpChat.Channels {
                 return;
 
             lock(Sync) {
-                Channel channel = Channels.FirstOrDefault(c => c.Name.Equals(cde.Target, StringComparison.InvariantCultureIgnoreCase));
+                Channel channel = Channels.FirstOrDefault(c => c.Equals(cde.Channel));
                 if(channel != null)
                     Channels.Remove(channel);
             }
@@ -299,7 +295,7 @@ namespace SharpChat.Channels {
 
         private void OnEvent(object sender, IEvent evt) {
             lock(Sync) {
-                Channel channel = Channels.FirstOrDefault(c => c.Name.Equals(evt.Target, StringComparison.InvariantCultureIgnoreCase));
+                Channel channel = Channels.FirstOrDefault(c => c.Equals(evt.Channel));
                 if(channel != null)
                     channel.HandleEvent(sender, evt);
             }

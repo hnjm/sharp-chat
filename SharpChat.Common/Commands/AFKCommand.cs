@@ -22,7 +22,8 @@ namespace SharpChat.Commands {
             }
 
             ctx.Chat.Users.Update(ctx.User, status: UserStatus.Away, statusMessage: statusText);
-            ctx.Channel.SendPacket(new UserUpdatePacket(ctx.User));
+            // send in ChannelUsers
+            //ctx.Channel.SendPacket(new UserUpdatePacket(ctx.User));
             return true;
         }
     }

@@ -1,4 +1,6 @@
 ﻿using SharpChat.Events;
+using SharpChat.Packets;
+using SharpChat.Sessions;
 using SharpChat.Users;
 using System;
 using System.Collections.Generic;
@@ -8,11 +10,28 @@ namespace SharpChat.Channels {
         private IEventDispatcher Dispatcher { get; }
         private ChannelManager Channels { get; }
         private UserManager Users { get; }
+        private SessionManager Sessions { get; }
 
-        public ChannelUserRelations(IEventDispatcher dispatcher, ChannelManager channels, UserManager users) {
+        public ChannelUserRelations(IEventDispatcher dispatcher, ChannelManager channels, UserManager users, SessionManager sessions) {
             Dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
             Channels = channels ?? throw new ArgumentNullException(nameof(channels));
             Users = users ?? throw new ArgumentNullException(nameof(users));
+        }
+
+        public void SendPacket(IChannel channel, IServerPacket packet, IEnumerable<IUser> except = null) {
+            if(channel == null)
+                throw new ArgumentNullException(nameof(channel));
+            if(packet == null)
+                throw new ArgumentNullException(nameof(packet));
+            //
+        }
+
+        public void SendPacket(IUser user, IServerPacket packet) {
+            if(user == null)
+                throw new ArgumentNullException(nameof(user));
+            if(packet == null)
+                throw new ArgumentNullException(nameof(packet));
+            //
         }
 
         public bool HasUser(IChannel channel, IUser user) {
@@ -73,9 +92,13 @@ namespace SharpChat.Channels {
 
         public void HandleEvent(object sender, IEvent evt) {
             switch(evt) {
+                case ChannelJoinEvent _:
+                    //
+                    break;
+
                 case ChannelLeaveEvent _: // Should ownership just be passed on to another user instead of Destruction?
-                    IChannel channel = Channels.GetChannel(evt.Target);
-                    if(channel.IsTemporary && evt.Sender.Equals(channel.Owner))
+                    IChannel channel = Channels.GetChannel(evt.Channel);
+                    if(channel.IsTemporary && evt.User.Equals(channel.Owner))
                         Channels.Remove(channel);
                     break;
             }

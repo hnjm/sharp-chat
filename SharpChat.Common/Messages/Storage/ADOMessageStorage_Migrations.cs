@@ -3,6 +3,7 @@
 namespace SharpChat.Messages.Storage {
     public partial class ADOMessageStorage {
         private const string CREATE_MESSAGES_TABLE = @"create_msgs_table";
+        private const string LEGACY_CREATE_EVENTS_TABLE = @"create_events_table";
 
         public void RunMigrations() {
             Wrapper.RunCommand(
@@ -53,14 +54,20 @@ namespace SharpChat.Messages.Storage {
                 + @");"
             );
             Wrapper.RunCommand(@"CREATE INDEX `sqc_messages_channel_index` ON `sqc_messages` (`msg_channel_name`);");
-            Wrapper.RunCommand(@"CREATE INDEX `sqc_messages_sender_index` ON `sqc_events` (`msg_sender_id`);");
-            Wrapper.RunCommand(@"CREATE INDEX `sqc_messages_flags_index` ON `sqc_events` (`msg_flags`);");
-            Wrapper.RunCommand(@"CREATE INDEX `sqc_messages_created_index` ON `sqc_events` (`msg_created`);");
-            Wrapper.RunCommand(@"CREATE INDEX `sqc_messages_edited_index` ON `sqc_events` (`msg_edited`);");
-            Wrapper.RunCommand(@"CREATE INDEX `sqc_messages_deleted_index` ON `sqc_events` (`msg_deleted`);");
+            Wrapper.RunCommand(@"CREATE INDEX `sqc_messages_sender_index` ON `sqc_messages` (`msg_sender_id`);");
+            Wrapper.RunCommand(@"CREATE INDEX `sqc_messages_flags_index` ON `sqc_messages` (`msg_flags`);");
+            Wrapper.RunCommand(@"CREATE INDEX `sqc_messages_created_index` ON `sqc_messages` (`msg_created`);");
+            Wrapper.RunCommand(@"CREATE INDEX `sqc_messages_edited_index` ON `sqc_messages` (`msg_edited`);");
+            Wrapper.RunCommand(@"CREATE INDEX `sqc_messages_deleted_index` ON `sqc_messages` (`msg_deleted`);");
 
-            // TODO: convert messages events from sqc_events
-            //       can use CheckMigration(@"create_events_table"); to check if it exists 
+            if(Wrapper.SupportsJson && CheckMigration(LEGACY_CREATE_EVENTS_TABLE))
+                Wrapper.RunCommand(
+                    @"INSERT INTO `sqc_messages`"
+                    + @" SELECT `event_id`, " + Wrapper.ToLower(@"`event_target`") + @", `event_sender`, `event_sender_name`"
+                    + @", `event_sender_colour`, `event_sender_rank`, `event_sender_nick`, `event_sender_perms`"
+                    + @", " + Wrapper.JsonValue(@"`event_data`", @"$.text") + @", `event_flags` & 1, `event_created`, NULL, `event_deleted`"
+                    + @" FROM `sqc_events` WHERE `event_type` = 'SharpChat.Events.ChatMessage';", 1800
+                );
         }
     }
 }

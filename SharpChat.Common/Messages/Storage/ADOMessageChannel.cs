@@ -13,8 +13,6 @@ namespace SharpChat.Messages.Storage {
         public IUser Owner => null;
         public string Password => string.Empty;
         public bool HasPassword => false;
-        public bool HasMaxCapacity => false;
-        public string TargetName => Name;
 
         public ADOMessageChannel(IDatabaseReader reader) {
             if(reader == null)

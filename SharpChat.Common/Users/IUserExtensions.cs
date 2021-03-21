@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SharpChat.Packets;
+using System;
 using System.Text;
 
 namespace SharpChat.Users {

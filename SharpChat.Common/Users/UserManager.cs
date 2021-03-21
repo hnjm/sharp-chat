@@ -8,12 +8,10 @@ namespace SharpChat.Users {
     public class UserManager : IEventHandler {
         private List<User> Users { get; } = new List<User>();
         private IEventDispatcher Dispatcher { get; }
-        private IEventTarget Target { get; }
         private readonly object Sync = new object();
 
-        public UserManager(IEventDispatcher dispatcher, IEventTarget target) {
+        public UserManager(IEventDispatcher dispatcher) {
             Dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
-            Target = target ?? throw new ArgumentNullException(nameof(target));
         }
 
         private void OnConnect(object sender, UserConnectEvent uce) {
@@ -21,18 +19,18 @@ namespace SharpChat.Users {
                 return;
 
             lock(Sync) {
-                if(Contains(uce.Sender))
+                if(Contains(uce.User))
                     throw new ArgumentException(@"User already registered?????", nameof(uce));
 
                 Users.Add(new User(
-                    uce.Sender.UserId,
-                    uce.Sender.UserName,
-                    uce.Sender.Colour,
-                    uce.Sender.Rank,
-                    uce.Sender.Permissions,
+                    uce.User.UserId,
+                    uce.User.UserName,
+                    uce.User.Colour,
+                    uce.User.Rank,
+                    uce.User.Permissions,
                     uce.Status,
                     uce.StatusMessage,
-                    uce.Sender.NickName
+                    uce.User.NickName
                 ));
             }
         }
@@ -41,12 +39,12 @@ namespace SharpChat.Users {
             if(user == null)
                 return;
             lock(Sync)
-                Dispatcher.DispatchEvent(this, new UserDisconnectEvent(Target, user, reason));
+                Dispatcher.DispatchEvent(this, new UserDisconnectEvent(user, reason));
         }
 
         private void OnDisconnect(object sender, UserDisconnectEvent ude) {
             lock(Sync) {
-                IUser user = GetUser(ude.Sender.UserId);
+                IUser user = GetUser(ude.User.UserId);
                 if(user == null)
                     return;
                 if(user is IEventHandler ueh)
@@ -56,7 +54,7 @@ namespace SharpChat.Users {
 
         private void OnUpdate(object sender, UserUpdateEvent uue) {
             lock(Sync) {
-                IUser user = GetUser(uue.Sender.UserId);
+                IUser user = GetUser(uue.User.UserId);
                 if(user is IEventHandler ueh)
                     ueh.HandleEvent(sender, uue);
             }
@@ -138,7 +136,7 @@ namespace SharpChat.Users {
             lock(Sync) {
                 User user = new User(userId, userName, colour, rank, perms, status, statusMessage, nickName);
                 Users.Add(user);
-                Dispatcher.DispatchEvent(this, new UserConnectEvent(Target, user));
+                Dispatcher.DispatchEvent(this, new UserConnectEvent(user));
                 return user;
             }
         }
@@ -195,7 +193,7 @@ namespace SharpChat.Users {
                     // cleanup
                 }
 
-                Dispatcher.DispatchEvent(this, new UserUpdateEvent(Target, user, userName, colour, rank, nickName, perms, status, statusMessage));
+                Dispatcher.DispatchEvent(this, new UserUpdateEvent(user, userName, colour, rank, nickName, perms, status, statusMessage));
             }
         }
 

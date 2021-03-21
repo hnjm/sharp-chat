@@ -1,6 +1,4 @@
 ﻿using SharpChat.Users;
-using System.Collections.Generic;
-using System.Text.Json;
 
 namespace SharpChat.Events {
     public class UserDisconnectEvent : Event {
@@ -9,16 +7,9 @@ namespace SharpChat.Events {
         public override string Type => TYPE;
         public UserDisconnectReason Reason { get; }
 
-        public UserDisconnectEvent(IEventTarget target, IUser user, UserDisconnectReason reason)
-            : base(target, user) {
+        public UserDisconnectEvent(IUser user, UserDisconnectReason reason)
+            : base(null, user) {
             Reason = reason;
-        }
-
-        public override string EncodeAsJson() {
-            Dictionary<string, object> data = new Dictionary<string, object>();
-            if(Reason != UserDisconnectReason.Unknown)
-                data[@"reason"] = (int)Reason;
-            return JsonSerializer.Serialize(data);
         }
     }
 }

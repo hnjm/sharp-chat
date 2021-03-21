@@ -3,7 +3,6 @@ using SharpChat.Configuration;
 using SharpChat.Database;
 using SharpChat.DataProvider;
 using SharpChat.Events;
-using SharpChat.Events.Storage;
 using SharpChat.Messages;
 using SharpChat.Packets;
 using SharpChat.RateLimiting;
@@ -16,7 +15,7 @@ using System.Linq;
 using SharpChat.Messages.Storage;
 
 namespace SharpChat {
-    public class ChatContext : IDisposable, IEventDispatcher, IEventTarget, IServerPacketTarget {
+    public class ChatContext : IDisposable, IEventDispatcher {
         public ChannelManager Channels { get; }
         public MessageManager Messages { get; }
         public UserManager Users { get; }
@@ -31,30 +30,24 @@ namespace SharpChat {
         private Timer BumpTimer { get; }
         private readonly object Sync = new object();
 
-        public string TargetName => @"~";
-
-        private ADOEventStorage Events { get; }
-
         public ChatContext(Guid serverId, IConfig config, IDatabaseBackend databaseBackend, IDataProvider dataProvider) {
             if(config == null)
                 throw new ArgumentNullException(nameof(config));
 
             DatabaseWrapper db = new DatabaseWrapper(databaseBackend ?? throw new ArgumentNullException(nameof(databaseBackend)));
-
-            if(!db.IsNullBackend) // only leaving to watch things fill in the database for now
-                Events = new ADOEventStorage(db);
-
             IMessageStorage msgStore = db.IsNullBackend
                 ? new MemoryMessageStorage()
                 : new ADOMessageStorage(db);
 
             DataProvider = dataProvider ?? throw new ArgumentNullException(nameof(dataProvider));
             Sessions = new SessionManager(serverId, config.ScopeTo(@"sessions"));
-            Users = new UserManager(this, this);
-            Channels = new ChannelManager(this, this, config, Bot);
-            ChannelUsers = new ChannelUserRelations(this, Channels, Users);
+            Users = new UserManager(this);
+            Channels = new ChannelManager(this, config, Bot);
+            ChannelUsers = new ChannelUserRelations(this, Channels, Users, Sessions);
             Messages = new MessageManager(this, msgStore, config.ScopeTo(@"messages"));
             RateLimiter = new RateLimiter(config.ScopeTo(@"flood"));
+
+            Channels.UpdateChannels();
 
             // Should probably not rely on Timers in the future
             BumpTimer = new Timer(e => {
@@ -70,6 +63,7 @@ namespace SharpChat {
             PruneSessionlessUsers(); // this function also needs to go
         }
 
+        // should this be moved to UserManager?
         public void BanUser(
             IUser user,
             TimeSpan duration,
@@ -94,54 +88,51 @@ namespace SharpChat {
             } else
                 packet = new ForceDisconnectPacket(ForceDisconnectReason.Kicked);
 
-            user.SendPacket(packet);
+            // handle in users
+            //user.SendPacket(packet);
 
+            // channel users
             ChannelUsers.GetChannels(user, c => {
                 foreach(IChannel chan in c)
                     ChannelUsers.LeaveChannel(chan, user, reason);
             });
 
+            // a disconnect with Flood, Kicked or Banned should probably cause this
+            // maybe forced disconnects should be their own event?
             Users.Disconnect(user, reason);
         }
 
         [Obsolete(@"Refactor to use ChannelUsers.LeaveChannel and Users.Disconnect")]
         public void UserLeave(IChannel chan, IUser user, UserDisconnectReason reason = UserDisconnectReason.Leave) {
-            // where do you go
-            chan.SendPacket(new UserDisconnectPacket(DateTimeOffset.Now, user, reason));
+            // handle in channelusers
+            //chan.SendPacket(new UserDisconnectPacket(DateTimeOffset.Now, user, reason));
         }
 
         [Obsolete(@"Use ChannelUsers.JoinChannel")]
         public void JoinChannel(IUser user, IChannel channel) {
-            // this still needs to go somewhere
-            channel.SendPacket(new UserChannelJoinPacket(user));
+            // handle in channelusers
+            //channel.SendPacket(new UserChannelJoinPacket(user));
 
-            // what about context clearing?
-            user.SendPacket(new ContextClearPacket(channel, ContextClearMode.MessagesUsers));
+            // send after join packet for v1
+            //user.SendPacket(new ContextClearPacket(channel, ContextClearMode.MessagesUsers));
 
-            // should users grab the user list themselves?
-            ChannelUsers.GetUsers(channel, u => user.SendPacket(new ContextUsersPacket(u.Except(new[] { user }).OrderByDescending(u => u.Rank))));
+            // send after join
+            //ChannelUsers.GetUsers(channel, u => user.SendPacket(new ContextUsersPacket(u.Except(new[] { user }).OrderByDescending(u => u.Rank))));
 
-            // what about dispatching the message history?
-            Messages.GetMessages(channel, m => {
+            // send after join, maybe add a capability that makes this implicit?
+            /*Messages.GetMessages(channel, m => {
                 foreach(IMessage msg in m)
                     user.SendPacket(new ContextMessagePacket(msg));
-            });
+            });*/
 
-            // oh god and then this
-            user.ForceChannel(channel);
+            // should happen implicitly for v1 clients
+            //user.ForceChannel(channel);
         }
 
         [Obsolete(@"Use ChannelUsers.LeaveChannel")]
         public void LeaveChannel(IUser user, IChannel channel) {
-            // this still needs to go somewhere
-            channel.SendPacket(new UserChannelLeavePacket(user));
-        }
-
-        [Obsolete(@"No.")]
-        public void SwitchChannel(Session session, IChannel chan) {
-            if(session.LastChannel != null)
-                ChannelUsers.LeaveChannel(session.LastChannel, session.User, UserDisconnectReason.Leave);
-            ChannelUsers.JoinChannel(chan, session.User);
+            // handle in channelusers
+            //channel.SendPacket(new UserChannelLeavePacket(user));
         }
 
         public void PruneSessionlessUsers() {
@@ -152,13 +143,8 @@ namespace SharpChat {
             });
         }
 
-        // Obsolete?
         public void SendPacket(IServerPacket packet) {
-            Users.GetUsers(users => {
-                foreach(IUser user in users)
-                    if(user is IServerPacketTarget spt)
-                        spt.SendPacket(packet);
-            });
+            Sessions.SendPacket(packet);
         }
 
         public void DispatchEvent(object sender, IEvent evt) {
@@ -166,9 +152,8 @@ namespace SharpChat {
                 throw new ArgumentNullException(nameof(evt));
 
             lock(Sync) {
-                Logger.Debug($@"{evt.GetType()} dispatched.");
+                Logger.Debug(evt);
 
-                Events?.HandleEvent(sender, evt);
                 Sessions.HandleEvent(sender, evt);
                 ChannelUsers.HandleEvent(sender, evt);
                 Channels.HandleEvent(sender, evt);

@@ -1,5 +1,6 @@
 ﻿using SharpChat.Configuration;
 using SharpChat.Events;
+using SharpChat.Packets;
 using SharpChat.Users;
 using SharpChat.WebSocket;
 using System;
@@ -25,6 +26,27 @@ namespace SharpChat.Sessions {
             ServerId = serverId;
             MaxPerUser = config.ReadCached(@"maxCount", DEFAULT_MAX_COUNT);
             TimeOut = config.ReadCached(@"timeOut", DEFAULT_TIMEOUT);
+        }
+
+        public void SendPacket(IServerPacket packet) {
+            if(packet == null)
+                throw new ArgumentNullException(nameof(packet));
+
+            lock(Sync)
+                foreach(Session session in Sessions)
+                    session.SendPacket(packet);
+        }
+
+        public void SendPacket(Session session, IServerPacket packet) {
+            if(session == null)
+                throw new ArgumentNullException(nameof(session));
+            if(packet == null)
+                throw new ArgumentNullException(nameof(packet));
+
+            lock(Sync) {
+                // this is here because i might add an ISession or some shit
+                session.SendPacket(packet);
+            }
         }
 
         public bool HasTimedOut(Session session) {

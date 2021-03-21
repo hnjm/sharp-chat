@@ -1,8 +1,6 @@
 ﻿using SharpChat.Messages;
 using SharpChat.Users;
 using System;
-using System.Collections.Generic;
-using System.Text.Json;
 
 namespace SharpChat.Events {
     public class MessageUpdateEvent : Event {
@@ -19,12 +17,6 @@ namespace SharpChat.Events {
             : base(message.Channel, editor) {
             MessageId = message.MessageId;
             Text = text ?? throw new ArgumentNullException(nameof(text));
-        }
-
-        public override string EncodeAsJson() {
-            return JsonSerializer.Serialize(new Dictionary<string, object> {
-                { @"text", Text },
-            });
         }
     }
 }

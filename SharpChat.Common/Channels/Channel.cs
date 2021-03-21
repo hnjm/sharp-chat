@@ -20,11 +20,6 @@ namespace SharpChat.Channels {
         public bool HasPassword
             => !string.IsNullOrWhiteSpace(Password);
 
-        public bool HasMaxCapacity
-            => MaxCapacity > 0;
-
-        public string TargetName { get; private set; }
-
         public Channel(
             string name,
             bool temp = false,
@@ -35,7 +30,6 @@ namespace SharpChat.Channels {
             IUser owner = null
         ) {
             Name = name;
-            TargetName = Name.ToLowerInvariant();
             IsTemporary = temp;
             MinimumRank = minimumRank;
             Password = password ?? string.Empty;
@@ -69,10 +63,8 @@ namespace SharpChat.Channels {
             lock(Sync)
                 switch(evt) {
                     case ChannelUpdateEvent update:
-                        if(update.HasName) {
+                        if(update.HasName)
                             Name = update.Name;
-                            TargetName = Name.ToLowerInvariant();
-                        }
                         if(update.IsTemporary.HasValue)
                             IsTemporary = update.IsTemporary.Value;
                         if(update.MinimumRank.HasValue)
@@ -82,11 +74,11 @@ namespace SharpChat.Channels {
                         break;
 
                     case ChannelJoinEvent join:
-                        Users.Add(join.Sender);
+                        Users.Add(join.User);
                         break;
 
                     case ChannelLeaveEvent leave:
-                        Users.Remove(leave.Sender);
+                        Users.Remove(leave.User);
                         break;
                 }
         }

@@ -52,9 +52,7 @@ namespace SharpChat.Database.Null {
             => string.Empty;
 
         public bool SupportsJson => false;
-        public string JsonSet(string path, string name, string value)
-            => string.Empty;
-        public string JsonSet(string field, IDictionary<string, object> values)
+        public string JsonValue(string field, string path)
             => string.Empty;
 
         public bool SupportsAlterTableCollate => true;

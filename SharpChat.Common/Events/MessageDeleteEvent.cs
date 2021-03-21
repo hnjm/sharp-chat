@@ -1,7 +1,5 @@
-﻿using SharpChat.Users;
-using System;
-using System.Collections.Generic;
-using System.Text.Json;
+﻿using SharpChat.Messages;
+using SharpChat.Users;
 
 namespace SharpChat.Events {
     public class MessageDeleteEvent : Event {
@@ -10,17 +8,9 @@ namespace SharpChat.Events {
         public override string Type => TYPE;
         public long MessageId { get; }
 
-        public MessageDeleteEvent(IEventTarget target, IUser actor, long eventId)
-            : base(target, actor) {
-            MessageId = eventId;
-        }
-        public MessageDeleteEvent(IEventTarget target, IUser actor, MessageCreateEvent message)
-            : this(target, actor, (message ?? throw new ArgumentNullException(nameof(message))).EventId) { }
-
-        public override string EncodeAsJson() {
-            return JsonSerializer.Serialize(new Dictionary<string, object> {
-                { @"id", MessageId },
-            });
+        public MessageDeleteEvent(IUser actor, IMessage message)
+            : base(message.Channel, actor) {
+            MessageId = message.MessageId;
         }
     }
 }

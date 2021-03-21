@@ -13,12 +13,12 @@ namespace SharpChat.Messages.Storage {
         public string StatusMessage => string.Empty;
 
         public MemoryMessageUser(MessageCreateEvent mce) {
-            UserId = mce.Sender.UserId;
-            UserName = mce.Sender.UserName;
-            Colour = mce.Sender.Colour;
-            Rank = mce.Sender.Rank;
-            NickName = mce.Sender.NickName;
-            Permissions = mce.Sender.Permissions;
+            UserId = mce.User.UserId;
+            UserName = mce.User.UserName;
+            Colour = mce.User.Colour;
+            Rank = mce.User.Rank;
+            NickName = mce.User.NickName;
+            Permissions = mce.User.Permissions;
         }
 
         public bool Equals(IUser other)
