@@ -4,33 +4,33 @@ using SharpChat.Database;
 using SharpChat.DataProvider;
 using SharpChat.Events;
 using SharpChat.Messages;
+using SharpChat.Messages.Storage;
 using SharpChat.Packets;
 using SharpChat.RateLimiting;
 using SharpChat.Sessions;
 using SharpChat.Users;
 using System;
 using System.Collections.Generic;
-using System.Threading;
 using System.Linq;
-using SharpChat.Messages.Storage;
+using System.Threading;
 
 namespace SharpChat {
     public class ChatContext : IDisposable, IEventDispatcher {
-        public ChannelManager Channels { get; }
+        public SessionManager Sessions { get; }
         public MessageManager Messages { get; }
         public UserManager Users { get; }
-        public SessionManager Sessions { get; }
+        public ChannelManager Channels { get; }
         public ChannelUserRelations ChannelUsers { get; }
-        public RateLimiter RateLimiter { get; }
 
         public IDataProvider DataProvider { get; }
+        public RateLimiter RateLimiter { get; }
 
         public ChatBot Bot { get; } = new ChatBot(); 
 
         private Timer BumpTimer { get; }
         private readonly object Sync = new object();
 
-        public ChatContext(Guid serverId, IConfig config, IDatabaseBackend databaseBackend, IDataProvider dataProvider) {
+        public ChatContext(string serverId, IConfig config, IDatabaseBackend databaseBackend, IDataProvider dataProvider) {
             if(config == null)
                 throw new ArgumentNullException(nameof(config));
 
@@ -40,11 +40,11 @@ namespace SharpChat {
                 : new ADOMessageStorage(db);
 
             DataProvider = dataProvider ?? throw new ArgumentNullException(nameof(dataProvider));
-            Sessions = new SessionManager(serverId, config.ScopeTo(@"sessions"));
+            Sessions = new SessionManager(this, serverId, config.ScopeTo(@"sessions"));
+            Messages = new MessageManager(this, msgStore, config.ScopeTo(@"messages"));
             Users = new UserManager(this);
             Channels = new ChannelManager(this, config, Bot);
-            ChannelUsers = new ChannelUserRelations(this, Channels, Users, Sessions);
-            Messages = new MessageManager(this, msgStore, config.ScopeTo(@"messages"));
+            ChannelUsers = new ChannelUserRelations(this, Channels, Users, Sessions, Messages);
             RateLimiter = new RateLimiter(config.ScopeTo(@"flood"));
 
             Channels.UpdateChannels();
@@ -59,8 +59,12 @@ namespace SharpChat {
         }
 
         public void Update() { // this should probably not exist, or at least not called the way it is
-            Sessions.DisposeTimedOut();
+            Sessions.CheckTimeOut();
             PruneSessionlessUsers(); // this function also needs to go
+        }
+
+        public void BroadcastMessage(string text) {
+            DispatchEvent(this, new BroadcastMessageEvent(Bot, text));
         }
 
         // should this be moved to UserManager?
@@ -155,10 +159,10 @@ namespace SharpChat {
                 Logger.Debug(evt);
 
                 Sessions.HandleEvent(sender, evt);
-                ChannelUsers.HandleEvent(sender, evt);
-                Channels.HandleEvent(sender, evt);
-                Users.HandleEvent(sender, evt);
                 Messages.HandleEvent(sender, evt);
+                Users.HandleEvent(sender, evt);
+                Channels.HandleEvent(sender, evt);
+                ChannelUsers.HandleEvent(sender, evt);
             }
         }
 

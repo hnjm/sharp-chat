@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using SharpChat.Sessions;
+using System.Collections.Generic;
 
 namespace SharpChat.Commands {
     public class LeaveCommand : ICommand {

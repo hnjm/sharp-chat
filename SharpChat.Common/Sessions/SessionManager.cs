@@ -18,12 +18,17 @@ namespace SharpChat.Sessions {
         private CachedValue<short> MaxPerUser { get; } 
         private CachedValue<ushort> TimeOut { get; }
 
-        private Guid ServerId { get; }
+        private IEventDispatcher Dispatcher { get; }
+        private string ServerId { get; }
 
-        private List<Session> Sessions { get; } = new List<Session>();
+        private List<ISession> Sessions { get; } = new List<ISession>();
+        private List<ILocalSession> LocalSessions { get; } = new List<ILocalSession>();
 
-        public SessionManager(Guid serverId, IConfig config) {
-            ServerId = serverId;
+        public SessionManager(IEventDispatcher dispatcher, string serverId, IConfig config) {
+            if(config == null)
+                throw new ArgumentNullException(nameof(config));
+            Dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
+            ServerId = serverId ?? throw new ArgumentNullException(nameof(serverId));
             MaxPerUser = config.ReadCached(@"maxCount", DEFAULT_MAX_COUNT);
             TimeOut = config.ReadCached(@"timeOut", DEFAULT_TIMEOUT);
         }
@@ -49,122 +54,184 @@ namespace SharpChat.Sessions {
             }
         }
 
-        public bool HasTimedOut(Session session) {
+        public bool HasTimedOut(ISession session) {
             if(session == null)
                 throw new ArgumentNullException(nameof(session));
             int timeOut = TimeOut;
             if(timeOut < 1) // avoid idiocy
                 timeOut = DEFAULT_TIMEOUT;
-            return session.IdleTime.TotalSeconds >= timeOut;
+            return session.GetIdleTime().TotalSeconds >= timeOut;
         }
 
-        public void GetSessions(IUser user, Action<IEnumerable<Session>> callback) {
+        public ISession GetSession(ISession session) {
+            if(session == null)
+                throw new ArgumentNullException(nameof(session));
+            lock(Sync) {
+                if(session is ILocalSession s && LocalSessions.Contains(s))
+                    return s;
+                if(Sessions.Contains(session))
+                    return session;
+                return Sessions.FirstOrDefault(s => s.Equals(session));
+            }
+        }
+
+        public ILocalSession GetLocalSession(ISession session) {
+            if(session == null)
+                throw new ArgumentNullException(nameof(session));
+            lock(Sync) {
+                if(session is ILocalSession s && Sessions.Contains(s))
+                    return s;
+                return LocalSessions.FirstOrDefault(s => s.Equals(session));
+            }
+        }
+
+        public ILocalSession GetLocalSession(IConnection conn) {
+            if(conn == null)
+                throw new ArgumentNullException(nameof(conn));
+
+            lock(Sync)
+                return LocalSessions.FirstOrDefault(s => s.HasConnection(conn));
+        }
+
+        public void GetSessions(IUser user, Action<IEnumerable<ISession>> callback) {
             if(user == null)
                 throw new ArgumentNullException(nameof(user));
             if(callback == null)
                 throw new ArgumentNullException(nameof(callback));
 
             lock(Sync)
-                callback.Invoke(Sessions.Where(s => s.HasUser && s.User.Equals(user)));
+                callback.Invoke(Sessions.Where(s => s.HasUser() && s.User.Equals(user)));
         }
 
-        public void GetActiveSessions(Action<IEnumerable<Session>> callback) {
+        public void GetLocalSessions(IUser user, Action<IEnumerable<ILocalSession>> callback) {
+            if(user == null)
+                throw new ArgumentNullException(nameof(user));
             if(callback == null)
                 throw new ArgumentNullException(nameof(callback));
 
             lock(Sync)
-                callback.Invoke(Sessions.Where(s => s.HasUser && !HasTimedOut(s)));
+                callback.Invoke(LocalSessions.Where(s => s.HasUser() && s.User.Equals(user)));
         }
 
-        public void Add(Session session) {
+        // i wonder what i'll think about this after sleeping a night on it
+        // perhaps stick active sessions with the master User implementation again transparently.
+        // session startups should probably be events as well
+        public void GetSessions(IEnumerable<IUser> users, Action<IEnumerable<ISession>> callback) {
+            if(users == null)
+                throw new ArgumentNullException(nameof(users));
+            if(callback == null)
+                throw new ArgumentNullException(nameof(callback));
+
+            lock(Sync)
+                callback.Invoke(Sessions.Where(s => s.HasUser() && users.Any(s.User.Equals)));
+        }
+
+        public void GetLocalSessions(IEnumerable<IUser> users, Action<IEnumerable<ILocalSession>> callback) {
+            if(users == null)
+                throw new ArgumentNullException(nameof(users));
+            if(callback == null)
+                throw new ArgumentNullException(nameof(callback));
+
+            lock(Sync)
+                callback.Invoke(LocalSessions.Where(s => s.HasUser() && users.Any(s.User.Equals)));
+        }
+
+        public void GetActiveSessions(Action<IEnumerable<ISession>> callback) {
+            if(callback == null)
+                throw new ArgumentNullException(nameof(callback));
+
+            lock(Sync)
+                callback.Invoke(Sessions.Where(s => s.HasUser() && !HasTimedOut(s)));
+        }
+
+        public void GetActiveLocalSessions(Action<IEnumerable<ILocalSession>> callback) {
+            if(callback == null)
+                throw new ArgumentNullException(nameof(callback));
+
+            lock(Sync)
+                callback.Invoke(LocalSessions.Where(s => s.HasUser() && !HasTimedOut(s)));
+        }
+
+        public void GetDeadLocalSessions(Action<IEnumerable<ILocalSession>> callback) {
+            if(callback == null)
+                throw new ArgumentNullException(nameof(callback));
+
+            lock(Sync)
+                callback.Invoke(LocalSessions.Where(HasTimedOut));
+        }
+
+        public ILocalSession Create(IConnection conn, IUser user) {
+            if(conn == null)
+                throw new ArgumentNullException(nameof(conn));
+            if(user == null)
+                throw new ArgumentNullException(nameof(user));
+
+            lock(Sync) {
+                Session sess = new Session(ServerId, conn, user);
+                LocalSessions.Add(sess);
+                Sessions.Add(sess);
+                Dispatcher.DispatchEvent(this, new SessionCreatedEvent(sess));
+                return sess;
+            }
+        }
+
+        public void Destroy(ISession session) {
             if(session == null)
                 throw new ArgumentNullException(nameof(session));
 
+            lock(Sync) {
+                ILocalSession ls = GetLocalSession(session);
+                if(ls != null) {
+                    LocalSessions.Remove(ls);
+                }
+
+                Dispatcher.DispatchEvent(this, new SessionDestroyEvent(session));
+            }
+        }
+
+        public bool HasSessions(IUser user) {
+            if(user == null)
+                throw new ArgumentNullException(nameof(user));
             lock(Sync)
-                Sessions.Add(session);
+                return Sessions.Any(s => s.HasUser() && s.User.Equals(user));
         }
 
         public int GetSessionCount(IUser user) {
-            int count = 0;
-            FindMany(s => s.User == user, s => count = s.Count());
-            return count;
+            if(user == null)
+                throw new ArgumentNullException(nameof(user));
+            lock(Sync)
+                return Sessions.Count(s => s.HasUser() && s.User.Equals(user));
         }
 
         public int GetAvailableSessionCount(IUser user) {
             return MaxPerUser - GetSessionCount(user);
         }
 
-        public Session Find(Func<Session, bool> predicate) {
-            if(predicate == null)
-                throw new ArgumentNullException(nameof(predicate));
-
-            lock(Sync)
-                return Sessions.FirstOrDefault(predicate);
-        }
-
-        public IEnumerable<Session> FindMany(Func<Session, bool> predicate) {
-            IEnumerable<Session> sessions = null;
-            FindMany(predicate, s => sessions = s.ToArray());
-            return sessions ?? Enumerable.Empty<Session>();
-        }
-
-        public void FindMany(Func<Session, bool> predicate, Action<IEnumerable<Session>> callback) {
-            if(predicate == null)
-                throw new ArgumentNullException(nameof(predicate));
-            if(callback == null)
-                throw new ArgumentNullException(nameof(callback));
-
-            lock(Sync)
-                callback.Invoke(Sessions.Where(predicate));
-        }
-
-        public Session ByConnection(IConnection connection) {
-            if(connection == null)
-                throw new ArgumentNullException(nameof(connection));
-            return Find(c => c.HasConnection(connection));
-        }
-
-        public IEnumerable<Session> ByUser(IUser user) {
-            if(user == null)
-                throw new ArgumentNullException(nameof(user));
-            return FindMany(s => s.User == user);
-        }
-
         public IEnumerable<IPAddress> GetRemoteAddresses(IUser user) {
             if(user == null)
                 throw new ArgumentNullException(nameof(user));
 
-            lock(Sync)
-                foreach(Session sess in Sessions)
-                    if(sess.HasUser && sess.User.Equals(user))
-                        yield return sess.RemoteAddress;
-        }
+            IEnumerable<IPAddress> addrs = Enumerable.Empty<IPAddress>();
 
-        public IPAddress GetLastRemoteAddress(IUser user) {
-            if(user == null)
-                throw new ArgumentNullException(nameof(user));
-
-            DateTimeOffset lastActive = DateTimeOffset.MinValue;
-            IPAddress addr = IPAddress.None;
-
-            lock(Sync)
-                foreach(Session sess in Sessions)
-                    if(sess.HasUser && sess.User.Equals(user) && sess.LastActivity > lastActive) {
-                        lastActive = sess.LastActivity;
-                        addr = sess.RemoteAddress;
-                    }
-
-            return addr;
-        }
-
-        public void DisposeTimedOut() {
-            FindMany(s => HasTimedOut(s), sessions => {
-                Session session;
-                while((session = sessions.FirstOrDefault()) != null) {
-                    session.Dispose();
-                    Sessions.Remove(session);
-                }
+            GetActiveSessions(sessions => {
+                addrs = sessions.Where(s => s.User.Equals(user))
+                                .OrderByDescending(s => s.LastPing)
+                                .Select(s => s.RemoteAddress)
+                                .Distinct();
             });
+
+            return addrs;
+        }
+
+        public void CheckTimeOut() {
+            lock(Sync) {
+                IEnumerable<ILocalSession> sessions = null;
+                GetDeadLocalSessions(s => sessions = s.ToArray());
+                if(sessions == null || !sessions.Any())
+                    return;
+                foreach(ILocalSession session in sessions)
+                    Destroy(session);
+            }
         }
 
         public void HandleEvent(object sender, IEvent evt) {

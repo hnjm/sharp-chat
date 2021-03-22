@@ -32,7 +32,6 @@ namespace SharpChat.Commands {
                 throw new MessageNotFoundCommandException();
 
             Messages.Delete(ctx.User, delMsg);
-            ctx.Chat.SendPacket(new ChatMessageDeletePacket(delMsg));
             return true;
         }
     }

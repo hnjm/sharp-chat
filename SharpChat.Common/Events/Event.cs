@@ -13,7 +13,7 @@ namespace SharpChat.Events {
         public Event(IChannel channel, IUser user, DateTimeOffset? dateTime = null) {
             EventId = SharpId.Next();
             DateTime = dateTime ?? DateTimeOffset.Now;
-            User = user ?? throw new ArgumentNullException(nameof(user));
+            User = user ?? throw new ArgumentNullException(nameof(user)); // might want to consider allowing NULL here too when users aren't involved
             Channel = channel; // channel is allowed to be NULL for broadcasting
         }
     }

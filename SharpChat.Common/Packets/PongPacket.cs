@@ -2,14 +2,14 @@
 using System.Text;
 
 namespace SharpChat.Packets {
-    public class PongPacket : ServerPacketBase {
+    public class PongPacket : IServerPacket {
         public DateTimeOffset PongTime { get; private set; }
 
         public PongPacket(DateTimeOffset dto) {
             PongTime = dto;
         }
 
-        public override string Pack() {
+        public string Pack() {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)ServerPacket.Pong);

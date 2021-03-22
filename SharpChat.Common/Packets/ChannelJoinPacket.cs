@@ -1,29 +1,30 @@
-﻿using SharpChat.Users;
+﻿using SharpChat.Events;
+using SharpChat.Users;
 using System;
 using System.Text;
 
 namespace SharpChat.Packets {
-    public class UserChannelJoinPacket : ServerPacketBase {
-        public IUser User { get; private set; }
+    public class ChannelJoinPacket : IServerPacket {
+        private ChannelJoinEvent Join { get; }
 
-        public UserChannelJoinPacket(IUser user) {
-            User = user ?? throw new ArgumentNullException(nameof(user));
+        public ChannelJoinPacket(ChannelJoinEvent join) {
+            Join = join ?? throw new ArgumentNullException(nameof(join));
         }
 
-        public override string Pack() {
+        public string Pack() {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)ServerPacket.UserMove);
             sb.Append(IServerPacket.SEPARATOR);
             sb.Append((int)ServerMovePacket.UserJoined);
             sb.Append(IServerPacket.SEPARATOR);
-            sb.Append(User.UserId);
+            sb.Append(Join.User.UserId);
             sb.Append(IServerPacket.SEPARATOR);
-            sb.Append(User.GetDisplayName());
+            sb.Append(Join.User.GetDisplayName());
             sb.Append(IServerPacket.SEPARATOR);
-            sb.Append(User.Colour);
+            sb.Append(Join.User.Colour);
             sb.Append(IServerPacket.SEPARATOR);
-            sb.Append(SequenceId);
+            sb.Append(Join.EventId);
 
             return sb.ToString();
         }

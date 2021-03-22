@@ -63,8 +63,7 @@ namespace SharpChat.PacketHandlers {
                             return;
                         }
 
-                        Session sess = new Session(ctx.Connection, user);
-                        Sessions.Add(sess);
+                        ILocalSession sess = Sessions.Create(ctx.Connection, user);
 
                         sess.SendPacket(new WelcomeMessagePacket(Sender, $@"Welcome to Flashii Chat, {user.UserName}!"));
 

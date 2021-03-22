@@ -1,4 +1,5 @@
 ﻿using SharpChat.Events;
+using SharpChat.Messages;
 using SharpChat.Packets;
 using SharpChat.Sessions;
 using SharpChat.Users;
@@ -11,27 +12,43 @@ namespace SharpChat.Channels {
         private ChannelManager Channels { get; }
         private UserManager Users { get; }
         private SessionManager Sessions { get; }
+        private MessageManager Messages { get; }
+        private readonly object Sync = new object();
 
-        public ChannelUserRelations(IEventDispatcher dispatcher, ChannelManager channels, UserManager users, SessionManager sessions) {
+        public ChannelUserRelations(
+            IEventDispatcher dispatcher,
+            ChannelManager channels,
+            UserManager users,
+            SessionManager sessions,
+            MessageManager messages
+        ) {
             Dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
             Channels = channels ?? throw new ArgumentNullException(nameof(channels));
             Users = users ?? throw new ArgumentNullException(nameof(users));
+            Sessions = sessions ?? throw new ArgumentNullException(nameof(sessions));
+            Messages = messages ?? throw new ArgumentNullException(nameof(messages));
         }
 
-        public void SendPacket(IChannel channel, IServerPacket packet, IEnumerable<IUser> except = null) {
+        public void SendPacket(IChannel channel, params IServerPacket[] packets) {
             if(channel == null)
                 throw new ArgumentNullException(nameof(channel));
-            if(packet == null)
-                throw new ArgumentNullException(nameof(packet));
-            //
+
+            GetUsers(channel, users => Sessions.GetSessions(users, sessions => SendPacket(sessions, packets)));
         }
 
-        public void SendPacket(IUser user, IServerPacket packet) {
+        public void SendPacket(IUser user, params IServerPacket[] packets) {
             if(user == null)
                 throw new ArgumentNullException(nameof(user));
-            if(packet == null)
-                throw new ArgumentNullException(nameof(packet));
-            //
+
+            Sessions.GetSessions(user, sessions => SendPacket(sessions, packets));
+        }
+
+        private static void SendPacket(IEnumerable<ILocalSession> sessions, IEnumerable<IServerPacket> packets) {
+            foreach(IServerPacket packet in packets) {
+                MemoizedPacket mp = new MemoizedPacket(packet);
+                foreach(ILocalSession session in sessions)
+                    session.SendPacket(mp);
+            }
         }
 
         public bool HasUser(IChannel channel, IUser user) {
@@ -90,18 +107,43 @@ namespace SharpChat.Channels {
                 Dispatcher.DispatchEvent(this, new ChannelLeaveEvent(channel, user, reason));
         }
 
-        public void HandleEvent(object sender, IEvent evt) {
-            switch(evt) {
-                case ChannelJoinEvent _:
-                    //
-                    break;
+        private void OnMessageUpdate(MessageUpdateEvent mue) {
+            // there should be a v2cap that makes one packet, this is jank
+            IMessage message = Messages.GetMessage(mue.MessageId);
+            if(message == null)
+                SendPacket(mue.Channel, new MessageDeletePacket(mue));
+            else
+                SendPacket(
+                    mue.Channel,
+                    new MessageDeletePacket(mue),
+                    new MessageCreatePacket(new MessageCreateEvent(message))
+                );
+        }
 
-                case ChannelLeaveEvent _: // Should ownership just be passed on to another user instead of Destruction?
-                    IChannel channel = Channels.GetChannel(evt.Channel);
-                    if(channel.IsTemporary && evt.User.Equals(channel.Owner))
-                        Channels.Remove(channel);
-                    break;
-            }
+        public void HandleEvent(object sender, IEvent evt) {
+            lock(Sync)
+                switch(evt) {
+                    case ChannelJoinEvent cje:
+                        SendPacket(cje.Channel, new ChannelJoinPacket(cje));
+                        break;
+                    case ChannelLeaveEvent cle: // Should ownership just be passed on to another user instead of Destruction?
+                        SendPacket(cle.Channel, new ChannelLeavePacket(cle));
+
+                        IChannel channel = Channels.GetChannel(evt.Channel);
+                        if(channel.IsTemporary && evt.User.Equals(channel.Owner))
+                            Channels.Remove(channel);
+                        break;
+
+                    case MessageCreateEvent mce:
+                        SendPacket(mce.Channel, new MessageCreatePacket(mce));
+                        break;
+                    case MessageUpdateEvent mue:
+                        OnMessageUpdate(mue);
+                        break;
+                    case MessageDeleteEvent mde:
+                        SendPacket(mde.Channel, new MessageDeletePacket(mde));
+                        break;
+                }
         }
     }
 }

@@ -2,7 +2,7 @@
 using System.Text;
 
 namespace SharpChat.Packets {
-    public class ChannelUpdatePacket : ServerPacketBase {
+    public class ChannelUpdatePacket : IServerPacket {
         public string PreviousName { get; private set; }
         public IChannel Channel { get; private set; }
 
@@ -11,7 +11,7 @@ namespace SharpChat.Packets {
             Channel = channel;
         }
 
-        public override string Pack() {
+        public string Pack() {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)ServerPacket.ChannelEvent);

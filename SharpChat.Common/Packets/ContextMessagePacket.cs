@@ -4,7 +4,7 @@ using System;
 using System.Text;
 
 namespace SharpChat.Packets {
-    public class ContextMessagePacket : ServerPacketBase {
+    public class ContextMessagePacket : IServerPacket {
         public IMessage Message { get; private set; }
         public bool Notify { get; private set; }
 
@@ -13,7 +13,7 @@ namespace SharpChat.Packets {
             Notify = notify;
         }
 
-        public override string Pack() {
+        public string Pack() {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)ServerPacket.ContextPopulate);

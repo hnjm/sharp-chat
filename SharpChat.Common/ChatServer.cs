@@ -22,8 +22,9 @@ namespace SharpChat {
 #endif
 
         public const int DEFAULT_MAX_CONNECTIONS = 5;
+        public const int ID_LENGTH = 8;
 
-        public Guid ServerId { get; }
+        public string ServerId { get; }
         private IConfig Config { get; }
         private IServer Server { get; }
         private ChatContext Context { get; }
@@ -35,7 +36,7 @@ namespace SharpChat {
         public ChatServer(IConfig config, IServer server, IDataProvider dataProvider, IDatabaseBackend databaseBackend) {
             Logger.Write("Starting Sock Chat server...");
 
-            ServerId = Guid.NewGuid();
+            ServerId = RNG.NextString(ID_LENGTH); // maybe read this from the cfg instead
             Config = config ?? throw new ArgumentNullException(nameof(config));
             Context = new ChatContext(ServerId, Config.ScopeTo(@"chat"), databaseBackend, dataProvider);
 
@@ -50,13 +51,13 @@ namespace SharpChat {
                     new WhoCommand(Context.ChannelUsers, Context.Bot),
                     new DeleteMessageCommand(Context.Messages),
 
-                    new NickCommand(Context.Bot),
+                    new NickCommand(),
                     new CreateChannelCommand(Context.Bot),
                     new DeleteChannelCommand(Context.Bot),
                     new ChannelPasswordCommand(Context.Bot),
                     new ChannelRankCommand(Context.Bot),
 
-                    new BroadcastCommand(Context.Messages, Context.Bot),
+                    new BroadcastCommand(Context),
                     new KickBanUserCommand(),
                     new PardonUserCommand(Context.Bot),
                     new PardonIPCommand(Context.Bot),
@@ -103,7 +104,7 @@ namespace SharpChat {
         }
 
         private void OnError(IConnection conn, Exception ex) {
-            Session sess = Context.Sessions.ByConnection(conn);
+            ILocalSession sess = Context.Sessions.ByConnection(conn);
             Logger.Write($@"[{sess} {conn}] {ex}");
             Context.Update();
         }
@@ -111,8 +112,8 @@ namespace SharpChat {
         private void OnMessage(IConnection conn, string msg) {
             Context.Update();
 
-            Session sess = Context.Sessions.ByConnection(conn);
-            bool hasUser = sess?.HasUser == true;
+            ILocalSession sess = Context.Sessions.ByConnection(conn);
+            bool hasUser = sess?.HasUser() == true;
 
             RateLimitState rateLimit = RateLimitState.None;
             if(!hasUser || !Context.RateLimiter.HasRankException(sess.User))

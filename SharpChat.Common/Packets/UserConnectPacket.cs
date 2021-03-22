@@ -1,27 +1,26 @@
-﻿using SharpChat.Users;
+﻿using SharpChat.Events;
+using SharpChat.Users;
 using System;
 using System.Text;
 
 namespace SharpChat.Packets {
-    public class UserConnectPacket : ServerPacketBase {
-        public DateTimeOffset Joined { get; private set; }
-        public IUser User { get; private set; }
+    public class UserConnectPacket : IServerPacket {
+        private UserConnectEvent Connect { get; }
 
-        public UserConnectPacket(DateTimeOffset joined, IUser user) {
-            Joined = joined;
-            User = user ?? throw new ArgumentNullException(nameof(user));
+        public UserConnectPacket(UserConnectEvent connect) {
+            Connect = connect ?? throw new ArgumentNullException(nameof(connect));
         }
 
-        public override string Pack() {
+        public string Pack() {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)ServerPacket.UserConnect);
             sb.Append(IServerPacket.SEPARATOR);
-            sb.Append(Joined.ToUnixTimeSeconds());
+            sb.Append(Connect.DateTime.ToUnixTimeSeconds());
             sb.Append(IServerPacket.SEPARATOR);
-            sb.Append(User.Pack());
+            sb.Append(Connect.User.Pack());
             sb.Append(IServerPacket.SEPARATOR);
-            sb.Append(SequenceId);
+            sb.Append(Connect.EventId);
 
             return sb.ToString();
         }

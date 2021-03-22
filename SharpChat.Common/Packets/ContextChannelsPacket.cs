@@ -5,14 +5,14 @@ using System.Linq;
 using System.Text;
 
 namespace SharpChat.Packets {
-    public class ContextChannelsPacket : ServerPacketBase {
+    public class ContextChannelsPacket : IServerPacket {
         public IEnumerable<IChannel> Channels { get; private set; }
 
         public ContextChannelsPacket(IEnumerable<IChannel> channels) {
             Channels = channels?.Where(c => c != null) ?? throw new ArgumentNullException(nameof(channels));
         }
 
-        public override string Pack() {
+        public string Pack() {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)ServerPacket.ContextPopulate);

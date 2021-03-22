@@ -1,30 +1,27 @@
-﻿using SharpChat.Users;
+﻿using SharpChat.Events;
+using SharpChat.Users;
 using System;
 using System.Text;
 
 namespace SharpChat.Packets {
-    public class UserDisconnectPacket : ServerPacketBase {
-        public DateTimeOffset Disconnected { get; private set; }
-        public IUser User { get; private set; }
-        public UserDisconnectReason Reason { get; private set; }
+    public class UserDisconnectPacket : IServerPacket {
+        private UserDisconnectEvent Disconnect { get; }
 
-        public UserDisconnectPacket(DateTimeOffset disconnected, IUser user, UserDisconnectReason reason) {
-            Disconnected = disconnected;
-            User = user ?? throw new ArgumentNullException(nameof(user));
-            Reason = reason;
+        public UserDisconnectPacket(UserDisconnectEvent disconnect) {
+            Disconnect = disconnect ?? throw new ArgumentNullException(nameof(disconnect));
         }
 
-        public override string Pack() {
+        public string Pack() {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)ServerPacket.UserDisconnect);
             sb.Append(IServerPacket.SEPARATOR);
-            sb.Append(User.UserId);
+            sb.Append(Disconnect.User.UserId);
             sb.Append(IServerPacket.SEPARATOR);
-            sb.Append(User.GetDisplayName());
+            sb.Append(Disconnect.User.GetDisplayName());
             sb.Append(IServerPacket.SEPARATOR);
 
-            switch (Reason) {
+            switch(Disconnect.Reason) {
                 case UserDisconnectReason.Leave:
                 default:
                     sb.Append(@"leave");
@@ -41,9 +38,9 @@ namespace SharpChat.Packets {
             }
 
             sb.Append(IServerPacket.SEPARATOR);
-            sb.Append(Disconnected.ToUnixTimeSeconds());
+            sb.Append(Disconnect.DateTime.ToUnixTimeSeconds());
             sb.Append(IServerPacket.SEPARATOR);
-            sb.Append(SequenceId);
+            sb.Append(Disconnect.EventId);
 
             return sb.ToString();
         }

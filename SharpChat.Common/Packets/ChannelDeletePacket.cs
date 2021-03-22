@@ -3,14 +3,14 @@ using System;
 using System.Text;
 
 namespace SharpChat.Packets {
-    public class ChannelDeletePacket : ServerPacketBase {
+    public class ChannelDeletePacket : IServerPacket {
         public IChannel Channel { get; private set; }
 
         public ChannelDeletePacket(IChannel channel) {
             Channel = channel ?? throw new ArgumentNullException(nameof(channel));
         }
 
-        public override string Pack() {
+        public string Pack() {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)ServerPacket.ChannelEvent);

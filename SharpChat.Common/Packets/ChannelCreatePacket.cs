@@ -2,14 +2,14 @@
 using System.Text;
 
 namespace SharpChat.Packets {
-    public class ChannelCreatePacket : ServerPacketBase {
+    public class ChannelCreatePacket : IServerPacket {
         public IChannel Channel { get; private set; }
 
         public ChannelCreatePacket(IChannel channel) {
             Channel = channel;
         }
 
-        public override string Pack() {
+        public string Pack() {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)ServerPacket.ChannelEvent);

@@ -3,7 +3,7 @@ using System;
 using System.Text;
 
 namespace SharpChat.Packets {
-    public class TypingPacket : ServerPacketBase {
+    public class TypingPacket : IServerPacket {
         public IChannel Channel { get; }
         public object TypingInfo { get; }
 
@@ -12,7 +12,7 @@ namespace SharpChat.Packets {
             TypingInfo = typingInfo ?? throw new ArgumentNullException(nameof(typingInfo));
         }
 
-        public override string Pack() {
+        public string Pack() {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)ServerPacket.TypingInfo);

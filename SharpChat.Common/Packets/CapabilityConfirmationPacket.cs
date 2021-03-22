@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 
 namespace SharpChat.Packets {
-    public class CapabilityConfirmationPacket : ServerPacketBase {
+    public class CapabilityConfirmationPacket : IServerPacket {
         private IEnumerable<string> Capabilities { get; }
 
         private static readonly string[] Names = Enum.GetNames(typeof(ClientCapabilities));
@@ -19,7 +19,7 @@ namespace SharpChat.Packets {
                     yield return Names[i];
         }
 
-        public override string Pack() {
+        public string Pack() {
             StringBuilder sb = new StringBuilder();
 
             sb.Append((int)ServerPacket.CapabilityConfirm);

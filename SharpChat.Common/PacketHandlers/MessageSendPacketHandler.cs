@@ -76,7 +76,7 @@ namespace SharpChat.PacketHandlers {
             text = text.Trim();
 
 #if DEBUG
-            Logger.Write($@"<{ctx.Session.Id} {ctx.User.UserName}> {text}");
+            Logger.Write($@"<{ctx.Session.SessionId} {ctx.User.UserName}> {text}");
 #endif
 
             bool handled = false;
@@ -92,7 +92,7 @@ namespace SharpChat.PacketHandlers {
                 Messages.Create(ctx.User, channel, text);
         }
 
-        public bool HandleCommand(string message, ChatContext context, IUser user, IChannel channel, Session session) {
+        public bool HandleCommand(string message, ChatContext context, IUser user, IChannel channel, ILocalSession session) {
             string[] parts = message[1..].Split(' ');
             string commandName = parts[0].Replace(@".", string.Empty).ToLowerInvariant();
 

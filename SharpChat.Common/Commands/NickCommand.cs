@@ -1,17 +1,10 @@
-﻿using SharpChat.Packets;
-using SharpChat.Users;
-using System;
+﻿using SharpChat.Users;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace SharpChat.Commands {
     public class NickCommand : ICommand {
         private const string NAME = @"nick";
-        private IUser Sender { get; }
-
-        public NickCommand(IUser sender) {
-            Sender = sender ?? throw new ArgumentNullException(nameof(sender));
-        }
 
         public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == NAME;
@@ -54,7 +47,7 @@ namespace SharpChat.Commands {
             if(nickStr != null && ctx.Chat.Users.GetUser(nickStr) != null)
                 throw new NickNameInUseCommandException(nickStr);
 
-            string previousName = targetUser == ctx.User ? (targetUser.NickName ?? targetUser.UserName) : null;
+            //string previousName = targetUser == ctx.User ? (targetUser.NickName ?? targetUser.UserName) : null;
             ctx.Chat.Users.Update(targetUser, nickName: nickStr);
             
             // both of these need to go in ChannelUsers
