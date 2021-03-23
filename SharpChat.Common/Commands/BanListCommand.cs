@@ -1,13 +1,16 @@
-﻿using SharpChat.Packets;
+﻿using SharpChat.DataProvider;
+using SharpChat.Packets;
 using SharpChat.Users;
 using System;
 using System.Collections.Generic;
 
 namespace SharpChat.Commands {
     public class BanListCommand : ICommand {
+        private IDataProvider DataProvider { get; }
         private IUser Sender { get; }
 
-        public BanListCommand(IUser sender) {
+        public BanListCommand(IDataProvider dataProvider, IUser sender) {
+            DataProvider = dataProvider ?? throw new ArgumentNullException(nameof(dataProvider));
             Sender = sender ?? throw new ArgumentNullException(nameof(sender));
         }
 
@@ -18,7 +21,7 @@ namespace SharpChat.Commands {
             if(!ctx.User.Can(UserPermissions.BanUser | UserPermissions.KickUser))
                 throw new CommandNotAllowedException(ctx.Args);
 
-            ctx.Chat.DataProvider.BanClient.GetBanList(b => {
+            DataProvider.BanClient.GetBanList(b => {
                 ctx.Session.SendPacket(new BanListPacket(Sender, b));
             }, ex => {
                 Logger.Write(@"Error during ban list retrieval.");

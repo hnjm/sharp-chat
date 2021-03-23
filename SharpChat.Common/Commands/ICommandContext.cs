@@ -9,7 +9,6 @@ namespace SharpChat.Commands {
         IEnumerable<string> Args { get; }
         IUser User { get; }
         IChannel Channel { get; }
-        ChatContext Chat { get; }
         ILocalSession Session { get; }
     }
 
@@ -17,14 +16,12 @@ namespace SharpChat.Commands {
         public IEnumerable<string> Args { get; }
         public IUser User { get; }
         public IChannel Channel { get; }
-        public ChatContext Chat { get; }
         public ILocalSession Session { get; }
 
-        public CommandContext(IEnumerable<string> args, IUser user, IChannel channel, ChatContext context, ILocalSession session) {
+        public CommandContext(IEnumerable<string> args, IUser user, IChannel channel, ILocalSession session) {
             Args = args ?? throw new ArgumentNullException(nameof(args));
             User = user ?? throw new ArgumentNullException(nameof(user));
             Channel = channel ?? throw new ArgumentNullException(nameof(channel));
-            Chat = context ?? throw new ArgumentNullException(nameof(context));
             Session = session ?? throw new ArgumentNullException(nameof(session));
         }
     }

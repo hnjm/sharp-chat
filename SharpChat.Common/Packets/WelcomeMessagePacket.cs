@@ -3,7 +3,7 @@ using System;
 using System.Text;
 
 namespace SharpChat.Packets {
-    public class WelcomeMessagePacket : IServerPacket {
+    public class WelcomeMessagePacket : ServerPacket {
         private const string STRING_ID = @"welcome";
 
         private IUser Sender { get; }
@@ -14,12 +14,12 @@ namespace SharpChat.Packets {
             Message = message ?? throw new ArgumentNullException(nameof(message));
         }
 
-        public string Pack() {
+        protected override string DoPack() {
             StringBuilder sb = new StringBuilder();
 
-            sb.Append((int)ServerPacket.ContextPopulate);
+            sb.Append((int)ServerPacketId.ContextPopulate);
             sb.Append(IServerPacket.SEPARATOR);
-            sb.Append((int)ServerContextPacket.Message);
+            sb.Append((int)ServerContextSubPacketId.Message);
             sb.Append(IServerPacket.SEPARATOR);
             sb.Append(DateTimeOffset.Now.ToUnixTimeSeconds());
             sb.Append(IServerPacket.SEPARATOR);

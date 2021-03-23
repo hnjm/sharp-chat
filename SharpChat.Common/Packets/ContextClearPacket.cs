@@ -10,7 +10,7 @@ namespace SharpChat.Packets {
         MessagesUsersChannels = 4,
     }
 
-    public class ContextClearPacket : IServerPacket {
+    public class ContextClearPacket : ServerPacket {
         public IChannel Channel { get; private set; }
         public ContextClearMode Mode { get; private set; }
 
@@ -22,10 +22,10 @@ namespace SharpChat.Packets {
             Mode = mode;
         }
 
-        public string Pack() {
+        protected override string DoPack() {
             StringBuilder sb = new StringBuilder();
 
-            sb.Append((int)ServerPacket.ContextClear);
+            sb.Append((int)ServerPacketId.ContextClear);
             sb.Append(IServerPacket.SEPARATOR);
             sb.Append((int)Mode);
             sb.Append(IServerPacket.SEPARATOR);

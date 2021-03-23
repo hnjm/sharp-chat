@@ -33,8 +33,8 @@ namespace SharpChat.DataProvider.Misuzu.Users.Bump {
 
             List<MisuzuUserBumpInfo> infos = new List<MisuzuUserBumpInfo>();
             foreach(IUser user in users) {
-                IPAddress addr = sessions.GetLastRemoteAddress(user);
-                if(addr == IPAddress.None)
+                IPAddress addr = sessions.GetRemoteAddresses(user).FirstOrDefault();
+                if(addr == default)
                     continue;
                 infos.Add(new MisuzuUserBumpInfo(user, addr));
             }

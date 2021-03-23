@@ -15,8 +15,8 @@ namespace SharpChat.Sessions {
 
         public string SessionId { get; }
         public string ServerId { get; }
-        public DateTimeOffset LastPing { get; set; }
-        public IUser User { get; set; }
+        public DateTimeOffset LastPing { get; private set; }
+        public IUser User { get; private set; }
 
         public TimeSpan IdleTime => LastPing - DateTimeOffset.Now;
 
@@ -26,12 +26,12 @@ namespace SharpChat.Sessions {
         public IPAddress RemoteAddress
             => Connection?.RemoteAddress;
 
-        private object Sync { get; } = new object();
+        private readonly object Sync = new object();
         private Queue<IServerPacket> PacketQueue { get; } = new Queue<IServerPacket>();
 
-        public IChannel LastChannel { get; set; }
+        private IChannel LastChannel { get; set; }
 
-        public ClientCapabilities Capabilities { get; set; }
+        public ClientCapability Capabilities { get; private set; }
 
         public Session(string serverId, IConnection conn, IUser user) {
             ServerId = serverId ?? throw new ArgumentNullException(nameof(serverId));
@@ -78,14 +78,6 @@ namespace SharpChat.Sessions {
         public void BumpPing()
             => LastPing = DateTimeOffset.Now;
 
-        public void ForceChannel(IChannel channel = null) {
-            if(channel != null)
-                LastChannel = channel;
-            if(LastChannel == null)
-                return;
-            SendPacket(new ChannelForceJoinPacket(LastChannel));
-        }
-
         public override string ToString() {
             return $@"S#{SessionId}";
         }
@@ -109,7 +101,51 @@ namespace SharpChat.Sessions {
             => other != null && ServerId.Equals(other.ServerId) && SessionId.Equals(other.SessionId);
 
         public void HandleEvent(object sender, IEvent evt) {
-            throw new NotImplementedException();
+            lock(Sync) {
+                if(evt.Channel != null)
+                    LastChannel = evt.Channel;
+
+                switch(evt) {
+                    case SessionCapabilitiesEvent sce:
+                        Capabilities = sce.Capabilities;
+                        SendPacket(new CapabilityConfirmationPacket(sce));
+                        break;
+                    case SessionPingEvent spe:
+                        LastPing = spe.DateTime;
+                        SendPacket(new PongPacket(spe));
+                        break;
+                    case SessionChannelSwitchEvent scwe:
+                        if(scwe.Channel != null)
+                            LastChannel = scwe.Channel;
+                        SendPacket(new ChannelSwitchPacket(LastChannel));
+                        break;
+
+                    case ChannelJoinEvent cje:
+                        SendPacket(new ChannelJoinPacket(cje));
+                        break;
+                    case ChannelLeaveEvent cle: // Should ownership just be passed on to another user instead of Destruction?
+                        SendPacket(new ChannelLeavePacket(cle));
+                        break;
+
+                    case MessageCreateEvent mce:
+                        SendPacket(new MessageCreatePacket(mce));
+                        break;
+                    case MessageUpdateEventWithData muewd:
+                        SendPacket(new MessageDeletePacket(muewd));
+                        SendPacket(new MessageCreatePacket(muewd));
+                        break;
+                    case MessageUpdateEvent mue:
+                        //SendPacket(new MessageUpdatePacket(mue));
+                        break;
+                    case MessageDeleteEvent mde:
+                        SendPacket(new MessageDeletePacket(mde));
+                        break;
+
+                    case BroadcastMessageEvent bme:
+                        SendPacket(new BroadcastMessagePacket(bme));
+                        break;
+                }
+            }
         }
     }
 }

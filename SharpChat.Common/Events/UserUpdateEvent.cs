@@ -1,10 +1,11 @@
 ﻿using SharpChat.Users;
+using System;
 
 namespace SharpChat.Events {
+    [Event(TYPE)]
     public class UserUpdateEvent : Event {
         public const string TYPE = @"user:update";
 
-        public override string Type => TYPE;
         public string UserName { get; }
         public Colour? Colour { get; }
         public int? Rank { get; }
@@ -26,7 +27,7 @@ namespace SharpChat.Events {
             UserPermissions? perms = null,
             UserStatus? status = null,
             string statusMessage = null
-        ) : base(null, user) {
+        ) : base(null, user ?? throw new ArgumentNullException(nameof(user))) {
             UserName = userName;
             Colour = colour;
             Rank = rank;

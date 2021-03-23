@@ -1,4 +1,5 @@
-﻿using SharpChat.Packets;
+﻿using SharpChat.Channels;
+using SharpChat.Packets;
 using SharpChat.Users;
 using System;
 using System.Collections.Generic;
@@ -6,9 +7,11 @@ using System.Linq;
 
 namespace SharpChat.Commands {
     public class ChannelRankCommand : ICommand {
+        private ChannelManager Channels { get; }
         private IUser Sender { get; }
 
-        public ChannelRankCommand(IUser sender) {
+        public ChannelRankCommand(ChannelManager channels, IUser sender) {
+            Channels = channels ?? throw new ArgumentNullException(nameof(channels));
             Sender = sender ?? throw new ArgumentNullException(nameof(sender));
         }
 
@@ -22,7 +25,7 @@ namespace SharpChat.Commands {
             if(!int.TryParse(ctx.Args.ElementAtOrDefault(1), out int rank) || rank > ctx.User.Rank)
                 throw new InsufficientRankForChangeCommandException();
 
-            ctx.Chat.Channels.Update(ctx.Channel, minRank: rank);
+            Channels.Update(ctx.Channel, minRank: rank);
             ctx.Session.SendPacket(new ChannelRankResponsePacket(Sender));
             return true;
         }

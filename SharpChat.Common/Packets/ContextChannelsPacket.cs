@@ -5,19 +5,19 @@ using System.Linq;
 using System.Text;
 
 namespace SharpChat.Packets {
-    public class ContextChannelsPacket : IServerPacket {
+    public class ContextChannelsPacket : ServerPacket {
         public IEnumerable<IChannel> Channels { get; private set; }
 
         public ContextChannelsPacket(IEnumerable<IChannel> channels) {
             Channels = channels?.Where(c => c != null) ?? throw new ArgumentNullException(nameof(channels));
         }
 
-        public string Pack() {
+        protected override string DoPack() {
             StringBuilder sb = new StringBuilder();
 
-            sb.Append((int)ServerPacket.ContextPopulate);
+            sb.Append((int)ServerPacketId.ContextPopulate);
             sb.Append(IServerPacket.SEPARATOR);
-            sb.Append((int)ServerContextPacket.Channels);
+            sb.Append((int)ServerContextSubPacketId.Channels);
             sb.Append(IServerPacket.SEPARATOR);
             sb.Append(Channels.Count());
 

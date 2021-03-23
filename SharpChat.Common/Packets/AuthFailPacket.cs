@@ -9,7 +9,7 @@ namespace SharpChat.Packets {
         Banned,
     }
 
-    public class AuthFailPacket : IServerPacket {
+    public class AuthFailPacket : ServerPacket {
         public AuthFailReason Reason { get; private set; }
         public IBanRecord BanInfo { get; private set; }
 
@@ -20,10 +20,10 @@ namespace SharpChat.Packets {
                 BanInfo = banInfo ?? throw new ArgumentNullException(nameof(banInfo));
         }
 
-        public string Pack() {
+        protected override string DoPack() {
             StringBuilder sb = new StringBuilder();
 
-            sb.Append((int)ServerPacket.UserConnect);
+            sb.Append((int)ServerPacketId.UserConnect);
             sb.Append(IServerPacket.SEPARATOR);
             sb.Append('n');
             sb.Append(IServerPacket.SEPARATOR);

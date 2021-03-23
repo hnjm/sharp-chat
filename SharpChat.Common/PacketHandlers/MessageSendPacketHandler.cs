@@ -2,7 +2,6 @@
 using SharpChat.Commands;
 using SharpChat.Events;
 using SharpChat.Messages;
-using SharpChat.Packets;
 using SharpChat.Sessions;
 using SharpChat.Users;
 using System;
@@ -11,26 +10,27 @@ using System.Linq;
 
 namespace SharpChat.PacketHandlers {
     public class MessageSendPacketHandler : IPacketHandler {
-        public ClientPacket PacketId => ClientPacket.MessageSend;
+        public ClientPacketId PacketId => ClientPacketId.MessageSend;
 
         private IEventDispatcher Dispatcher { get; }
         private MessageManager Messages { get; }
         private UserManager Users { get; }
         private ChannelManager Channels { get; }
+        private ChannelUserRelations ChannelUsers { get; }
         private ChatBot Bot { get; }
         private IEnumerable<ICommand> Commands { get; }
 
         public MessageSendPacketHandler(
-            IEventDispatcher dispatcher,
             UserManager users,
             ChannelManager channels,
+            ChannelUserRelations channelUsers,
             MessageManager messages,
             ChatBot bot,
             IEnumerable<ICommand> commands
         ) {
-            Dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
             Users = users ?? throw new ArgumentNullException(nameof(users));
             Channels = channels ?? throw new ArgumentNullException(nameof(channels));
+            ChannelUsers = channelUsers ?? throw new ArgumentNullException(nameof(channelUsers));
             Messages = messages ?? throw new ArgumentNullException(nameof(messages));
             Bot = bot ?? throw new ArgumentNullException(nameof(bot));
             Commands = commands ?? throw new ArgumentNullException(nameof(commands));
@@ -51,19 +51,17 @@ namespace SharpChat.PacketHandlers {
             IChannel channel;
             string channelName = ctx.Args.ElementAtOrDefault(3)?.ToLowerInvariant();
             if(string.IsNullOrWhiteSpace(channelName))
-                channel = ctx.Session.LastChannel;
+                channel = Channels.DefaultChannel;
             else
-                channel = ctx.Chat.Channels.GetChannel(channelName);
+                channel = Channels.GetChannel(channelName);
 
             if(channel == null
-                || !ctx.Chat.ChannelUsers.HasUser(channel, ctx.User)
+                || !ChannelUsers.HasUser(channel, ctx.User)
             //  || (ctx.User.IsSilenced && !ctx.User.Can(UserPermissions.SilenceUser)) TODO: readd silencing
             ) return;
 
-            ctx.Session.LastChannel = channel;
-
             if(ctx.User.Status != UserStatus.Online) {
-                ctx.Chat.Users.Update(ctx.User, status: UserStatus.Online);
+                Users.Update(ctx.User, status: UserStatus.Online);
                 // ChannelUsers?
                 //channel.SendPacket(new UserUpdatePacket(ctx.User));
             }
@@ -83,7 +81,7 @@ namespace SharpChat.PacketHandlers {
 
             if(text[0] == '/')
                 try {
-                    handled = HandleCommand(text, ctx.Chat, ctx.User, channel, ctx.Session);
+                    handled = HandleCommand(text, ctx.User, channel, ctx.Session);
                 } catch(CommandException ex) {
                     ctx.Session.SendPacket(ex.ToPacket(Bot));
                 }
@@ -92,7 +90,7 @@ namespace SharpChat.PacketHandlers {
                 Messages.Create(ctx.User, channel, text);
         }
 
-        public bool HandleCommand(string message, ChatContext context, IUser user, IChannel channel, ILocalSession session) {
+        public bool HandleCommand(string message, IUser user, IChannel channel, ILocalSession session) {
             string[] parts = message[1..].Split(' ');
             string commandName = parts[0].Replace(@".", string.Empty).ToLowerInvariant();
 
@@ -104,7 +102,7 @@ namespace SharpChat.PacketHandlers {
             ICommand command = Commands.FirstOrDefault(x => x.IsCommandMatch(commandName, parts));
             if(command == null)
                 throw new CommandNotFoundException(commandName);
-            return command.DispatchCommand(new CommandContext(parts, user, channel, context, session));
+            return command.DispatchCommand(new CommandContext(parts, user, channel, session));
         }
     }
 }

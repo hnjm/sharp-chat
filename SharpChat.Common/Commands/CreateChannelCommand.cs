@@ -9,9 +9,13 @@ namespace SharpChat.Commands {
     public class CreateChannelCommand : ICommand {
         private const string NAME = @"create";
 
+        private ChannelManager Channels { get; }
+        private ChannelUserRelations ChannelUsers { get; }
         private IUser Sender { get; }
 
-        public CreateChannelCommand(IUser sender) {
+        public CreateChannelCommand(ChannelManager channels, ChannelUserRelations channelUsers, IUser sender) {
+            Channels = channels ?? throw new ArgumentNullException(nameof(channels));
+            ChannelUsers = channelUsers ?? throw new ArgumentNullException(nameof(channelUsers));
             Sender = sender ?? throw new ArgumentNullException(nameof(sender));
         }
 
@@ -37,7 +41,7 @@ namespace SharpChat.Commands {
             IChannel createChan;
 
             try {
-                createChan = ctx.Chat.Channels.Create(
+                createChan = Channels.Create(
                     ctx.User,
                     createChanName,
                     !ctx.User.Can(UserPermissions.SetChannelPermanent),
@@ -49,9 +53,7 @@ namespace SharpChat.Commands {
                 throw new ChannelNameInvalidCommandException();
             }
 
-            if(ctx.Session.LastChannel != null) // this should probably happen implicitly for v1 clients
-                ctx.Chat.ChannelUsers.LeaveChannel(ctx.Session.LastChannel, ctx.User, UserDisconnectReason.Leave);
-            ctx.Chat.ChannelUsers.JoinChannel(createChan, ctx.User);
+            ChannelUsers.JoinChannel(createChan, ctx.User);
 
             ctx.Session.SendPacket(new ChannelCreateResponsePacket(Sender, createChan));
             return true;

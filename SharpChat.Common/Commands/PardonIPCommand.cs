@@ -1,4 +1,5 @@
-﻿using SharpChat.Packets;
+﻿using SharpChat.DataProvider;
+using SharpChat.Packets;
 using SharpChat.Users;
 using System;
 using System.Collections.Generic;
@@ -7,9 +8,11 @@ using System.Net;
 
 namespace SharpChat.Commands {
     public class PardonIPCommand : ICommand {
+        private IDataProvider DataProvider { get; }
         private IUser Sender { get; }
 
-        public PardonIPCommand(IUser sender) {
+        public PardonIPCommand(IDataProvider dataProvider, IUser sender) {
+            DataProvider = dataProvider ?? throw new ArgumentNullException(nameof(dataProvider));
             Sender = sender ?? throw new ArgumentNullException(nameof(sender));
         }
 
@@ -24,7 +27,7 @@ namespace SharpChat.Commands {
             if(!IPAddress.TryParse(ipAddress, out IPAddress ipAddr))
                 throw new NotBannedCommandException(ipAddr?.ToString() ?? @"::");
 
-            ctx.Chat.DataProvider.BanClient.RemoveBan(ipAddr, success => {
+            DataProvider.BanClient.RemoveBan(ipAddr, success => {
                 if(success)
                     ctx.Session.SendPacket(new PardonResponsePacket(Sender, ipAddr));
                 else

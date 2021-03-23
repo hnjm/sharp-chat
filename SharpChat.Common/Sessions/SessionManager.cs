@@ -1,4 +1,5 @@
-﻿using SharpChat.Configuration;
+﻿using SharpChat.Channels;
+using SharpChat.Configuration;
 using SharpChat.Events;
 using SharpChat.Packets;
 using SharpChat.Users;
@@ -21,6 +22,9 @@ namespace SharpChat.Sessions {
         private IEventDispatcher Dispatcher { get; }
         private string ServerId { get; }
 
+        // IMPORTANT TODO: It should probably be possible to resume a session created on one server on another server.
+        //                 Perhaps the ServerId field should be empty to indicate that a session is currently in limbo.
+        //                 Being that all session wrangling should be done in this class, this could be done later.
         private List<ISession> Sessions { get; } = new List<ISession>();
         private List<ILocalSession> LocalSessions { get; } = new List<ILocalSession>();
 
@@ -31,15 +35,6 @@ namespace SharpChat.Sessions {
             ServerId = serverId ?? throw new ArgumentNullException(nameof(serverId));
             MaxPerUser = config.ReadCached(@"maxCount", DEFAULT_MAX_COUNT);
             TimeOut = config.ReadCached(@"timeOut", DEFAULT_TIMEOUT);
-        }
-
-        public void SendPacket(IServerPacket packet) {
-            if(packet == null)
-                throw new ArgumentNullException(nameof(packet));
-
-            lock(Sync)
-                foreach(Session session in Sessions)
-                    session.SendPacket(packet);
         }
 
         public void SendPacket(Session session, IServerPacket packet) {
@@ -75,14 +70,35 @@ namespace SharpChat.Sessions {
             }
         }
 
+        public ISession GetSession(string serverId, string sessionId) {
+            if(serverId == null)
+                throw new ArgumentNullException(nameof(serverId));
+            if(sessionId == null)
+                throw new ArgumentNullException(nameof(sessionId));
+
+            lock(Sync)
+                return Sessions.FirstOrDefault(s => serverId.Equals(s.ServerId) && sessionId.Equals(s.SessionId));
+        }
+
         public ILocalSession GetLocalSession(ISession session) {
             if(session == null)
                 throw new ArgumentNullException(nameof(session));
+
             lock(Sync) {
                 if(session is ILocalSession s && Sessions.Contains(s))
                     return s;
                 return LocalSessions.FirstOrDefault(s => s.Equals(session));
             }
+        }
+
+        public ILocalSession GetLocalSession(string serverId, string sessionId) {
+            if(serverId == null)
+                throw new ArgumentNullException(nameof(serverId));
+            if(sessionId == null)
+                throw new ArgumentNullException(nameof(sessionId));
+
+            lock(Sync)
+                return LocalSessions.FirstOrDefault(s => serverId.Equals(s.ServerId) && sessionId.Equals(s.SessionId));
         }
 
         public ILocalSession GetLocalSession(IConnection conn) {
@@ -175,6 +191,30 @@ namespace SharpChat.Sessions {
             }
         }
 
+        public void SetCapabilities(ISession session, ClientCapability caps) {
+            if(session == null)
+                throw new ArgumentNullException(nameof(session));
+
+            lock(Sync)
+                Dispatcher.DispatchEvent(this, new SessionCapabilitiesEvent(session, caps));
+        }
+
+        public void DoKeepAlive(ISession session) {
+            if(session == null)
+                throw new ArgumentNullException(nameof(session));
+
+            lock(Sync)
+                Dispatcher.DispatchEvent(this, new SessionPingEvent(session));
+        }
+
+        public void SwitchChannel(ISession session, IChannel channel = null) {
+            if(session == null)
+                throw new ArgumentNullException(nameof(session));
+
+            lock(Sync)
+                Dispatcher.DispatchEvent(this, new SessionChannelSwitchEvent(session, channel));
+        }
+
         public void Destroy(ISession session) {
             if(session == null)
                 throw new ArgumentNullException(nameof(session));
@@ -212,15 +252,22 @@ namespace SharpChat.Sessions {
                 throw new ArgumentNullException(nameof(user));
 
             IEnumerable<IPAddress> addrs = Enumerable.Empty<IPAddress>();
-
             GetActiveSessions(sessions => {
                 addrs = sessions.Where(s => s.User.Equals(user))
                                 .OrderByDescending(s => s.LastPing)
                                 .Select(s => s.RemoteAddress)
                                 .Distinct();
             });
-
             return addrs;
+        }
+
+        public ClientCapability GetCapabilities(IUser user) {
+            if(user == null)
+                throw new ArgumentNullException(nameof(user));
+
+            ClientCapability caps = 0;
+            GetSessions(user, sessions => caps = sessions.Select(s => s.Capabilities).Aggregate((x, y) => x | y));
+            return caps;
         }
 
         public void CheckTimeOut() {
@@ -235,7 +282,9 @@ namespace SharpChat.Sessions {
         }
 
         public void HandleEvent(object sender, IEvent evt) {
-            //
+            if(evt is SessionEvent se)
+                lock(Sync)
+                    GetLocalSession(se.ServerId, se.SessionId)?.HandleEvent(sender, se);
         }
     }
 }

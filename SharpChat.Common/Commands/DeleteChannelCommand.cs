@@ -7,9 +7,11 @@ using System.Linq;
 
 namespace SharpChat.Commands {
     public class DeleteChannelCommand : ICommand {
+        private ChannelManager Channels { get; }
         private IUser Sender { get; }
 
-        public DeleteChannelCommand(IUser sender) {
+        public DeleteChannelCommand(ChannelManager channels, IUser sender) {
+            Channels = channels ?? throw new ArgumentNullException(nameof(channels));
             Sender = sender ?? throw new ArgumentNullException(nameof(sender));
         }
 
@@ -22,14 +24,14 @@ namespace SharpChat.Commands {
             if(string.IsNullOrWhiteSpace(channelName))
                 throw new CommandFormatException();
 
-            IChannel channel = ctx.Chat.Channels.GetChannel(channelName);
+            IChannel channel = Channels.GetChannel(channelName);
             if(channel == null)
                 throw new ChannelNotFoundCommandException(channelName);
 
             if(!ctx.User.Can(UserPermissions.DeleteChannel) && channel.Owner != ctx.User)
                 throw new ChannelDeletionCommandException(channel.Name);
 
-            ctx.Chat.Channels.Remove(channel);
+            Channels.Remove(channel);
             ctx.Session.SendPacket(new ChannelDeleteResponsePacket(Sender, channel.Name));
             return true;
         }

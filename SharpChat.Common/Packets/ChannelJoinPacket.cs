@@ -4,19 +4,19 @@ using System;
 using System.Text;
 
 namespace SharpChat.Packets {
-    public class ChannelJoinPacket : IServerPacket {
+    public class ChannelJoinPacket : ServerPacket {
         private ChannelJoinEvent Join { get; }
 
         public ChannelJoinPacket(ChannelJoinEvent join) {
             Join = join ?? throw new ArgumentNullException(nameof(join));
         }
 
-        public string Pack() {
+        protected override string DoPack() {
             StringBuilder sb = new StringBuilder();
 
-            sb.Append((int)ServerPacket.UserMove);
+            sb.Append((int)ServerPacketId.UserMove);
             sb.Append(IServerPacket.SEPARATOR);
-            sb.Append((int)ServerMovePacket.UserJoined);
+            sb.Append((int)ServerMoveSubPacketId.UserJoined);
             sb.Append(IServerPacket.SEPARATOR);
             sb.Append(Join.User.UserId);
             sb.Append(IServerPacket.SEPARATOR);

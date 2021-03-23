@@ -4,17 +4,17 @@ using System;
 using System.Text;
 
 namespace SharpChat.Packets {
-    public class UserDisconnectPacket : IServerPacket {
+    public class UserDisconnectPacket : ServerPacket {
         private UserDisconnectEvent Disconnect { get; }
 
         public UserDisconnectPacket(UserDisconnectEvent disconnect) {
             Disconnect = disconnect ?? throw new ArgumentNullException(nameof(disconnect));
         }
 
-        public string Pack() {
+        protected override string DoPack() {
             StringBuilder sb = new StringBuilder();
 
-            sb.Append((int)ServerPacket.UserDisconnect);
+            sb.Append((int)ServerPacketId.UserDisconnect);
             sb.Append(IServerPacket.SEPARATOR);
             sb.Append(Disconnect.User.UserId);
             sb.Append(IServerPacket.SEPARATOR);

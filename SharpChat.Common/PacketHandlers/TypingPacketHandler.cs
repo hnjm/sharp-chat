@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace SharpChat.PacketHandlers {
     public class TypingPacketHandler : IPacketHandler {
-        public ClientPacket PacketId => ClientPacket.Typing;
+        public ClientPacketId PacketId => ClientPacketId.Typing;
 
         public void HandlePacket(IPacketHandlerContext ctx) {
             /*if(!ctx.HasUser)

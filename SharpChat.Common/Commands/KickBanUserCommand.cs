@@ -5,6 +5,12 @@ using System.Linq;
 
 namespace SharpChat.Commands {
     public class KickBanUserCommand : ICommand {
+        private UserManager Users { get; }
+
+        public KickBanUserCommand(UserManager users) {
+            Users = users ?? throw new ArgumentNullException(nameof(users));
+        }
+
         public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == @"kick" || name == @"ban";
 
@@ -17,7 +23,7 @@ namespace SharpChat.Commands {
 
             string userName = ctx.Args.ElementAtOrDefault(1);
             IUser user;
-            if(userName == null || (user = ctx.Chat.Users.GetUser(userName)) == null)
+            if(userName == null || (user = Users.GetUser(userName)) == null)
                 throw new UserNotFoundCommandException(userName);
 
             if(user == ctx.User || user.Rank >= ctx.User.Rank)
@@ -40,7 +46,7 @@ namespace SharpChat.Commands {
 
             // TODO: allow supplying a textReason
 
-            ctx.Chat.BanUser(user, duration, isPermanent: isPermanent, modUser: ctx.User);
+            //ctx.Chat.BanUser(user, duration, isPermanent: isPermanent, modUser: ctx.User);
             return true;
         }
     }

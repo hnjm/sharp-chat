@@ -1,30 +1,31 @@
-﻿using SharpChat.Packets;
+﻿using SharpChat.Sessions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace SharpChat.PacketHandlers {
     public class CapabilitiesPacketHandler : IPacketHandler {
-        public ClientPacket PacketId => ClientPacket.Capabilities;
+        public ClientPacketId PacketId => ClientPacketId.Capabilities;
+
+        private SessionManager Sessions { get; }
+
+        public CapabilitiesPacketHandler(SessionManager sessions) {
+            Sessions = sessions ?? throw new ArgumentNullException(nameof(sessions));
+        }
 
         public void HandlePacket(IPacketHandlerContext ctx) {
             if(!ctx.HasSession)
                 return;
 
-            ClientCapabilities caps = 0;
+            ClientCapability caps = 0;
 
             IEnumerable<string> capStrs = ctx.Args.ElementAtOrDefault(1)?.Split(' ');
             if(capStrs != null && capStrs.Any())
-                foreach(string capStr in capStrs) {
-                    Logger.Debug(capStr);
-                    if(Enum.TryParse(typeof(ClientCapabilities), capStr.ToUpperInvariant(), out object cap))
-                        caps |= (ClientCapabilities)cap;
-                }
+                foreach(string capStr in capStrs)
+                    if(Enum.TryParse(typeof(ClientCapability), capStr.ToUpperInvariant(), out object cap))
+                        caps |= (ClientCapability)cap;
 
-            Logger.Debug(caps);
-
-            ctx.Session.Capabilities = caps;
-            ctx.Session.SendPacket(new CapabilityConfirmationPacket(caps));
+            Sessions.SetCapabilities(ctx.Session, caps);
         }
     }
 }

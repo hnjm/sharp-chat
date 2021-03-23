@@ -5,7 +5,6 @@ using System;
 namespace SharpChat.Events {
     public interface IEvent {
         long EventId { get; }
-        string Type { get; }
         DateTimeOffset DateTime { get; }
         IUser User { get; }
         IChannel Channel { get; }

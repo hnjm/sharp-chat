@@ -5,7 +5,7 @@ using System;
 using System.Text;
 
 namespace SharpChat.Packets {
-    public class AuthSuccessPacket : IServerPacket {
+    public class AuthSuccessPacket : ServerPacket {
         public IUser User { get; private set; }
         public IChannel Channel { get; private set; }
         public ILocalSession Session { get; private set; }
@@ -20,10 +20,10 @@ namespace SharpChat.Packets {
             CharacterLimit = charLimit;
         }
 
-        public string Pack() {
+        protected override string DoPack() {
             StringBuilder sb = new StringBuilder();
 
-            sb.Append((int)ServerPacket.UserConnect);
+            sb.Append((int)ServerPacketId.UserConnect);
             sb.Append(IServerPacket.SEPARATOR);
             sb.Append('y');
             sb.Append(IServerPacket.SEPARATOR);

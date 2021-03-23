@@ -1,4 +1,5 @@
-﻿using SharpChat.Packets;
+﻿using SharpChat.Channels;
+using SharpChat.Packets;
 using SharpChat.Users;
 using System;
 using System.Collections.Generic;
@@ -6,9 +7,11 @@ using System.Linq;
 
 namespace SharpChat.Commands {
     public class ChannelPasswordCommand : ICommand {
+        private ChannelManager Channels { get; }
         private IUser Sender { get; }
 
-        public ChannelPasswordCommand(IUser sender) {
+        public ChannelPasswordCommand(ChannelManager channels, IUser sender) {
+            Channels = channels ?? throw new ArgumentNullException(nameof(channels));
             Sender = sender ?? throw new ArgumentNullException(nameof(sender));
         }
 
@@ -24,7 +27,7 @@ namespace SharpChat.Commands {
             if(string.IsNullOrWhiteSpace(password))
                 password = string.Empty;
 
-            ctx.Chat.Channels.Update(ctx.Channel, password: password);
+            Channels.Update(ctx.Channel, password: password);
             ctx.Session.SendPacket(new ChannelPasswordResponsePacket(Sender));
             return true;
         }

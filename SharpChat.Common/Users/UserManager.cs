@@ -153,8 +153,6 @@ namespace SharpChat.Users {
         ) {
             if(user == null)
                 throw new ArgumentNullException(nameof(user));
-            if(!Users.Contains(user))
-                throw new ArgumentException(@"Provided user is not registered with this manager.", nameof(user));
 
             lock(Sync) {
                 if(userName != null && user.UserName == userName)

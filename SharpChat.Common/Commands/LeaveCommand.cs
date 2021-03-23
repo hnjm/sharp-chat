@@ -7,7 +7,7 @@ namespace SharpChat.Commands {
             => name == @"leave";
 
         public bool DispatchCommand(ICommandContext ctx) {
-            if(!ctx.Session.HasCapability(ClientCapabilities.MCHAN))
+            if(!ctx.Session.HasCapability(ClientCapability.MCHAN))
                 throw new CommandNotFoundException(@"leave");
 
             // figure out the channel leaving logic

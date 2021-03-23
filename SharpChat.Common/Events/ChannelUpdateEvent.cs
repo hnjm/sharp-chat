@@ -3,10 +3,10 @@ using SharpChat.Users;
 using System;
 
 namespace SharpChat.Events {
+    [Event(TYPE)]
     public class ChannelUpdateEvent : Event {
         public const string TYPE = @"channel:update";
 
-        public override string Type => TYPE;
         public string PreviousName { get; }
         public string Name { get; }
         public bool? IsTemporary { get; }

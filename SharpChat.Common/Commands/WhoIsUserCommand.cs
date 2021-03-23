@@ -8,10 +8,12 @@ using System.Net;
 
 namespace SharpChat.Commands {
     public class WhoIsUserCommand : ICommand {
+        private UserManager Users { get; }
         private SessionManager Sessions { get; }
         private IUser Sender { get; }
 
-        public WhoIsUserCommand(SessionManager sessions, IUser sender) {
+        public WhoIsUserCommand(UserManager users, SessionManager sessions, IUser sender) {
+            Users = users ?? throw new ArgumentNullException(nameof(users));
             Sessions = sessions ?? throw new ArgumentNullException(nameof(sessions));
             Sender = sender ?? throw new ArgumentNullException(nameof(sender));
         }
@@ -25,7 +27,7 @@ namespace SharpChat.Commands {
 
             string userName = ctx.Args.ElementAtOrDefault(1);
             IUser user = null;
-            if(string.IsNullOrEmpty(userName) || (user = ctx.Chat.Users.GetUser(userName)) == null)
+            if(string.IsNullOrEmpty(userName) || (user = Users.GetUser(userName)) == null)
                 throw new UserNotFoundCommandException(user?.UserName ?? userName);
 
             IEnumerable<IPAddress> addrs = Sessions.GetRemoteAddresses(user);

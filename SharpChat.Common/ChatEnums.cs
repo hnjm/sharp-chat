@@ -4,7 +4,7 @@ namespace SharpChat {
     /// <summary>
     /// Packet IDs sent from the client to the server.
     /// </summary>
-    public enum ClientPacket {
+    public enum ClientPacketId {
         /*************
          * VERSION 1 *
          *************/
@@ -42,18 +42,18 @@ namespace SharpChat {
     /// <summary>
     /// Packet IDs sent from the server to the client.
     /// </summary>
-    public enum ServerPacket {
+    public enum ServerPacketId {
         /*************
          * VERSION 1 *
          *************/
 
         /// <summary>
-        /// Response to the <see cref="ClientPacket.Ping"/> packet.
+        /// Response to the <see cref="ClientPacketId.Ping"/> packet.
         /// </summary>
         Pong = 0,
 
         /// <summary>
-        /// Both acts as a response to <see cref="ClientPacket.Authenticate"/> and as a method to inform that a user has connected.
+        /// Both acts as a response to <see cref="ClientPacketId.Authenticate"/> and as a method to inform that a user has connected.
         /// </summary>
         UserConnect = 1,
 
@@ -123,37 +123,37 @@ namespace SharpChat {
     }
 
     /// <summary>
-    /// Actions for <see cref="ServerPacket.ChannelEvent"/>.
+    /// Actions for <see cref="ServerPacketId.ChannelEvent"/>.
     /// </summary>
-    public enum ServerChannelPacket {
+    public enum ServerChannelSubPacketId {
         Create = 0,
         Update = 1,
         Delete = 2,
     }
 
     /// <summary>
-    /// Actions for <see cref="ServerPacket.UserMove"/>.
+    /// Actions for <see cref="ServerPacketId.UserMove"/>.
     /// </summary>
-    public enum ServerMovePacket {
+    public enum ServerMoveSubPacketId {
         UserJoined = 0,
         UserLeft = 1,
         ForcedMove = 2,
     }
 
     /// <summary>
-    /// Actions for <see cref="ServerPacket.ContextPopulate"/>.
+    /// Actions for <see cref="ServerPacketId.ContextPopulate"/>.
     /// </summary>
-    public enum ServerContextPacket {
+    public enum ServerContextSubPacketId {
         Users = 0,
         Message = 1,
         Channels = 2,
     }
 
     /// <summary>
-    /// Capability list for <see cref="ClientPacket.Capabilities"/> and <see cref="ServerPacket.CapabilityConfirm"/>.
+    /// Capability list for <see cref="ClientPacketId.Capabilities"/> and <see cref="ServerPacketId.CapabilityConfirm"/>.
     /// </summary>
     [Flags]
-    public enum ClientCapabilities : int {
+    public enum ClientCapability : int {
         /// <summary>
         /// Supports the typing event.
         /// </summary>

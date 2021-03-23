@@ -3,19 +3,19 @@ using System;
 using System.Text;
 
 namespace SharpChat.Packets {
-    public class ChannelLeavePacket : IServerPacket {
+    public class ChannelLeavePacket : ServerPacket {
         private ChannelLeaveEvent Leave { get; }
 
         public ChannelLeavePacket(ChannelLeaveEvent leave) {
             Leave = leave ?? throw new ArgumentNullException(nameof(leave));
         }
 
-        public string Pack() {
+        protected override string DoPack() {
             StringBuilder sb = new StringBuilder();
 
-            sb.Append((int)ServerPacket.UserMove);
+            sb.Append((int)ServerPacketId.UserMove);
             sb.Append(IServerPacket.SEPARATOR);
-            sb.Append((int)ServerMovePacket.UserLeft);
+            sb.Append((int)ServerMoveSubPacketId.UserLeft);
             sb.Append(IServerPacket.SEPARATOR);
             sb.Append(Leave.User.UserId);
             sb.Append(IServerPacket.SEPARATOR);

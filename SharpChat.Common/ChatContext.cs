@@ -17,10 +17,10 @@ using System.Threading;
 namespace SharpChat {
     public class ChatContext : IDisposable, IEventDispatcher {
         public SessionManager Sessions { get; }
-        public MessageManager Messages { get; }
         public UserManager Users { get; }
         public ChannelManager Channels { get; }
         public ChannelUserRelations ChannelUsers { get; }
+        public MessageManager Messages { get; }
 
         public IDataProvider DataProvider { get; }
         public RateLimiter RateLimiter { get; }
@@ -147,10 +147,6 @@ namespace SharpChat {
             });
         }
 
-        public void SendPacket(IServerPacket packet) {
-            Sessions.SendPacket(packet);
-        }
-
         public void DispatchEvent(object sender, IEvent evt) {
             if(evt == null)
                 throw new ArgumentNullException(nameof(evt));
@@ -159,10 +155,10 @@ namespace SharpChat {
                 Logger.Debug(evt);
 
                 Sessions.HandleEvent(sender, evt);
-                Messages.HandleEvent(sender, evt);
                 Users.HandleEvent(sender, evt);
                 Channels.HandleEvent(sender, evt);
                 ChannelUsers.HandleEvent(sender, evt);
+                Messages.HandleEvent(sender, evt);
             }
         }
 

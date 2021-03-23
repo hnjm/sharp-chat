@@ -4,17 +4,17 @@ using System;
 using System.Text;
 
 namespace SharpChat.Packets {
-    public class UserConnectPacket : IServerPacket {
+    public class UserConnectPacket : ServerPacket {
         private UserConnectEvent Connect { get; }
 
         public UserConnectPacket(UserConnectEvent connect) {
             Connect = connect ?? throw new ArgumentNullException(nameof(connect));
         }
 
-        public string Pack() {
+        protected override string DoPack() {
             StringBuilder sb = new StringBuilder();
 
-            sb.Append((int)ServerPacket.UserConnect);
+            sb.Append((int)ServerPacketId.UserConnect);
             sb.Append(IServerPacket.SEPARATOR);
             sb.Append(Connect.DateTime.ToUnixTimeSeconds());
             sb.Append(IServerPacket.SEPARATOR);

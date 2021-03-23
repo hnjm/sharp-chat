@@ -11,6 +11,6 @@ namespace SharpChat.Sessions {
         IUser User { get; }
         bool IsConnected { get; }
         IPAddress RemoteAddress { get; }
-        ClientCapabilities Capabilities { get; }
+        ClientCapability Capabilities { get; }
     }
 }

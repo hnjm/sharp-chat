@@ -29,28 +29,6 @@ namespace SharpChat.Channels {
             Messages = messages ?? throw new ArgumentNullException(nameof(messages));
         }
 
-        public void SendPacket(IChannel channel, params IServerPacket[] packets) {
-            if(channel == null)
-                throw new ArgumentNullException(nameof(channel));
-
-            GetUsers(channel, users => Sessions.GetSessions(users, sessions => SendPacket(sessions, packets)));
-        }
-
-        public void SendPacket(IUser user, params IServerPacket[] packets) {
-            if(user == null)
-                throw new ArgumentNullException(nameof(user));
-
-            Sessions.GetSessions(user, sessions => SendPacket(sessions, packets));
-        }
-
-        private static void SendPacket(IEnumerable<ILocalSession> sessions, IEnumerable<IServerPacket> packets) {
-            foreach(IServerPacket packet in packets) {
-                MemoizedPacket mp = new MemoizedPacket(packet);
-                foreach(ILocalSession session in sessions)
-                    session.SendPacket(mp);
-            }
-        }
-
         public bool HasUser(IChannel channel, IUser user) {
             if(channel == null)
                 throw new ArgumentNullException(nameof(channel));
@@ -107,43 +85,37 @@ namespace SharpChat.Channels {
                 Dispatcher.DispatchEvent(this, new ChannelLeaveEvent(channel, user, reason));
         }
 
-        private void OnMessageUpdate(MessageUpdateEvent mue) {
-            // there should be a v2cap that makes one packet, this is jank
-            IMessage message = Messages.GetMessage(mue.MessageId);
-            if(message == null)
-                SendPacket(mue.Channel, new MessageDeletePacket(mue));
-            else
-                SendPacket(
-                    mue.Channel,
-                    new MessageDeletePacket(mue),
-                    new MessageCreatePacket(new MessageCreateEvent(message))
-                );
-        }
-
         public void HandleEvent(object sender, IEvent evt) {
-            lock(Sync)
+            lock(Sync) {
                 switch(evt) {
                     case ChannelJoinEvent cje:
-                        SendPacket(cje.Channel, new ChannelJoinPacket(cje));
+                        // THIS DOES NOT DO WHAT YOU WANT IT TO DO
+                        // I THINK
+                        // it really doesn't, figure out how to leave channels when MCHAN isn't active for the session
+                        //if((Sessions.GetCapabilities(cje.User) & ClientCapability.MCHAN) == 0)
+                        //    LeaveChannel(cje.Channel, cje.User, UserDisconnectReason.Leave);
                         break;
-                    case ChannelLeaveEvent cle: // Should ownership just be passed on to another user instead of Destruction?
-                        SendPacket(cle.Channel, new ChannelLeavePacket(cle));
 
+                    case ChannelLeaveEvent cle: // Should ownership just be passed on to another user instead of Destruction?
                         IChannel channel = Channels.GetChannel(evt.Channel);
                         if(channel.IsTemporary && evt.User.Equals(channel.Owner))
                             Channels.Remove(channel);
                         break;
 
-                    case MessageCreateEvent mce:
-                        SendPacket(mce.Channel, new MessageCreatePacket(mce));
-                        break;
-                    case MessageUpdateEvent mue:
-                        OnMessageUpdate(mue);
-                        break;
-                    case MessageDeleteEvent mde:
-                        SendPacket(mde.Channel, new MessageDeletePacket(mde));
+                    case MessageUpdateEvent mue: // there should be a v2cap that makes one packet, this is jank
+                        IMessage msg = Messages.GetMessage(mue.MessageId);
+                        evt = msg == null
+                            ? new MessageDeleteEvent(mue)
+                            : new MessageUpdateEventWithData(mue, msg);
                         break;
                 }
+
+                if(evt.Channel != null)
+                    GetUsers(evt.Channel, users => Sessions.GetLocalSessions(users, sessions => {
+                        foreach(ILocalSession session in sessions)
+                            session.HandleEvent(sender, evt);
+                    }));
+            }
         }
     }
 }

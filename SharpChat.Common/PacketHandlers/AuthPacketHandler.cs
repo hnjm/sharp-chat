@@ -1,4 +1,5 @@
 ﻿using SharpChat.Channels;
+using SharpChat.DataProvider;
 using SharpChat.Messages;
 using SharpChat.Packets;
 using SharpChat.Sessions;
@@ -13,16 +14,33 @@ namespace SharpChat.PacketHandlers {
     public class AuthPacketHandler : IPacketHandler {
         private const string WELCOME = @"welcome.txt";
 
-        public ClientPacket PacketId => ClientPacket.Authenticate;
+        public ClientPacketId PacketId => ClientPacketId.Authenticate;
 
         private SessionManager Sessions { get; }
+        private UserManager Users { get; }
         private ChannelManager Channels { get; }
+        private ChannelUserRelations ChannelUsers { get; }
+        private MessageManager Messages { get; }
+        private IDataProvider DataProvider { get; }
         private IUser Sender { get; }
         private int Version { get; }
 
-        public AuthPacketHandler(SessionManager sessions, ChannelManager channels, IUser sender, int version) {
+        public AuthPacketHandler(
+            SessionManager sessions,
+            UserManager users,
+            ChannelManager channels,
+            ChannelUserRelations channelUsers,
+            MessageManager messages,
+            IDataProvider dataProvider,
+            IUser sender,
+            int version
+        ) {
             Sessions = sessions ?? throw new ArgumentNullException(nameof(sessions));
+            Users = users ?? throw new ArgumentNullException(nameof(users));
             Channels = channels ?? throw new ArgumentNullException(nameof(channels));
+            ChannelUsers = channelUsers ?? throw new ArgumentNullException(nameof(channelUsers));
+            Messages = messages ?? throw new ArgumentNullException(nameof(messages));
+            DataProvider = dataProvider ?? throw new ArgumentNullException(nameof(dataProvider));
             Sender = sender ?? throw new ArgumentNullException(nameof(sender));
             Version = version;
         }
@@ -44,17 +62,17 @@ namespace SharpChat.PacketHandlers {
                 ctx.Connection.Dispose();
             });
 
-            ctx.Chat.DataProvider.UserAuthClient.AttemptAuth(
+            DataProvider.UserAuthClient.AttemptAuth(
                 new UserAuthRequest(userId, token, ctx.Connection.RemoteAddress),
                 res => {
-                    ctx.Chat.DataProvider.BanClient.CheckBan(res.UserId, ctx.Connection.RemoteAddress, ban => {
+                    DataProvider.BanClient.CheckBan(res.UserId, ctx.Connection.RemoteAddress, ban => {
                         if(ban.IsPermanent || ban.Expires > DateTimeOffset.Now) {
                             ctx.Connection.Send(new AuthFailPacket(AuthFailReason.Banned, ban));
                             ctx.Connection.Dispose();
                             return;
                         }
 
-                        IUser user = ctx.Chat.Users.Connect(res);
+                        IUser user = Users.Connect(res);
 
                         // Enforce a maximum amount of connections per user
                         if(Sessions.GetAvailableSessionCount(user) < 1) {
@@ -75,8 +93,8 @@ namespace SharpChat.PacketHandlers {
                                 sess.SendPacket(new WelcomeMessagePacket(Sender, line));
                         }
 
-                        IChannel chan = ctx.Chat.Channels.DefaultChannel;
-                        bool shouldJoin = !ctx.Chat.ChannelUsers.HasUser(chan, user);
+                        IChannel chan = Channels.DefaultChannel;
+                        bool shouldJoin = !ChannelUsers.HasUser(chan, user);
 
                         if(shouldJoin) {
                             // ChannelUsers?
@@ -84,18 +102,18 @@ namespace SharpChat.PacketHandlers {
                             //ctx.Chat.DispatchEvent(this, new UserConnectEvent(chan, user));
                         }
 
-                        sess.SendPacket(new AuthSuccessPacket(user, chan, sess, Version, ctx.Chat.Messages.TextMaxLength));
-                        ctx.Chat.ChannelUsers.GetUsers(chan, u => sess.SendPacket(new ContextUsersPacket(u.Except(new[] { user }).OrderByDescending(u => u.Rank))));
+                        sess.SendPacket(new AuthSuccessPacket(user, chan, sess, Version, Messages.TextMaxLength));
+                        ChannelUsers.GetUsers(chan, u => sess.SendPacket(new ContextUsersPacket(u.Except(new[] { user }).OrderByDescending(u => u.Rank))));
 
-                        ctx.Chat.Messages.GetMessages(chan, m => {
+                        Messages.GetMessages(chan, m => {
                             foreach(IMessage msg in m)
                                 sess.SendPacket(new ContextMessagePacket(msg));
                         });
 
-                        ctx.Chat.Channels.GetChannels(user.Rank, c => sess.SendPacket(new ContextChannelsPacket(c)));
+                        Channels.GetChannels(user.Rank, c => sess.SendPacket(new ContextChannelsPacket(c)));
 
                         if(shouldJoin)
-                            ctx.Chat.ChannelUsers.JoinChannel(chan, user);
+                            ChannelUsers.JoinChannel(chan, user);
                     }, exceptionHandler);
                 },
                 exceptionHandler

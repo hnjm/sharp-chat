@@ -41,36 +41,36 @@ namespace SharpChat {
             Context = new ChatContext(ServerId, Config.ScopeTo(@"chat"), databaseBackend, dataProvider);
 
             List<IPacketHandler> handlers = new List<IPacketHandler> {
-                new PingPacketHandler(),
-                new AuthPacketHandler(Context.Sessions, Context.Channels, Context.Bot, VERSION),
-                new MessageSendPacketHandler(Context, Context.Users, Context.Channels, Context.Messages, Context.Bot, new ICommand[] {
-                    new JoinCommand(),
-                    new AFKCommand(),
+                new PingPacketHandler(Context.Sessions),
+                new AuthPacketHandler(Context.Sessions, Context.Users, Context.Channels, Context.ChannelUsers, Context.Messages, Context.DataProvider, Context.Bot, VERSION),
+                new MessageSendPacketHandler(Context.Users, Context.Channels, Context.ChannelUsers, Context.Messages, Context.Bot, new ICommand[] {
+                    new JoinCommand(Context.Channels, Context.ChannelUsers, Context.Sessions),
+                    new AFKCommand(Context.Users),
                     new WhisperCommand(),
                     new ActionCommand(Context.Messages),
-                    new WhoCommand(Context.ChannelUsers, Context.Bot),
+                    new WhoCommand(Context.Users, Context.Channels, Context.ChannelUsers, Context.Bot),
                     new DeleteMessageCommand(Context.Messages),
 
-                    new NickCommand(),
-                    new CreateChannelCommand(Context.Bot),
-                    new DeleteChannelCommand(Context.Bot),
-                    new ChannelPasswordCommand(Context.Bot),
-                    new ChannelRankCommand(Context.Bot),
+                    new NickCommand(Context.Users),
+                    new CreateChannelCommand(Context.Channels, Context.ChannelUsers, Context.Bot),
+                    new DeleteChannelCommand(Context.Channels, Context.Bot),
+                    new ChannelPasswordCommand(Context.Channels, Context.Bot),
+                    new ChannelRankCommand(Context.Channels, Context.Bot),
 
                     new BroadcastCommand(Context),
-                    new KickBanUserCommand(),
-                    new PardonUserCommand(Context.Bot),
-                    new PardonIPCommand(Context.Bot),
-                    new BanListCommand(Context.Bot),
-                    new WhoIsUserCommand(Context.Sessions, Context.Bot),
-                    new SilenceUserCommand(Context.Bot),
-                    new UnsilenceUserCommand(Context.Bot),
+                    new KickBanUserCommand(Context.Users),
+                    new PardonUserCommand(Context.DataProvider, Context.Bot),
+                    new PardonIPCommand(Context.DataProvider, Context.Bot),
+                    new BanListCommand(Context.DataProvider, Context.Bot),
+                    new WhoIsUserCommand(Context.Users, Context.Sessions, Context.Bot),
+                    new SilenceUserCommand(Context.Users, Context.Bot),
+                    new UnsilenceUserCommand(Context.Users, Context.Bot),
                 }),
             };
 
             if(VERSION >= 2)
                 handlers.AddRange(new IPacketHandler[] {
-                    new CapabilitiesPacketHandler(),
+                    new CapabilitiesPacketHandler(Context.Sessions),
                     new TypingPacketHandler(),
                 });
 
@@ -104,7 +104,7 @@ namespace SharpChat {
         }
 
         private void OnError(IConnection conn, Exception ex) {
-            ILocalSession sess = Context.Sessions.ByConnection(conn);
+            ILocalSession sess = Context.Sessions.GetLocalSession(conn);
             Logger.Write($@"[{sess} {conn}] {ex}");
             Context.Update();
         }
@@ -112,7 +112,7 @@ namespace SharpChat {
         private void OnMessage(IConnection conn, string msg) {
             Context.Update();
 
-            ILocalSession sess = Context.Sessions.ByConnection(conn);
+            ILocalSession sess = Context.Sessions.GetLocalSession(conn);
             bool hasUser = sess?.HasUser() == true;
 
             RateLimitState rateLimit = RateLimitState.None;
@@ -126,10 +126,10 @@ namespace SharpChat {
             }
 
             IEnumerable<string> args = msg.Split(IServerPacket.SEPARATOR);
-            if(!Enum.TryParse(args.ElementAtOrDefault(0), out ClientPacket opCode))
+            if(!Enum.TryParse(args.ElementAtOrDefault(0), out ClientPacketId opCode))
                 return;
 
-            if(opCode != ClientPacket.Authenticate) {
+            if(opCode != ClientPacketId.Authenticate) {
                 if(!hasUser) 
                     return;
 
@@ -141,7 +141,7 @@ namespace SharpChat {
             }
 
             PacketHandlers.FirstOrDefault(x => x.PacketId == opCode)?.HandlePacket(
-                new PacketHandlerContext(args, Context, sess, conn)
+                new PacketHandlerContext(args, sess, conn)
             );
         }
 

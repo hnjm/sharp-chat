@@ -7,7 +7,7 @@ namespace SharpChat.Packets {
         Banned = 1,
     }
 
-    public class ForceDisconnectPacket : IServerPacket {
+    public class ForceDisconnectPacket : ServerPacket {
         public ForceDisconnectReason Reason { get; }
         public DateTimeOffset Expires { get; }
         public bool IsPermanent { get; }
@@ -26,10 +26,10 @@ namespace SharpChat.Packets {
             }
         }
 
-        public string Pack() {
+        protected override string DoPack() {
             StringBuilder sb = new StringBuilder();
 
-            sb.Append((int)ServerPacket.BAKA);
+            sb.Append((int)ServerPacketId.BAKA);
             sb.Append(IServerPacket.SEPARATOR);
             sb.Append((int)Reason);
 

@@ -4,7 +4,7 @@ using System;
 using System.Text;
 
 namespace SharpChat.Packets {
-    public class BotResponsePacket : IServerPacket {
+    public class BotResponsePacket : ServerPacket {
         private IChannel Channel { get; }
         private IUser Sender { get; }
         private BotArguments Arguments { get; }
@@ -28,10 +28,10 @@ namespace SharpChat.Packets {
             ArbitraryId = SharpId.Next();
         }
 
-        public string Pack() {
+        protected override string DoPack() {
             StringBuilder sb = new StringBuilder();
 
-            sb.Append((int)ServerPacket.MessageAdd);
+            sb.Append((int)ServerPacketId.MessageAdd);
             sb.Append(IServerPacket.SEPARATOR);
             sb.Append(DateTime.ToUnixTimeSeconds());
             sb.Append(IServerPacket.SEPARATOR);

@@ -1,5 +1,5 @@
-﻿using SharpChat.Packets;
-using SharpChat.Users;
+﻿using SharpChat.Users;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -7,6 +7,12 @@ namespace SharpChat.Commands {
     public class AFKCommand : ICommand {
         private const string DEFAULT = @"AFK";
         private const int MAX_LENGTH = 5;
+
+        private UserManager Users { get; }
+
+        public AFKCommand(UserManager users) {
+            Users = users ?? throw new ArgumentNullException(nameof(users));
+        }
 
         public bool IsCommandMatch(string name, IEnumerable<string> args)
             => name == @"afk";
@@ -21,9 +27,7 @@ namespace SharpChat.Commands {
                     statusText = statusText.Substring(0, MAX_LENGTH).Trim();
             }
 
-            ctx.Chat.Users.Update(ctx.User, status: UserStatus.Away, statusMessage: statusText);
-            // send in ChannelUsers
-            //ctx.Channel.SendPacket(new UserUpdatePacket(ctx.User));
+            Users.Update(ctx.User, status: UserStatus.Away, statusMessage: statusText);
             return true;
         }
     }

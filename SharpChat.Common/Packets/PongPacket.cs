@@ -1,18 +1,19 @@
-﻿using System;
+﻿using SharpChat.Events;
+using System;
 using System.Text;
 
 namespace SharpChat.Packets {
-    public class PongPacket : IServerPacket {
+    public class PongPacket : ServerPacket {
         public DateTimeOffset PongTime { get; private set; }
 
-        public PongPacket(DateTimeOffset dto) {
-            PongTime = dto;
+        public PongPacket(SessionPingEvent spe) {
+            PongTime = spe.DateTime;
         }
 
-        public string Pack() {
+        protected override string DoPack() {
             StringBuilder sb = new StringBuilder();
 
-            sb.Append((int)ServerPacket.Pong);
+            sb.Append((int)ServerPacketId.Pong);
             sb.Append(IServerPacket.SEPARATOR);
             sb.Append(PongTime.ToUnixTimeSeconds());
 

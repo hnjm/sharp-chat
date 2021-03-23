@@ -1,10 +1,10 @@
 ﻿using SharpChat.Channels;
 
 namespace SharpChat.Events {
+    [Event(TYPE)]
     public class ChannelCreateEvent : Event {
         public const string TYPE = @"channel:create";
 
-        public override string Type => TYPE;
         public string Name { get; }
         public bool IsTemporary { get; }
         public int MinimumRank { get; }

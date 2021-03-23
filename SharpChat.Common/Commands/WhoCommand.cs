@@ -7,10 +7,14 @@ using System.Linq;
 
 namespace SharpChat.Commands {
     public class WhoCommand : ICommand {
+        private UserManager Users { get; }
+        private ChannelManager Channels { get; }
         private ChannelUserRelations ChannelUsers { get; }
         private IUser Sender { get; }
 
-        public WhoCommand(ChannelUserRelations channelUsers, IUser sender) {
+        public WhoCommand(UserManager users, ChannelManager channels, ChannelUserRelations channelUsers, IUser sender) {
+            Users = users ?? throw new ArgumentNullException(nameof(users));
+            Channels = channels ?? throw new ArgumentNullException(nameof(channels));
             ChannelUsers = channelUsers ?? throw new ArgumentNullException(nameof(channelUsers));
             Sender = sender ?? throw new ArgumentNullException(nameof(sender));
         }
@@ -19,13 +23,13 @@ namespace SharpChat.Commands {
             => name == @"who";
 
         private void WhoServer(ICommandContext ctx) {
-            ctx.Chat.Users.GetUsers(u => {
+            Users.GetUsers(u => {
                 ctx.Session.SendPacket(new UserListResponsePacket(Sender, ctx.User, u));
             });
         }
 
         private void WhoChannel(ICommandContext ctx, string channelName) {
-            IChannel channel = ctx.Chat.Channels.GetChannel(channelName);
+            IChannel channel = Channels.GetChannel(channelName);
 
             if(channel == null)
                 throw new ChannelNotFoundCommandException(channelName);

@@ -1,4 +1,5 @@
-﻿using SharpChat.Packets;
+﻿using SharpChat.DataProvider;
+using SharpChat.Packets;
 using SharpChat.Users;
 using System;
 using System.Collections.Generic;
@@ -6,9 +7,11 @@ using System.Linq;
 
 namespace SharpChat.Commands {
     public class PardonUserCommand : ICommand {
+        private IDataProvider DataProvider { get; }
         private IUser Sender { get; }
 
-        public PardonUserCommand(IUser sender) {
+        public PardonUserCommand(IDataProvider dataProvider, IUser sender) {
+            DataProvider = dataProvider ?? throw new ArgumentNullException(nameof(dataProvider));
             Sender = sender ?? throw new ArgumentNullException(nameof(sender));
         }
 
@@ -23,7 +26,7 @@ namespace SharpChat.Commands {
             if(string.IsNullOrEmpty(userName))
                 throw new NotBannedCommandException(userName ?? @"User");
 
-            ctx.Chat.DataProvider.BanClient.RemoveBan(userName, success => {
+            DataProvider.BanClient.RemoveBan(userName, success => {
                 if(success)
                     ctx.Session.SendPacket(new PardonResponsePacket(Sender, userName));
                 else

@@ -3,10 +3,10 @@ using SharpChat.Users;
 using System;
 
 namespace SharpChat.Events {
+    [Event(TYPE)]
     public class MessageUpdateEvent : Event {
         public const string TYPE = @"message:update";
 
-        public override string Type => TYPE;
         public long MessageId { get; }
         public string Text { get; }
 

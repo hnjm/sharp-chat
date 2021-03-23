@@ -6,9 +6,11 @@ using System.Linq;
 
 namespace SharpChat.Commands {
     public class SilenceUserCommand : ICommand {
+        private UserManager Users { get; }
         private IUser Sender { get; }
 
-        public SilenceUserCommand(IUser sender) {
+        public SilenceUserCommand(UserManager users, IUser sender) {
+            Users = users ?? throw new ArgumentNullException(nameof(users));
             Sender = sender ?? throw new ArgumentNullException(nameof(sender));
         }
 
@@ -21,7 +23,7 @@ namespace SharpChat.Commands {
 
             string userName = ctx.Args.ElementAtOrDefault(1);
             IUser user;
-            if(string.IsNullOrEmpty(userName) || (user = ctx.Chat.Users.GetUser(userName)) == null)
+            if(string.IsNullOrEmpty(userName) || (user = Users.GetUser(userName)) == null)
                 throw new UserNotFoundCommandException(userName);
 
             if(user == ctx.User)

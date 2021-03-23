@@ -1,16 +1,17 @@
-﻿using System;
+﻿using SharpChat.Events;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace SharpChat.Packets {
-    public class CapabilityConfirmationPacket : IServerPacket {
+    public class CapabilityConfirmationPacket : ServerPacket {
         private IEnumerable<string> Capabilities { get; }
 
-        private static readonly string[] Names = Enum.GetNames(typeof(ClientCapabilities));
-        private static readonly int[] Values = Enum.GetValues(typeof(ClientCapabilities)) as int[];
+        private static readonly string[] Names = Enum.GetNames(typeof(ClientCapability));
+        private static readonly int[] Values = Enum.GetValues(typeof(ClientCapability)) as int[];
 
-        public CapabilityConfirmationPacket(ClientCapabilities caps) {
-            Capabilities = GetStrings((int)caps);
+        public CapabilityConfirmationPacket(SessionCapabilitiesEvent sce) {
+            Capabilities = GetStrings((int)sce.Capabilities);
         }
 
         private static IEnumerable<string> GetStrings(int caps) {
@@ -19,10 +20,10 @@ namespace SharpChat.Packets {
                     yield return Names[i];
         }
 
-        public string Pack() {
+        protected override string DoPack() {
             StringBuilder sb = new StringBuilder();
 
-            sb.Append((int)ServerPacket.CapabilityConfirm);
+            sb.Append((int)ServerPacketId.CapabilityConfirm);
             sb.Append(IServerPacket.SEPARATOR);
             sb.Append(string.Join(' ', Capabilities));
 
