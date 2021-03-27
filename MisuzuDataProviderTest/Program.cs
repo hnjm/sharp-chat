@@ -66,6 +66,7 @@ namespace MisuzuDataProviderTest {
             if(authRes == null)
                 return;
 
+#if FUCKED
             WriteLine(@"Bumping last seen...");
             mre.Reset();
             dataProvider.UserBumpClient.SubmitBumpUsers(
@@ -77,6 +78,7 @@ namespace MisuzuDataProviderTest {
                 }
             );
             mre.WaitOne();
+#endif
 
             WriteLine(@"Fetching ban list...");
             IEnumerable<IBanRecord> bans = Enumerable.Empty<IBanRecord>();

@@ -5,9 +5,9 @@ using System.Text;
 
 namespace SharpChat.Packets {
     public class ChannelJoinPacket : ServerPacket {
-        private ChannelJoinEvent Join { get; }
+        private ChannelUserJoinEvent Join { get; }
 
-        public ChannelJoinPacket(ChannelJoinEvent join) {
+        public ChannelJoinPacket(ChannelUserJoinEvent join) {
             Join = join ?? throw new ArgumentNullException(nameof(join));
         }
 

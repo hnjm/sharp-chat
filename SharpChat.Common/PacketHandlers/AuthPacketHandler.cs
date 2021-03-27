@@ -59,7 +59,7 @@ namespace SharpChat.PacketHandlers {
             Action<Exception> exceptionHandler = new Action<Exception>(ex => {
                 Logger.Debug($@"<{ctx.Connection.RemoteAddress}> Auth fail: {ex.Message}");
                 ctx.Connection.Send(new AuthFailPacket(AuthFailReason.AuthInvalid));
-                ctx.Connection.Dispose();
+                ctx.Connection.Close();
             });
 
             DataProvider.UserAuthClient.AttemptAuth(
@@ -68,7 +68,7 @@ namespace SharpChat.PacketHandlers {
                     DataProvider.BanClient.CheckBan(res.UserId, ctx.Connection.RemoteAddress, ban => {
                         if(ban.IsPermanent || ban.Expires > DateTimeOffset.Now) {
                             ctx.Connection.Send(new AuthFailPacket(AuthFailReason.Banned, ban));
-                            ctx.Connection.Dispose();
+                            ctx.Connection.Close();
                             return;
                         }
 
@@ -77,11 +77,11 @@ namespace SharpChat.PacketHandlers {
                         // Enforce a maximum amount of connections per user
                         if(Sessions.GetAvailableSessionCount(user) < 1) {
                             ctx.Connection.Send(new AuthFailPacket(AuthFailReason.MaxSessions));
-                            ctx.Connection.Dispose();
+                            ctx.Connection.Close();
                             return;
                         }
 
-                        ILocalSession sess = Sessions.Create(ctx.Connection, user);
+                        ISession sess = Sessions.Create(ctx.Connection, user);
 
                         sess.SendPacket(new WelcomeMessagePacket(Sender, $@"Welcome to Flashii Chat, {user.UserName}!"));
 
@@ -113,7 +113,7 @@ namespace SharpChat.PacketHandlers {
                         Channels.GetChannels(user.Rank, c => sess.SendPacket(new ContextChannelsPacket(c)));
 
                         if(shouldJoin)
-                            ChannelUsers.JoinChannel(chan, user);
+                            ChannelUsers.JoinChannel(chan, sess);
                     }, exceptionHandler);
                 },
                 exceptionHandler

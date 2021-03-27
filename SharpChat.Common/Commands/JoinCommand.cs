@@ -55,7 +55,7 @@ namespace SharpChat.Commands {
                 }
             }
 
-            ChannelUsers.JoinChannel(channel, ctx.User);
+            ChannelUsers.JoinChannel(channel, ctx.Session);
             return true;
         }
     }

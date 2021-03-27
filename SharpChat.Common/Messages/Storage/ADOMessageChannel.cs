@@ -25,5 +25,8 @@ namespace SharpChat.Messages.Storage {
 
         public bool Equals(IChannel other)
             => other != null && Name.Equals(other.Name, StringComparison.InvariantCultureIgnoreCase);
+
+        public override string ToString()
+            => $@"<ADOMessageChannel {Name}>";
     }
 }

@@ -15,5 +15,9 @@ namespace SharpChat.Events {
             User = user; // user is allowed to be NULL for things not involving users
             Channel = channel; // channel is allowed to be NULL for broadcasting
         }
+
+        public override string ToString() {
+            return $@"[{EventId}] {GetType().Name} {User} {Channel}";
+        }
     }
 }

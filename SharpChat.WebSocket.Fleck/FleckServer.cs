@@ -36,7 +36,7 @@ namespace SharpChat.WebSocket.Fleck {
             Server.Start(rawConn => {
                 FleckConnection conn = new FleckConnection(rawConn);
                 rawConn.OnOpen += () => OnOpen?.Invoke(conn);
-                rawConn.OnClose += () => { OnClose?.Invoke(conn); conn.Dispose(); };
+                rawConn.OnClose += () => OnClose?.Invoke(conn);
                 rawConn.OnError += ex => OnError?.Invoke(conn, ex);
                 rawConn.OnMessage += msg => OnMessage?.Invoke(conn, msg);
             });

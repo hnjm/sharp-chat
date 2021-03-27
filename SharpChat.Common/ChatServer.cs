@@ -90,7 +90,7 @@ namespace SharpChat {
             Logger.Debug($@"[{conn}] Connection opened");
 
             if(!AcceptingConnections) {
-                conn.Dispose();
+                conn.Close();
                 return;
             }
 
@@ -99,12 +99,15 @@ namespace SharpChat {
 
         private void OnClose(IConnection conn) {
             Logger.Debug($@"[{conn}] Connection closed");
+
+            // what should the session close behaviour be?
+
             Context.RateLimiter.ClearConnection(conn);
             Context.Update();
         }
 
         private void OnError(IConnection conn, Exception ex) {
-            ILocalSession sess = Context.Sessions.GetLocalSession(conn);
+            ISession sess = Context.Sessions.GetLocalSession(conn);
             Logger.Write($@"[{sess} {conn}] {ex}");
             Context.Update();
         }
@@ -112,7 +115,7 @@ namespace SharpChat {
         private void OnMessage(IConnection conn, string msg) {
             Context.Update();
 
-            ILocalSession sess = Context.Sessions.GetLocalSession(conn);
+            ISession sess = Context.Sessions.GetLocalSession(conn);
             bool hasUser = sess?.HasUser() == true;
 
             RateLimitState rateLimit = RateLimitState.None;
@@ -121,7 +124,7 @@ namespace SharpChat {
             
             Logger.Debug($@"[{conn}] {rateLimit}");
             if(!hasUser && rateLimit == RateLimitState.Drop) {
-                conn.Dispose();
+                conn.Close();
                 return;
             }
 

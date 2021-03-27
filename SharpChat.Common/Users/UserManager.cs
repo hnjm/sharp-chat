@@ -102,6 +102,15 @@ namespace SharpChat.Users {
                 callback.Invoke(Users.Where(u => u.Rank >= minRank));
         }
 
+        public void GetUsers(IEnumerable<long> ids, Action<IEnumerable<IUser>> callback) {
+            if(ids == null)
+                throw new ArgumentNullException(nameof(ids));
+            if(callback == null)
+                throw new ArgumentNullException(nameof(callback));
+            lock(Sync)
+                callback.Invoke(Users.Where(u => ids.Contains(u.UserId)));
+        }
+
         public void GetUsers(Action<IEnumerable<IUser>> callback) {
             if(callback == null)
                 throw new ArgumentNullException(nameof(callback));

@@ -4,12 +4,12 @@ using System;
 
 namespace SharpChat.Events {
     [Event(TYPE)]
-    public class ChannelLeaveEvent : Event {
-        public const string TYPE = @"channel:leave";
+    public class ChannelUserLeaveEvent : Event {
+        public const string TYPE = @"channel:user:leave";
 
         public UserDisconnectReason Reason { get; }
 
-        public ChannelLeaveEvent(IChannel channel, IUser user, UserDisconnectReason reason)
+        public ChannelUserLeaveEvent(IChannel channel, IUser user, UserDisconnectReason reason)
             : base(
                   channel ?? throw new ArgumentNullException(nameof(channel)),
                   user ?? throw new ArgumentNullException(nameof(user))

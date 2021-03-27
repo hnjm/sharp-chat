@@ -38,5 +38,8 @@ namespace SharpChat.Messages.Storage {
                     break;
             }
         }
+
+        public override string ToString()
+            => $@"<MemoryMessageChannel {Name}>";
     }
 }

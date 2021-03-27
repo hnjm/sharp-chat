@@ -84,13 +84,14 @@ namespace SharpChat.PacketHandlers {
                     handled = HandleCommand(text, ctx.User, channel, ctx.Session);
                 } catch(CommandException ex) {
                     ctx.Session.SendPacket(ex.ToPacket(Bot));
+                    handled = true;
                 }
 
             if(!handled)
                 Messages.Create(ctx.User, channel, text);
         }
 
-        public bool HandleCommand(string message, IUser user, IChannel channel, ILocalSession session) {
+        public bool HandleCommand(string message, IUser user, IChannel channel, ISession session) {
             string[] parts = message[1..].Split(' ');
             string commandName = parts[0].Replace(@".", string.Empty).ToLowerInvariant();
 

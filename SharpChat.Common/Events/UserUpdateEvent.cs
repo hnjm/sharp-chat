@@ -36,5 +36,17 @@ namespace SharpChat.Events {
             Status = status;
             StatusMessage = statusMessage;
         }
+
+        public UserUpdateEvent(IUser user, UserUpdateEvent uue)
+            : this(
+                  user,
+                  uue.UserName,
+                  uue.Colour,
+                  uue.Rank,
+                  uue.NickName,
+                  uue.Perms,
+                  uue.Status,
+                  uue.StatusMessage
+              ) { }
     }
 }

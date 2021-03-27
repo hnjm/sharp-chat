@@ -56,7 +56,7 @@ namespace SharpChat.Users {
         }
 
         public override string ToString()
-            => $@"<ChatUser {UserId}#{UserName}>";
+            => $@"<User {UserId}#{UserName}>";
 
         public bool Equals(IUser other)
             => other != null && other.UserId == UserId;
@@ -78,10 +78,10 @@ namespace SharpChat.Users {
         public void HandleEvent(object sender, IEvent evt) {
             lock(Sync) {
                 switch(evt) {
-                    case ChannelJoinEvent cje:
+                    case ChannelUserJoinEvent cje:
                         Channels.Add(evt.Channel.Name);
                         break;
-                    case ChannelLeaveEvent cle:
+                    case ChannelUserLeaveEvent cle:
                         Channels.Remove(evt.Channel.Name);
                         break;
 

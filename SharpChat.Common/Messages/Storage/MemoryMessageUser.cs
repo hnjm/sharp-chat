@@ -23,5 +23,8 @@ namespace SharpChat.Messages.Storage {
 
         public bool Equals(IUser other)
             => other != null && other.UserId == UserId;
+
+        public override string ToString()
+            => $@"<MemoryMessageUser {UserId}#{UserName}>";
     }
 }

@@ -27,8 +27,7 @@ namespace SharpChat.Messages.Storage {
         public bool Equals(IUser other)
             => other != null && other.UserId == UserId;
 
-        public override string ToString() {
-            return $@"<ADOMessageUser {UserId}#{UserName}>";
-        }
+        public override string ToString()
+            => $@"<ADOMessageUser {UserId}#{UserName}>";
     }
 }

@@ -4,9 +4,9 @@ using System.Text;
 
 namespace SharpChat.Packets {
     public class ChannelLeavePacket : ServerPacket {
-        private ChannelLeaveEvent Leave { get; }
+        private ChannelUserLeaveEvent Leave { get; }
 
-        public ChannelLeavePacket(ChannelLeaveEvent leave) {
+        public ChannelLeavePacket(ChannelUserLeaveEvent leave) {
             Leave = leave ?? throw new ArgumentNullException(nameof(leave));
         }
 

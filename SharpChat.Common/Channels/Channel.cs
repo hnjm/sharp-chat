@@ -1,4 +1,5 @@
 ﻿using SharpChat.Events;
+using SharpChat.Sessions;
 using SharpChat.Users;
 using System;
 using System.Collections.Generic;
@@ -14,7 +15,8 @@ namespace SharpChat.Channels {
         public IUser Owner { get; private set; }
 
         private readonly object Sync = new object();
-        private List<IUser> Users { get; } = new List<IUser>();
+        private HashSet<long> Users { get; } = new HashSet<long>();
+        private HashSet<(string sessionId, long userId)> Sessions { get; } = new HashSet<(string, long)>();
 
         public string Password { get; private set; } = string.Empty;
         public bool HasPassword
@@ -49,20 +51,34 @@ namespace SharpChat.Channels {
             if(user == null)
                 return false;
             lock(Sync)
-                return Users.Any(u => u.Equals(user));
+                return Users.Contains(user.UserId);
         }
 
-        public void GetUsers(Action<IEnumerable<IUser>> callable) {
+        public bool HasSession(ISession session) {
+            if(session == null)
+                return false;
+            lock(Sync)
+                return Sessions.Any(su => su.sessionId.Equals(session.SessionId));
+        }
+
+        public void GetUserIds(Action<IEnumerable<long>> callable) {
             if(callable == null)
                 throw new ArgumentNullException(nameof(callable));
             lock(Sync)
                 callable(Users);
         }
 
+        public int CountUserSessions(IUser user) {
+            if(user == null)
+                throw new ArgumentNullException(nameof(user));
+            lock(Sync)
+                return Sessions.Count(s => s.userId == user.UserId);
+        }
+
         public void HandleEvent(object sender, IEvent evt) {
             lock(Sync)
                 switch(evt) {
-                    case ChannelUpdateEvent update:
+                    case ChannelUpdateEvent update: // Owner?
                         if(update.HasName)
                             Name = update.Name;
                         if(update.IsTemporary.HasValue)
@@ -71,19 +87,34 @@ namespace SharpChat.Channels {
                             MinimumRank = update.MinimumRank.Value;
                         if(update.HasPassword)
                             Password = update.Password;
+                        if(update.AutoJoin.HasValue)
+                            AutoJoin = update.AutoJoin.Value;
+                        if(update.MaxCapacity.HasValue)
+                            MaxCapacity = update.MaxCapacity.Value;
                         break;
 
-                    case ChannelJoinEvent join:
-                        Users.Add(join.User);
+                    case ChannelUserJoinEvent cuje:
+                        Sessions.Add((cuje.SessionId, cuje.User.UserId));
+                        Users.Add(cuje.User.UserId);
+                        break;
+                    case ChannelSessionJoinEvent csje:
+                        Sessions.Add((csje.SessionId, csje.User.UserId));
                         break;
 
-                    case ChannelLeaveEvent leave:
-                        Users.Remove(leave.User);
+                    case ChannelUserLeaveEvent cule:
+                        Users.Remove(cule.User.UserId);
+                        Sessions.RemoveWhere(su => su.userId == cule.User.UserId);
+                        break;
+                    case ChannelSessionLeaveEvent csle:
+                        Sessions.RemoveWhere(su => su.sessionId.Equals(csle.SessionId));
                         break;
                 }
         }
 
         public bool Equals(IChannel other)
             => other != null && Name.Equals(other.Name, StringComparison.InvariantCultureIgnoreCase);
+
+        public override string ToString()
+            => $@"<Channel {Name}>";
     }
 }

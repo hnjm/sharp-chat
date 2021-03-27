@@ -53,7 +53,7 @@ namespace SharpChat.Commands {
                 throw new ChannelNameInvalidCommandException();
             }
 
-            ChannelUsers.JoinChannel(createChan, ctx.User);
+            ChannelUsers.JoinChannel(createChan, ctx.Session);
 
             ctx.Session.SendPacket(new ChannelCreateResponsePacket(Sender, createChan));
             return true;

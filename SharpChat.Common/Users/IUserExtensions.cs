@@ -14,7 +14,7 @@ namespace SharpChat.Users {
             StringBuilder sb = new StringBuilder();
 
             if(user.Status == UserStatus.Away)
-                sb.AppendFormat(@"&lt;{0}&gt;_", user.StatusMessage.Substring(0, Math.Min(user.StatusMessage.Length, 5)).ToUpperInvariant());
+                sb.Append(user.StatusMessage.ToAFKString());
 
             if(string.IsNullOrWhiteSpace(user.NickName))
                 sb.Append(user.UserName);
@@ -25,6 +25,9 @@ namespace SharpChat.Users {
 
             return sb.ToString();
         }
+
+        public static string ToAFKString(this string str)
+            => string.Format(@"&lt;{0}&gt;_", str.Substring(0, Math.Min(str.Length, 5)).ToUpperInvariant());
 
         public static string Pack(this IUser user) {
             if(user is ChatBot cb)
@@ -56,6 +59,23 @@ namespace SharpChat.Users {
             sb.Append(user.Can(UserPermissions.CreateChannel | UserPermissions.SetChannelPermanent) ? 2 : (
                 user.Can(UserPermissions.CreateChannel) ? 1 : 0
             ));
+        }
+
+        public static void Pack(this UserPermissions perms, StringBuilder sb) {
+            sb.Append(' ');
+            sb.Append((perms & UserPermissions.KickUser) > 0 ? '1' : '0');
+            sb.Append(' ');
+            sb.Append(0); // Legacy view logs
+            sb.Append(' ');
+            sb.Append((perms & UserPermissions.SetOwnNickname) > 0 ? '1' : '0');
+            sb.Append(' ');
+            sb.Append((perms & UserPermissions.CreateChannel) > 0 ? ((perms & UserPermissions.SetChannelPermanent) > 0 ? 2 : 1) : 0);
+        }
+
+        public static string Pack(this UserPermissions perms) {
+            StringBuilder sb = new StringBuilder();
+            perms.Pack(sb);
+            return sb.ToString();
         }
     }
 }

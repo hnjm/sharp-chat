@@ -312,8 +312,8 @@ namespace SharpChat.Channels {
                         break;
 
                     case ChannelUpdateEvent _:
-                    case ChannelJoinEvent _:
-                    case ChannelLeaveEvent _:
+                    case ChannelUserJoinEvent _:
+                    case ChannelUserLeaveEvent _:
                         OnEvent(sender, evt);
                         break;
                 }
